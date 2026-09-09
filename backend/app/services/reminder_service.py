@@ -37,6 +37,7 @@ class ReminderService:
 
         sent_count = 0
         logs = []
+        tasks_to_dispatch = []
 
         for student in students:
             reminder_type = None
@@ -75,13 +76,22 @@ class ReminderService:
                 student_id=student.id,
                 reminder_type=reminder_type,
                 channel="sms",
-                status="sent",
+                status="pending",
                 message=msg,
-                provider_response="Delivered (Mock SMS Provider)" if settings.SMS_PROVIDER == "mock" else "Pending Gateway"
+                provider_response="Queued for delivery"
             )
             db.add(reminder_log)
+            await db.flush()
+            
+            tasks_to_dispatch.append((reminder_log.id, student.phone, msg))
             sent_count += 1
             logs.append({"student": student.full_name, "type": reminder_type, "phone": student.phone})
 
         await db.commit()
+
+        # Dispatch to Celery worker only after successful DB commit
+        from app.worker import celery_app
+        for log_id, phone, msg in tasks_to_dispatch:
+            celery_app.send_task("app.worker.send_sms_task", args=[log_id, phone, msg])
+
         return {"sent_count": sent_count, "logs": logs}

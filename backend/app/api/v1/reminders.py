@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -49,3 +49,32 @@ async def get_reminder_logs(
         }
         for l in logs
     ]
+
+@router.post("/retry/{log_id}")
+async def retry_reminder(
+    log_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    query = (
+        select(ReminderLog)
+        .options(selectinload(ReminderLog.student))
+        .where(ReminderLog.id == log_id, ReminderLog.tenant_id == current_user.tenant_id)
+    )
+    res = await db.execute(query)
+    log = res.scalar_one_or_none()
+    
+    if not log:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Log not found")
+    
+    if not log.student:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Associated student not found")
+
+    log.status = "pending"
+    log.provider_response = "Manual retry queued"
+    await db.commit()
+
+    from app.worker import celery_app
+    celery_app.send_task("app.worker.send_sms_task", args=[log.id, log.student.phone, log.message])
+    
+    return {"status": "success", "message": "Retry task dispatched"}

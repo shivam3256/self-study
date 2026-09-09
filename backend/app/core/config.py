@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # Database
     # Default is SQLite for zero-setup out of the box; supports postgresql+asyncpg://...
     DATABASE_URL: str = "sqlite+aiosqlite:///./study_center.db"
+
+    # Celery & Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
     
     # CORS
     CORS_ORIGINS: Union[List[str], str] = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
@@ -40,4 +43,3 @@ class Settings(BaseSettings):
     }
 
 settings = Settings()
-

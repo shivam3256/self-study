@@ -1,146 +1,122 @@
-from datetime import date, datetime
-from typing import List
+from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
-from sqlalchemy.orm import selectinload
+from typing import List, Optional
+from pydantic import BaseModel
 
 from app.core.database import get_db, get_utc_now
 from app.core.deps import get_current_user
 from app.models.tenant import User
 from app.models.student import Student
 from app.models.attendance import Attendance
-from app.models.allocation import SeatAllocation
-from app.schemas.attendance import CheckInRequest, AttendanceResponse
 
-router = APIRouter(prefix="/attendance", tags=["Attendance & QR Check-in"])
+router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
-@router.get("/today", response_model=List[AttendanceResponse])
-async def get_today_attendance(
+class CheckInRequest(BaseModel):
+    student_id: Optional[str] = None
+    method: str = "qr"
+
+@router.post("/check-in/{qr_token}")
+async def student_check_in(
+    qr_token: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    today = date.today()
-    query = (
-        select(Attendance)
-        .options(
-            selectinload(Attendance.student).selectinload(Student.allocations).selectinload(SeatAllocation.desk)
-        )
-        .where(
-            Attendance.tenant_id == current_user.tenant_id,
-            Attendance.date == today
-        )
-        .order_by(Attendance.check_in_time.desc())
+    # 1. Find student by QR token within this tenant
+    query = select(Student).where(
+        Student.tenant_id == current_user.tenant_id,
+        Student.qr_code_token == qr_token
     )
     res = await db.execute(query)
-    records = res.scalars().all()
+    student = res.scalar_one_or_none()
 
-    output = []
-    for r in records:
-        resp = AttendanceResponse.model_validate(r)
-        if r.student:
-            resp.student_name = r.student.full_name
-            resp.student_phone = r.student.phone
-            active_alloc = next((a for a in r.student.allocations if a.status == "active"), None)
-            if active_alloc and active_alloc.desk:
-                resp.desk_number = active_alloc.desk.desk_number
-        output.append(resp)
-    return output
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found or invalid token")
+    
+    if student.status != "active":
+        raise HTTPException(status_code=403, detail=f"Student membership is {student.status}")
 
-@router.post("/check-in", response_model=AttendanceResponse)
-async def check_in(
-    data: CheckInRequest,
+    # 2. Check if already checked in today
+    today = date.today()
+    existing_query = select(Attendance).where(
+        Attendance.tenant_id == current_user.tenant_id,
+        Attendance.student_id == student.id,
+        Attendance.date == today,
+        Attendance.check_out_time == None
+    )
+    existing_res = await db.execute(existing_query)
+    if existing_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Student already checked in")
+
+    # 3. Create record
+    attendance = Attendance(
+        tenant_id=current_user.tenant_id,
+        student_id=student.id,
+        date=today,
+        check_in_time=get_utc_now(),
+        method="qr"
+    )
+    db.add(attendance)
+    await db.commit()
+    return {"status": "success", "student_name": student.full_name}
+
+@router.post("/check-in")
+async def manual_check_in(
+    payload: CheckInRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    student = None
-    if data.qr_code_token:
-        res = await db.execute(
-            select(Student).where(
-                Student.qr_code_token == data.qr_code_token,
-                Student.tenant_id == current_user.tenant_id
-            )
-        )
-        student = res.scalar_one_or_none()
-    elif data.student_id:
-        res = await db.execute(
-            select(Student).where(
-                Student.id == data.student_id,
-                Student.tenant_id == current_user.tenant_id
-            )
-        )
-        student = res.scalar_one_or_none()
-
+    if not payload.student_id:
+        raise HTTPException(status_code=400, detail="Student ID required for manual check-in")
+    
+    res = await db.execute(select(Student).where(
+        Student.id == payload.student_id, 
+        Student.tenant_id == current_user.tenant_id
+    ))
+    student = res.scalar_one_or_none()
+    
     if not student:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not recognized.")
-
-    if student.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Student account is currently {student.status}. Please resolve status first."
-        )
+        raise HTTPException(status_code=404, detail="Student not found")
 
     today = date.today()
-    # Check if student already checked in today without check-out
-    existing_check = await db.execute(
-        select(Attendance).where(
-            Attendance.tenant_id == current_user.tenant_id,
-            Attendance.student_id == student.id,
-            Attendance.date == today,
-            Attendance.check_out_time == None
-        )
-    )
-    existing = existing_check.scalar_one_or_none()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{student.full_name} is already checked in since {existing.check_in_time.strftime('%I:%M %p')}."
-        )
+    existing = await db.execute(select(Attendance).where(
+        Attendance.student_id == student.id,
+        Attendance.date == today,
+        Attendance.check_out_time == None
+    ))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Student already checked in")
 
     attendance = Attendance(
         tenant_id=current_user.tenant_id,
         student_id=student.id,
         date=today,
         check_in_time=get_utc_now(),
-        method=data.method
+        method=payload.method
     )
     db.add(attendance)
     await db.commit()
-    await db.refresh(attendance)
+    return {"status": "success", "student_name": student.full_name}
 
-    resp = AttendanceResponse.model_validate(attendance)
-    resp.student_name = student.full_name
-    resp.student_phone = student.phone
-    return resp
-
-@router.post("/check-out/{attendance_id}", response_model=AttendanceResponse)
-async def check_out(
-    attendance_id: str,
+@router.post("/check-out/{student_id}")
+async def student_check_out(
+    student_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    query = (
-        select(Attendance)
-        .options(selectinload(Attendance.student))
-        .where(
-            Attendance.id == attendance_id,
-            Attendance.tenant_id == current_user.tenant_id
-        )
-    )
+    query = select(Attendance).where(
+        Attendance.tenant_id == current_user.tenant_id,
+        Attendance.student_id == student_id,
+        Attendance.check_out_time == None
+    ).order_by(Attendance.check_in_time.desc())
+    
     res = await db.execute(query)
     attendance = res.scalar_one_or_none()
+    
     if not attendance:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attendance record not found.")
-
-    if attendance.check_out_time:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already checked out.")
-
+        raise HTTPException(status_code=404, detail="No active check-in session found")
+    
     attendance.check_out_time = get_utc_now()
     await db.commit()
-    await db.refresh(attendance)
-
-    resp = AttendanceResponse.model_validate(attendance)
-    if attendance.student:
-        resp.student_name = attendance.student.full_name
-        resp.student_phone = attendance.student.phone
-    return resp
+    return {"status": "success"}
