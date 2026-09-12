@@ -201,5 +201,9 @@ export const api = {
         method: 'POST',
       }),
     getLogs: () => request('/reminders/logs'),
+    retry: (logId) =>
+      request(`/reminders/retry/${logId}`, {
+        method: 'POST',
+      }),
   },
 };

@@ -4,8 +4,8 @@ import { api, setAuthToken, setStoredUser } from '../api';
 
 export default function Auth({ onLoginSuccess }) {
   const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState('owner@apexlibrary.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   // Register form state
   const [libraryName, setLibraryName] = useState('');

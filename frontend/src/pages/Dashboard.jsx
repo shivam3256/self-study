@@ -35,8 +35,17 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-        Loading dashboard metrics...
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', gap: 16 }}>
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          border: '3px solid rgba(99, 102, 241, 0.2)',
+          borderTopColor: 'var(--primary)',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Loading dashboard metrics...</div>
       </div>
     );
   }

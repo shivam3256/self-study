@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Receipt } from 'lucide-react';
 import { api } from '../api';
 
-export default function NewPaymentModal({ students, plans, onClose, onSuccess }) {
-  const [studentId, setStudentId] = useState('');
+export default function NewPaymentModal({ students, plans, preselectedStudentId, onClose, onSuccess }) {
+  const [studentId, setStudentId] = useState(preselectedStudentId || '');
   const [planId, setPlanId] = useState('');
   const [amount, setAmount] = useState('');
   const [discount, setDiscount] = useState('0');
@@ -12,6 +12,13 @@ export default function NewPaymentModal({ students, plans, onClose, onSuccess })
   const [remarks, setRemarks] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Sync pre-selected student when prop changes (e.g. re-open)
+  useEffect(() => {
+    if (preselectedStudentId) {
+      setStudentId(preselectedStudentId);
+    }
+  }, [preselectedStudentId]);
 
   // When plan changes, automatically set amount
   const handlePlanChange = (selectedId) => {

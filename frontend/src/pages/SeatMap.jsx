@@ -28,7 +28,7 @@ export default function SeatMap({ students, onRefreshStudents }) {
   };
 
   const fetchSeatMap = async () => {
-    if (!activeShiftId && shifts.length > 0) return;
+    if (!activeShiftId) return;
     try {
       const data = await api.desks.getSeatMap(activeShiftId, selectedDate);
       setDesks(data);

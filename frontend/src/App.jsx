@@ -205,6 +205,7 @@ export default function App() {
         <NewPaymentModal
           students={students}
           plans={plans}
+          preselectedStudentId={preselectedStudentIdForPayment}
           onClose={() => setShowNewPaymentModal(false)}
           onSuccess={(issuedReceipt) => {
             loadSharedData();

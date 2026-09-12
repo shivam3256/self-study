@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BellRing, Send, CheckCircle2, MessageSquare, ShieldCheck, RotateCcw } from 'lucide-react';
+import { BellRing, Send, CheckCircle2, MessageSquare, ShieldCheck } from 'lucide-react';
 import { api } from '../api';
 
 export default function Reminders() {
@@ -38,15 +38,6 @@ export default function Reminders() {
       setResultMessage({ type: 'error', text: err.message });
     } finally {
       setTriggering(false);
-    }
-  };
-
-  const handleRetry = async (logId) => {
-    try {
-      await api.reminders.retry(logId);
-      fetchLogs();
-    } catch (err) {
-      console.error("Retry failed:", err);
     }
   };
 
@@ -110,7 +101,6 @@ export default function Reminders() {
                 <th>SMS Message Text</th>
                 <th>Delivery Status</th>
                 <th>Sent Timestamp</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -140,17 +130,6 @@ export default function Reminders() {
                     </td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {new Date(l.sent_at).toLocaleString()}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      {l.status === 'failed' && (
-                        <button 
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => handleRetry(l.id)}
-                        >
-                          <RotateCcw size={14} />
-                          <span>Retry</span>
-                        </button>
-                      )}
                     </td>
                   </tr>
                 ))

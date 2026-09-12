@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, MapPin, UserPlus, Receipt } from 'lucide-react';
+import { MapPin, UserPlus, Receipt } from 'lucide-react';
 
 export default function TopBar({ title, subtitle, tenant, onOpenNewStudent, onOpenNewPayment }) {
   return (
