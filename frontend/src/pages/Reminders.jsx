@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { BellRing, Send, CheckCircle2, MessageSquare, ShieldCheck } from 'lucide-react';
+import { BellRing, Send, CheckCircle2, MessageSquare, ShieldCheck, RotateCcw } from 'lucide-react';
 import { api } from '../api';
 
 export default function Reminders() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [retryingId, setRetryingId] = useState(null);
   const [resultMessage, setResultMessage] = useState(null);
+
 
   const fetchLogs = async () => {
     try {
@@ -40,6 +42,23 @@ export default function Reminders() {
       setTriggering(false);
     }
   };
+
+  const handleRetry = async (logId) => {
+    setRetryingId(logId);
+    try {
+      await api.reminders.retry(logId);
+      setResultMessage({
+        type: 'success',
+        text: 'Retry request dispatched successfully.',
+      });
+      fetchLogs();
+    } catch (err) {
+      setResultMessage({ type: 'error', text: `Retry failed: ${err.message}` });
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
 
   return (
     <div>
@@ -101,12 +120,13 @@ export default function Reminders() {
                 <th>SMS Message Text</th>
                 <th>Delivery Status</th>
                 <th>Sent Timestamp</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {logs.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
                     No automated reminders dispatched yet. Click "Trigger Due-Date Reminders Now" above to evaluate student dues.
                   </td>
                 </tr>
@@ -124,12 +144,30 @@ export default function Reminders() {
                       {l.message}
                     </td>
                     <td>
-                      <span className="badge badge-active" style={{ fontSize: '0.72rem' }}>
+                      <span
+                        className={`badge ${l.status === 'sent' || l.status === 'delivered' ? 'badge-active' : 'badge-paused'}`}
+                        style={{ fontSize: '0.72rem' }}
+                      >
                         {l.status.toUpperCase()}
                       </span>
                     </td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {new Date(l.sent_at).toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {l.status === 'failed' ? (
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={retryingId === l.id}
+                          onClick={() => handleRetry(l.id)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        >
+                          <RotateCcw size={13} className={retryingId === l.id ? 'spin' : ''} />
+                          <span>{retryingId === l.id ? 'Retrying...' : 'Retry'}</span>
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>—</span>
+                      )}
                     </td>
                   </tr>
                 ))

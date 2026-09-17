@@ -42,6 +42,18 @@ async def test_login_and_auth_flow():
         assert me_resp.status_code == 200
         assert me_resp.json()["email"] == "owner@apexlibrary.com"
 
+        # Ensure at least one check-in exists today for testing dashboard & attendance endpoints
+        students_resp = await ac.get("/api/v1/students", headers=headers)
+        assert students_resp.status_code == 200
+        first_student = students_resp.json()[0]
+
+        # Record check-in for first student if not already checked in today
+        await ac.post(
+            "/api/v1/attendance/check-in",
+            json={"student_id": first_student["id"], "method": "manual"},
+            headers=headers
+        )
+
         # Test dashboard summary
         dash_resp = await ac.get("/api/v1/dashboard/summary", headers=headers)
         assert dash_resp.status_code == 200
@@ -49,6 +61,14 @@ async def test_login_and_auth_flow():
         assert dash_data["total_desks"] >= 30
         assert dash_data["total_active_students"] >= 10
         assert dash_data["today_checkins_count"] >= 1
+
+        # Test GET /attendance/today endpoint
+        att_resp = await ac.get("/api/v1/attendance/today", headers=headers)
+        assert att_resp.status_code == 200
+        today_list = att_resp.json()
+        assert len(today_list) >= 1
+        assert any(a["student_id"] == first_student["id"] for a in today_list)
+
 
 @pytest.mark.asyncio
 async def test_seat_allocation_conflict_prevention():
@@ -83,3 +103,41 @@ async def test_seat_allocation_conflict_prevention():
 
         assert conflict_resp.status_code == 409
         assert "already occupied" in conflict_resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_tenant_settings_and_shifts_flow():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        login_resp = await ac.post("/api/v1/auth/login", json={
+            "email": "owner@apexlibrary.com",
+            "password": "admin123"
+        })
+        token = login_resp.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Test updating tenant settings
+        update_resp = await ac.put("/api/v1/auth/tenant", json={
+            "operating_hours": "07:00 AM - 11:00 PM",
+            "city": "Noida Knowledge Park"
+        }, headers=headers)
+        assert update_resp.status_code == 200
+        assert update_resp.json()["operating_hours"] == "07:00 AM - 11:00 PM"
+        assert update_resp.json()["city"] == "Noida Knowledge Park"
+
+        # 2. Test creating and deleting a shift
+        new_shift_resp = await ac.post("/api/v1/shifts", json={
+            "name": "Late Night Shift",
+            "code": "LNIGHT",
+            "start_time": "22:00",
+            "end_time": "06:00",
+            "capacity": 30,
+            "is_active": True
+        }, headers=headers)
+        assert new_shift_resp.status_code == 201
+        created_shift_id = new_shift_resp.json()["id"]
+
+        # Delete the shift
+        del_shift_resp = await ac.delete(f"/api/v1/shifts/{created_shift_id}", headers=headers)
+        assert del_shift_resp.status_code == 204
+

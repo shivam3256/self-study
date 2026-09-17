@@ -11,11 +11,56 @@ from app.models.tenant import User
 from app.models.student import Student
 from app.models.attendance import Attendance
 
+from app.schemas.attendance import AttendanceResponse, CheckInRequest
+from app.models.allocation import SeatAllocation
+from sqlalchemy.orm import selectinload
+
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
-class CheckInRequest(BaseModel):
-    student_id: Optional[str] = None
-    method: str = "qr"
+@router.get("/today", response_model=List[AttendanceResponse])
+async def get_today_attendance(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    today = date.today()
+    query = (
+        select(Attendance)
+        .options(
+            selectinload(Attendance.student).selectinload(Student.allocations).selectinload(SeatAllocation.desk)
+        )
+        .where(
+            Attendance.tenant_id == current_user.tenant_id,
+            Attendance.date == today
+        )
+        .order_by(Attendance.check_in_time.desc())
+    )
+    res = await db.execute(query)
+    attendances = res.scalars().all()
+
+    output: List[AttendanceResponse] = []
+    for att in attendances:
+        desk_no = None
+        if att.student and att.student.allocations:
+            active_alloc = next((a for a in att.student.allocations if a.status == "active"), None)
+            if active_alloc and active_alloc.desk:
+                desk_no = active_alloc.desk.desk_number
+
+        output.append(
+            AttendanceResponse(
+                id=att.id,
+                tenant_id=att.tenant_id,
+                student_id=att.student_id,
+                date=att.date,
+                check_in_time=att.check_in_time,
+                check_out_time=att.check_out_time,
+                method=att.method,
+                student_name=att.student.full_name if att.student else "Student",
+                student_phone=att.student.phone if att.student else None,
+                desk_number=desk_no
+            )
+        )
+    return output
+
 
 @router.post("/check-in/{qr_token}")
 async def student_check_in(

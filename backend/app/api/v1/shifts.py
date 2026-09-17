@@ -60,3 +60,19 @@ async def update_shift(
     await db.commit()
     await db.refresh(shift)
     return ShiftResponse.model_validate(shift)
+
+@router.delete("/{shift_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_shift(
+    shift_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(Shift).where(Shift.id == shift_id, Shift.tenant_id == current_user.tenant_id)
+    res = await db.execute(query)
+    shift = res.scalar_one_or_none()
+    if not shift:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shift not found.")
+
+    await db.delete(shift)
+    await db.commit()
+

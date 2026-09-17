@@ -81,8 +81,18 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    googleAuth: (credential, extraData = {}) =>
+      request('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ credential, ...extraData }),
+      }),
     getMe: () => request('/auth/me'),
     getTenant: () => request('/auth/tenant'),
+    updateTenant: (data) =>
+      request('/auth/tenant', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
   },
 
   dashboard: {
@@ -111,6 +121,15 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    update: (id, data) =>
+      request(`/shifts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id) =>
+      request(`/shifts/${id}`, {
+        method: 'DELETE',
+      }),
   },
 
   plans: {
@@ -119,6 +138,15 @@ export const api = {
       request('/plans', {
         method: 'POST',
         body: JSON.stringify(data),
+      }),
+    update: (id, data) =>
+      request(`/plans/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id) =>
+      request(`/plans/${id}`, {
+        method: 'DELETE',
       }),
   },
 

@@ -8,6 +8,7 @@ import {
   BellRing,
   LogOut,
   Building2,
+  Settings as SettingsIcon,
   Sparkles
 } from 'lucide-react';
 
@@ -19,7 +20,9 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
     { id: 'billing', label: 'Fee & Billing', icon: CreditCard },
     { id: 'attendance', label: 'Attendance & QR', icon: QrCode },
     { id: 'reminders', label: 'SMS Reminders', icon: BellRing },
+    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
+
 
   return (
     <aside className="sidebar">

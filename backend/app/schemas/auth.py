@@ -17,6 +17,13 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class GoogleAuthRequest(BaseModel):
+    """Google OAuth flow: frontend sends the ID token credential from Google Identity Services."""
+    credential: str  # Google ID token (JWT)
+    library_name: Optional[str] = None  # Required only for first-time registration via Google
+    phone: Optional[str] = None
+    city: Optional[str] = None
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -55,5 +62,18 @@ class TenantResponse(BaseModel):
     is_active: bool
     created_at: datetime
 
+class TenantUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    owner_name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    logo_url: Optional[str] = None
+    currency: Optional[str] = None
+    operating_hours: Optional[str] = None
+
 TokenResponse.model_rebuild()
+
 

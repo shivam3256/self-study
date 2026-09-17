@@ -8,6 +8,7 @@ import Students from './pages/Students';
 import Billing from './pages/Billing';
 import Attendance from './pages/Attendance';
 import Reminders from './pages/Reminders';
+import Settings from './pages/Settings';
 import Auth from './pages/Auth';
 import NewStudentModal from './components/NewStudentModal';
 import NewPaymentModal from './components/NewPaymentModal';
@@ -122,6 +123,11 @@ export default function App() {
           title: 'Automated SMS Fee Reminders',
           subtitle: 'Scheduled notifications sent 7/3/1 days before due dates and on overdue status.',
         };
+      case 'settings':
+        return {
+          title: 'Library Settings & Workspace Configuration',
+          subtitle: 'Customize library branding, operating shifts, and student membership plans.',
+        };
       default:
         return { title: 'Self-Study Management', subtitle: '' };
     }
@@ -190,8 +196,19 @@ export default function App() {
           {activeTab === 'reminders' && (
             <Reminders />
           )}
+
+          {activeTab === 'settings' && (
+            <Settings
+              tenant={tenant}
+              shifts={shifts}
+              plans={plans}
+              onTenantUpdated={(newTenant) => setTenant(newTenant)}
+              onRefreshData={loadSharedData}
+            />
+          )}
         </main>
       </div>
+
 
       {/* Modals */}
       {showNewStudentModal && (

@@ -31,6 +31,9 @@ class Settings(BaseSettings):
             return v
         return ["*"]
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""  # Set in .env: your Google OAuth 2.0 client ID
+
     # SMS Gateway Configuration
     SMS_PROVIDER: str = "mock"  # mock, msg91, fast2sms
     SMS_API_KEY: str = ""
