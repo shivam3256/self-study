@@ -65,20 +65,28 @@ class ReminderService:
             if already_sent:
                 continue
 
-            msg = (
-                f"Hello {student.full_name}, your membership at {tenant.name} "
-                f"{'is expiring on ' + student.expiry_date.strftime('%d-%b-%Y') if reminder_type != 'overdue' else 'expired on ' + student.expiry_date.strftime('%d-%b-%Y')}. "
-                f"Please renew to secure your reserved desk. Contact {tenant.phone or ''}."
-            )
+            expiry_formatted = student.expiry_date.strftime('%d-%b-%Y')
+            if reminder_type == "overdue":
+                msg = (
+                    f"Hello {student.full_name}, your membership at *{tenant.name}* expired on *{expiry_formatted}*. "
+                    f"Please renew your subscription to secure your reserved desk. "
+                    f"Contact us at {tenant.phone or 'the front desk'}."
+                )
+            else:
+                msg = (
+                    f"Hello {student.full_name}, this is a gentle reminder that your membership at *{tenant.name}* "
+                    f"is expiring on *{expiry_formatted}*. "
+                    f"Please renew to ensure uninterrupted access. Contact: {tenant.phone or 'the reception'}."
+                )
 
             reminder_log = ReminderLog(
                 tenant_id=tenant_id,
                 student_id=student.id,
                 reminder_type=reminder_type,
-                channel="sms",
+                channel="whatsapp",
                 status="pending",
                 message=msg,
-                provider_response="Queued for delivery"
+                provider_response="Queued for WhatsApp delivery"
             )
             db.add(reminder_log)
             await db.flush()
@@ -92,6 +100,6 @@ class ReminderService:
         # Dispatch to Celery worker only after successful DB commit
         from app.worker import celery_app
         for log_id, phone, msg in tasks_to_dispatch:
-            celery_app.send_task("app.worker.send_sms_task", args=[log_id, phone, msg])
+            celery_app.send_task("app.worker.send_whatsapp_task", args=[log_id, phone, msg])
 
         return {"sent_count": sent_count, "logs": logs}

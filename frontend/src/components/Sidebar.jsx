@@ -19,7 +19,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
     { id: 'students', label: 'Students', icon: Users },
     { id: 'billing', label: 'Fee & Billing', icon: CreditCard },
     { id: 'attendance', label: 'Attendance & QR', icon: QrCode },
-    { id: 'reminders', label: 'SMS Reminders', icon: BellRing },
+    { id: 'reminders', label: 'WhatsApp Reminders', icon: BellRing },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 

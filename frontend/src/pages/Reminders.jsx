@@ -33,7 +33,7 @@ export default function Reminders() {
       const res = await api.reminders.trigger();
       setResultMessage({
         type: 'success',
-        text: `Reminder scan completed: Sent ${res.sent_count} automated SMS alerts.`,
+        text: `Reminder scan completed: Sent ${res.sent_count} automated WhatsApp alerts.`,
       });
       fetchLogs();
     } catch (err) {
@@ -49,7 +49,7 @@ export default function Reminders() {
       await api.reminders.retry(logId);
       setResultMessage({
         type: 'success',
-        text: 'Retry request dispatched successfully.',
+        text: 'WhatsApp retry request dispatched successfully.',
       });
       fetchLogs();
     } catch (err) {
@@ -68,10 +68,10 @@ export default function Reminders() {
           <div>
             <div className="card-title">
               <BellRing size={20} color="var(--primary)" />
-              <span>Automated Fee Renewal Reminders</span>
+              <span>Automated WhatsApp Fee Reminders</span>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, maxWidth: '640px' }}>
-              The background reminder engine automatically dispatches SMS notifications to students 7, 3, and 1 day prior to membership expiry, and upon becoming overdue.
+              The background reminder engine automatically dispatches WhatsApp messages to students 7, 3, and 1 day prior to membership expiry, and upon becoming overdue.
             </div>
           </div>
 
@@ -107,7 +107,7 @@ export default function Reminders() {
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
           <div className="card-title">
             <MessageSquare size={18} color="var(--primary)" />
-            <span>Recent SMS Notification Audit Logs</span>
+            <span>Recent WhatsApp Notification Audit Logs</span>
           </div>
         </div>
         <div className="table-container">
@@ -117,7 +117,7 @@ export default function Reminders() {
                 <th>Student</th>
                 <th>Phone</th>
                 <th>Trigger Event</th>
-                <th>SMS Message Text</th>
+                <th>WhatsApp Message Text</th>
                 <th>Delivery Status</th>
                 <th>Sent Timestamp</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>

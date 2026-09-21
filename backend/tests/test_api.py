@@ -141,3 +141,31 @@ async def test_tenant_settings_and_shifts_flow():
         del_shift_resp = await ac.delete(f"/api/v1/shifts/{created_shift_id}", headers=headers)
         assert del_shift_resp.status_code == 204
 
+@pytest.mark.asyncio
+async def test_whatsapp_reminders_flow():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        login_resp = await ac.post("/api/v1/auth/login", json={
+            "email": "owner@apexlibrary.com",
+            "password": "admin123"
+        })
+        token = login_resp.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Trigger reminders scan
+        trigger_resp = await ac.post("/api/v1/reminders/trigger", headers=headers)
+        assert trigger_resp.status_code == 200
+        data = trigger_resp.json()
+        assert "sent_count" in data
+
+        # 2. Fetch reminder audit logs
+        logs_resp = await ac.get("/api/v1/reminders/logs", headers=headers)
+        assert logs_resp.status_code == 200
+        logs = logs_resp.json()
+        assert isinstance(logs, list)
+        if len(logs) > 0:
+            assert logs[0]["channel"] == "whatsapp"
+            assert "id" in logs[0]
+            assert "message" in logs[0]
+
+

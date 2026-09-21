@@ -34,10 +34,12 @@ class Settings(BaseSettings):
     # Google OAuth
     GOOGLE_CLIENT_ID: str = ""  # Set in .env: your Google OAuth 2.0 client ID
 
-    # SMS Gateway Configuration
-    SMS_PROVIDER: str = "mock"  # mock, msg91, fast2sms
-    SMS_API_KEY: str = ""
-    SMS_SENDER_ID: str = "STDCEN"
+    # WhatsApp Meta Cloud API Configuration
+    WHATSAPP_PROVIDER: str = "mock"  # "mock" for local dev/testing, "meta" for Meta Cloud API
+    WHATSAPP_ACCESS_TOKEN: str = ""  # System user or temporary Meta Graph API token
+    WHATSAPP_PHONE_NUMBER_ID: str = ""  # WhatsApp Business Phone Number ID from Meta Dashboard
+    WHATSAPP_BUSINESS_ACCOUNT_ID: str = ""  # WABA ID (optional)
+    WHATSAPP_API_VERSION: str = "v20.0"  # Meta Graph API version
 
     model_config = {
         "env_file": ".env",

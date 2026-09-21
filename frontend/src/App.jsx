@@ -120,8 +120,8 @@ export default function App() {
         };
       case 'reminders':
         return {
-          title: 'Automated SMS Fee Reminders',
-          subtitle: 'Scheduled notifications sent 7/3/1 days before due dates and on overdue status.',
+          title: 'Automated WhatsApp Fee Reminders',
+          subtitle: 'Scheduled notifications sent 7/3/1 days before due dates and on overdue status via WhatsApp.',
         };
       case 'settings':
         return {

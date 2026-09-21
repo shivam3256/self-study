@@ -23,8 +23,8 @@ Delivered as a **responsive web application** — accessed via browser on deskto
 | Frontend | React | Responsive web app (desktop + mobile browsers) |
 | Backend | FastAPI (Python) | Async support for concurrent tenant operations |
 | Database | PostgreSQL | Multi-tenant via `tenant_id` scoping on all tables |
-| Background Jobs | Celery + Redis | Per-tenant scheduled SMS reminders, recurring tasks |
-| SMS Gateway | MSG91 / Fast2SMS | India-focused, cost-effective delivery |
+| Background Jobs | Celery + Redis | Per-tenant scheduled WhatsApp reminders, recurring tasks |
+| Messaging Gateway | WhatsApp Meta Cloud API | Meta Cloud API for automated renewal messages |
 | Auth | JWT-based (fastapi-users or equivalent) | Multi-tenant login, role-based permissions |
 | Billing | Razorpay | Recurring subscription billing (UPI/card) |
 | Hosting | Railway / Render / Hetzner VPS | Cloud-hosted, centrally managed |

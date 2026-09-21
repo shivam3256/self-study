@@ -7,7 +7,7 @@ class ReminderLog(TenantScopedModel):
 
     student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     reminder_type = Column(String(50), nullable=False)  # 7_days_before, 3_days_before, 1_day_before, overdue, custom
-    channel = Column(String(50), default="sms", nullable=False)  # sms, whatsapp, email
+    channel = Column(String(50), default="whatsapp", nullable=False)  # whatsapp, sms, email
     status = Column(String(50), default="sent", nullable=False)  # sent, failed, pending
     message = Column(Text, nullable=False)
     sent_at = Column(DateTime(timezone=True), default=get_utc_now, nullable=False)

@@ -75,6 +75,6 @@ async def retry_reminder(
     await db.commit()
 
     from app.worker import celery_app
-    celery_app.send_task("app.worker.send_sms_task", args=[log.id, log.student.phone, log.message])
+    celery_app.send_task("app.worker.send_whatsapp_task", args=[log.id, log.student.phone, log.message])
     
-    return {"status": "success", "message": "Retry task dispatched"}
+    return {"status": "success", "message": "WhatsApp retry task dispatched"}

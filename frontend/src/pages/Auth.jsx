@@ -27,7 +27,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const FEATURES = [
   { icon: Users, label: 'Student Management', desc: 'Enroll, track, and manage every student effortlessly.' },
   { icon: BookOpen, label: 'Desk & Shift Allocation', desc: 'Real-time visual seat map with multi-shift support.' },
-  { icon: BarChart3, label: 'Fee Billing & Receipts', desc: 'Collect dues, send SMS reminders, print GST receipts.' },
+  { icon: BarChart3, label: 'Fee Billing & Receipts', desc: 'Collect dues, send WhatsApp reminders, print GST receipts.' },
   { icon: Shield, label: 'Multi-tenant SaaS', desc: 'Isolated workspace for every library owner.' },
 ];
 
@@ -299,7 +299,7 @@ export default function Auth({ onLoginSuccess }) {
                 Manage your <span className="auth-gradient-text">study library</span> like a pro
               </h1>
               <p className="auth-headline-sub">
-                The all-in-one platform for self-study centers — seats, students, fees, and SMS reminders, unified.
+                The all-in-one platform for self-study centers — seats, students, fees, and WhatsApp reminders, unified.
               </p>
             </div>
 
