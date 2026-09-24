@@ -70,7 +70,7 @@ export default function Students({
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: '240px', maxWidth: '400px' }}>
             <div style={{ position: 'relative', width: '100%' }}>
-              <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 13 }} />
+              <Search size={16} color="var(--color-text-secondary)" style={{ position: 'absolute', left: 12, top: 12 }} />
               <input
                 type="text"
                 className="form-input"
@@ -102,7 +102,7 @@ export default function Students({
 
       {/* Students Data Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-container">
+        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
           <table className="data-table">
             <thead>
               <tr>
@@ -118,7 +118,7 @@ export default function Students({
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-secondary)' }}>
                     No students match the current filters.
                   </td>
                 </tr>
@@ -126,22 +126,22 @@ export default function Students({
                 filteredStudents.map((s) => (
                   <tr key={s.id}>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#fff' }}>{s.full_name}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{s.phone}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{s.full_name}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>{s.phone}</div>
                     </td>
                     <td>
-                      <span style={{ fontFamily: 'monospace', color: 'var(--primary)', fontWeight: 600 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-brand)', fontWeight: 600 }}>
                         {s.admission_number}
                       </span>
                     </td>
                     <td>
                       {s.current_desk_number ? (
                         <div>
-                          <span style={{ fontWeight: 700, color: '#fff' }}>Desk {s.current_desk_number}</span>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.current_shift_name}</div>
+                          <span style={{ fontWeight: 600, color: 'var(--color-heading)' }}>Desk {s.current_desk_number}</span>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{s.current_shift_name}</div>
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--text-subtle)', fontSize: '0.82rem' }}>No seat assigned</span>
+                        <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>No seat assigned</span>
                       )}
                     </td>
                     <td>
@@ -150,12 +150,12 @@ export default function Students({
                       </span>
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.85rem', color: s.status === 'expired' ? 'var(--danger)' : '#fff' }}>
+                      <div style={{ fontSize: '0.85rem', color: s.status === 'expired' ? 'var(--danger-text)' : 'var(--color-text)' }}>
                         {s.expiry_date || 'N/A'}
                       </div>
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {s.notes || 'General Study'}
                       </div>
                     </td>

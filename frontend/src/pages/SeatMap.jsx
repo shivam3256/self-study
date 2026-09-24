@@ -58,7 +58,7 @@ export default function SeatMap({ students, onRefreshStudents }) {
       <div className="card" style={{ marginBottom: 24, padding: '16px 20px' }}>
         <div className="seat-map-controls">
           <div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>
               Select Shift
             </div>
             <div className="shift-selector">
@@ -75,7 +75,7 @@ export default function SeatMap({ students, onRefreshStudents }) {
           </div>
 
           <div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>
               Occupancy Date
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -107,7 +107,7 @@ export default function SeatMap({ students, onRefreshStudents }) {
       </div>
 
       {error && (
-        <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: '#f87171', padding: '12px 16px', borderRadius: 8, marginBottom: 20 }}>
+        <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '12px 16px', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
           {error}
         </div>
       )}
@@ -119,9 +119,9 @@ export default function SeatMap({ students, onRefreshStudents }) {
         return (
           <div key={zone} style={{ marginBottom: 32 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff' }}>{zone}</h3>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                Occupancy: <strong style={{ color: '#fff' }}>{occupiedCount}</strong> / {zoneDesks.length} Seats
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-heading)' }}>{zone}</h3>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                Occupancy: <strong style={{ color: 'var(--color-heading)' }}>{occupiedCount}</strong> / {zoneDesks.length} Seats
               </div>
             </div>
 
@@ -146,7 +146,7 @@ export default function SeatMap({ students, onRefreshStudents }) {
                       </>
                     ) : (
                       <>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>Available</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Available</div>
                         <span className="seat-status-pill free">Assign</span>
                       </>
                     )}

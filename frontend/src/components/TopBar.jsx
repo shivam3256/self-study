@@ -9,7 +9,7 @@ export default function TopBar({ title, subtitle, tenant, onOpenNewStudent, onOp
           <span>{title}</span>
         </div>
         {subtitle && (
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
             {subtitle}
           </div>
         )}
@@ -17,8 +17,8 @@ export default function TopBar({ title, subtitle, tenant, onOpenNewStudent, onOp
 
       <div className="topbar-actions">
         {tenant?.city && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            <MapPin size={14} color="var(--primary)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+            <MapPin size={14} color="var(--color-brand)" />
             <span>{tenant.city}</span>
           </div>
         )}

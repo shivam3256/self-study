@@ -60,13 +60,13 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
           <div>
-            <h3 style={{ fontSize: '1.25rem', color: '#fff' }}>
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)' }}>
               Desk {desk.desk_number} Details
             </h3>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Zone: {desk.zone} | Category: <span style={{ textTransform: 'uppercase', color: 'var(--primary)' }}>{desk.category}</span>
+            <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+              Zone: {desk.zone} | Category: <span style={{ textTransform: 'uppercase', color: 'var(--color-brand)', fontWeight: 600 }}>{desk.category}</span>
             </div>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={onClose}>
@@ -75,7 +75,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: '#f87171', padding: '10px 14px', borderRadius: 8, fontSize: '0.85rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <ShieldAlert size={16} />
             <span>{error}</span>
           </div>
@@ -83,27 +83,27 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
 
         {isOccupied ? (
           <div>
-            <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, padding: 18, marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#a5b4fc', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>
+            <div style={{ background: 'var(--color-brand-tint)', border: '1px solid #FED7AA', borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-brand)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>
                 <UserCheck size={16} />
                 <span>Currently Occupied</span>
               </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--color-heading)' }}>
                 {desk.student_name}
               </div>
               {desk.student_phone && (
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
                   Phone: {desk.student_phone}
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>Shift</div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{desk.shift_name || 'Assigned Shift'}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>Shift</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-heading)' }}>{desk.shift_name || 'Assigned Shift'}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>Validity Period</div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>Validity Period</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-heading)' }}>
                     {desk.start_date} to {desk.end_date}
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
           </div>
         ) : (
           <form onSubmit={handleAllocate}>
-            <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 18, fontSize: '0.85rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 18, fontSize: '0.85rem', color: 'var(--success-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <CheckCircle size={16} />
               <span>Desk is available for allocation in this shift.</span>
             </div>

@@ -41,9 +41,9 @@ export default function NewStudentModal({ onClose, onSuccess }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h3 style={{ fontSize: '1.25rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <UserPlus size={20} color="var(--primary)" />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
+          <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <UserPlus size={20} color="var(--color-brand)" />
             <span>Register New Student</span>
           </h3>
           <button className="btn btn-secondary btn-sm" onClick={onClose}>
@@ -52,7 +52,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: '#f87171', padding: '10px 14px', borderRadius: 8, fontSize: '0.85rem', marginBottom: 16 }}>
+          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: 16 }}>
             {error}
           </div>
         )}

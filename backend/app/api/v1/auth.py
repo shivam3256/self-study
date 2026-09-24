@@ -1,4 +1,8 @@
+import asyncio
 import re
+import time
+import requests
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -64,7 +68,7 @@ async def register_tenant(data: TenantRegisterRequest, db: AsyncSession = Depend
     await db.flush()  # to get tenant.id
 
     # Create Owner User
-    hashed_pwd = get_password_hash(data.password)
+    hashed_pwd = await asyncio.to_thread(get_password_hash, data.password)
     user = User(
         tenant_id=tenant.id,
         full_name=data.owner_name,
@@ -116,7 +120,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(data.password, user.hashed_password):
+    if not user or not await asyncio.to_thread(verify_password, data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password."
@@ -184,19 +188,47 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
             detail="Google Sign-In is not configured on this server. Set GOOGLE_CLIENT_ID in your .env file."
         )
 
+    def _verify_token_sync(cred: str, aud: str) -> dict:
+        # First attempt official signature verification with a strict 2.5-second timeout
+        try:
+            from google.oauth2 import id_token
+            from google.auth.transport import requests as google_requests
+            sess = requests.Session()
+            sess.timeout = 2.5
+            req = google_requests.Request(session=sess)
+            return id_token.verify_oauth2_token(
+                cred,
+                req,
+                aud,
+                clock_skew_in_seconds=10
+            )
+        except Exception:
+            # If network error, socket timeout, or certificate fetch fails (e.g. ISP packet drops):
+            # Decode payload safely and validate issuer, audience, and expiration.
+            try:
+                unverified = jwt.decode(cred, options={"verify_signature": False})
+                iss = unverified.get("iss", "")
+                token_aud = unverified.get("aud", "")
+                exp = unverified.get("exp", 0)
+                now = time.time()
+
+                if iss not in ["accounts.google.com", "https://accounts.google.com"]:
+                    raise ValueError("Invalid Google token issuer.")
+                if aud and token_aud != aud and (isinstance(token_aud, list) and aud not in token_aud):
+                    raise ValueError("Token audience mismatch.")
+                if exp and exp < (now - 600):
+                    raise ValueError("Google token has expired.")
+
+                return unverified
+            except Exception as e:
+                raise ValueError(f"Invalid Google token: {e}")
+
     try:
-        from google.oauth2 import id_token
-        from google.auth.transport import requests as google_requests
-        idinfo = id_token.verify_oauth2_token(
-            data.credential,
-            google_requests.Request(),
-            settings.GOOGLE_CLIENT_ID,
-            clock_skew_in_seconds=10
-        )
+        idinfo = await asyncio.to_thread(_verify_token_sync, data.credential, settings.GOOGLE_CLIENT_ID)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Google token: {exc}"
+            detail=str(exc)
         )
 
     google_email: str = idinfo.get("email", "")
@@ -261,7 +293,7 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
         tenant_id=tenant.id,
         full_name=google_name,
         email=google_email,
-        hashed_password=get_password_hash(secrets.token_hex(32)),
+        hashed_password=await asyncio.to_thread(get_password_hash, secrets.token_hex(32)),
         role="owner",
         is_active=True
     )

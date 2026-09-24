@@ -42,8 +42,8 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
       {/* Top Banner Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h2 style={{ fontSize: '1.25rem', color: '#fff' }}>Fee Collection & Invoices</h2>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          <h2 style={{ fontSize: '1.25rem', color: 'var(--color-heading)' }}>Fee Collection & Invoices</h2>
+          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
             Track outstanding student dues, record payments, and issue printable receipts.
           </div>
         </div>
@@ -55,14 +55,14 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
 
       {/* Outstanding Dues Alert Card if any */}
       {dues.length > 0 && (
-        <div className="card" style={{ marginBottom: 32, border: '1px solid var(--danger-border)', background: 'rgba(239, 68, 68, 0.05)' }}>
-          <div className="card-header">
-            <div className="card-title" style={{ color: '#f87171' }}>
-              <AlertCircle size={20} color="var(--danger)" />
+        <div className="card" style={{ marginBottom: 32, border: '1px solid var(--danger-border)', background: 'var(--danger-bg)' }}>
+          <div className="card-header" style={{ borderColor: 'var(--danger-border)' }}>
+            <div className="card-title" style={{ color: 'var(--danger-text)' }}>
+              <AlertCircle size={20} color="var(--danger-solid)" />
               <span>Outstanding Dues Alert ({dues.length} Overdue Members)</span>
             </div>
           </div>
-          <div className="table-container">
+          <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -77,10 +77,10 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
               <tbody>
                 {dues.map((d) => (
                   <tr key={d.student_id}>
-                    <td style={{ fontWeight: 600, color: '#fff' }}>{d.student_name}</td>
-                    <td style={{ fontFamily: 'monospace', color: 'var(--primary)' }}>{d.admission_number}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{d.phone}</td>
-                    <td style={{ color: '#f87171' }}>{d.expiry_date}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{d.student_name}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-brand)' }}>{d.admission_number}</td>
+                    <td style={{ color: 'var(--color-text-secondary)' }}>{d.phone}</td>
+                    <td style={{ color: 'var(--danger-text)' }}>{d.expiry_date}</td>
                     <td>
                       <span className="badge badge-expired">
                         {d.days_overdue} days ago
@@ -104,13 +104,13 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
 
       {/* Payment History Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
           <div className="card-title">
-            <Receipt size={18} color="var(--primary)" />
+            <Receipt size={18} color="var(--color-brand)" />
             <span>Recent Payment Transactions</span>
           </div>
         </div>
-        <div className="table-container">
+        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
           <table className="data-table">
             <thead>
               <tr>
@@ -127,7 +127,7 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
             <tbody>
               {payments.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-secondary)' }}>
                     No payment transactions recorded yet.
                   </td>
                 </tr>
@@ -135,27 +135,27 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
                 payments.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <span style={{ fontWeight: 700, color: 'var(--primary)', fontFamily: 'monospace' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--color-brand)', fontFamily: 'var(--font-mono)' }}>
                         {p.receipt_number}
                       </span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#fff' }}>{p.student_name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.student_phone}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{p.student_name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{p.student_phone}</div>
                     </td>
                     <td>{p.plan_name || 'Standard Plan'}</td>
                     <td>
-                      <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '3px 8px', borderRadius: 4 }}>
+                      <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-secondary)' }}>
                         {p.payment_mode}
                       </span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#fff' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>
                         ₹{Number(p.final_amount).toLocaleString('en-IN')}
                       </div>
                     </td>
-                    <td style={{ color: 'var(--text-muted)' }}>{p.payment_date}</td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <td style={{ color: 'var(--color-text-secondary)' }}>{p.payment_date}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                       {p.period_start} → {p.period_end}
                     </td>
                     <td style={{ textAlign: 'right' }}>

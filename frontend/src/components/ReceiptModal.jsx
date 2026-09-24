@@ -22,52 +22,52 @@ export default function ReceiptModal({ receipt, onClose }) {
         </div>
 
         <div className="receipt-paper">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #E5E7EB', paddingBottom: '16px', marginBottom: '20px' }}>
             <div>
-              <h2 style={{ fontSize: '1.35rem', color: '#0f172a', fontWeight: 800 }}>
+              <h2 style={{ fontSize: '1.35rem', color: '#1F2933', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
                 {receipt.library_name}
               </h2>
-              <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 4 }}>
+              <div style={{ fontSize: '0.8125rem', color: '#5C5C5C', marginTop: 4 }}>
                 {receipt.library_address || 'Self-Study & Reading Center'}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+              <div style={{ fontSize: '0.8125rem', color: '#5C5C5C' }}>
                 Contact: {receipt.library_phone} | {receipt.library_email}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <span style={{ display: 'inline-block', background: '#ecfdf5', color: '#059669', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4, marginBottom: 4 }}>
+              <span style={{ display: 'inline-block', background: '#DCFCE7', color: '#166534', fontSize: '0.75rem', fontWeight: 600, padding: '3px 8px', borderRadius: 4, marginBottom: 4 }}>
                 PAID INVOICE
               </span>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1F2933', fontFamily: 'var(--font-mono)' }}>
                 {receipt.receipt_number}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+              <div style={{ fontSize: '0.78rem', color: '#5C5C5C' }}>
                 Date: {receipt.payment_date}
               </div>
             </div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div style={{ background: '#F7F5F2', border: '1px solid #E5E7EB', padding: '12px 16px', borderRadius: '6px', marginBottom: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#5C5C5C', fontWeight: 600 }}>
                 Billed To
               </div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1F2933' }}>
                 {receipt.student_name}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#475569' }}>
+              <div style={{ fontSize: '0.8125rem', color: '#5C5C5C' }}>
                 Phone: {receipt.student_phone}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#5C5C5C', fontWeight: 600 }}>
                 Payment Method
               </div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1F2933', textTransform: 'uppercase' }}>
                 {receipt.payment_mode}
               </div>
               {receipt.transaction_reference && (
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                <div style={{ fontSize: '0.75rem', color: '#5C5C5C' }}>
                   Ref: {receipt.transaction_reference}
                 </div>
               )}
@@ -76,26 +76,26 @@ export default function ReceiptModal({ receipt, onClose }) {
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '0.88rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #cbd5e1', textAlign: 'left', color: '#475569' }}>
-                <th style={{ padding: '8px 0' }}>Plan / Description</th>
-                <th style={{ padding: '8px 0' }}>Validity Period</th>
-                <th style={{ padding: '8px 0', textAlign: 'right' }}>Amount</th>
+              <tr style={{ borderBottom: '1px solid #E5E7EB', textAlign: 'left', color: '#5C5C5C' }}>
+                <th style={{ padding: '8px 0', fontSize: '0.75rem', textTransform: 'uppercase' }}>Plan / Description</th>
+                <th style={{ padding: '8px 0', fontSize: '0.75rem', textTransform: 'uppercase' }}>Validity Period</th>
+                <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '0.75rem', textTransform: 'uppercase' }}>Amount</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '12px 0', fontWeight: 600, color: '#1e293b' }}>
+              <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+                <td style={{ padding: '12px 0', fontWeight: 600, color: '#1F2933' }}>
                   {receipt.plan_name || 'Study Desk Subscription'}
                 </td>
-                <td style={{ padding: '12px 0', color: '#475569', fontSize: '0.82rem' }}>
+                <td style={{ padding: '12px 0', color: '#5C5C5C', fontSize: '0.8125rem' }}>
                   {receipt.period_start} to {receipt.period_end}
                 </td>
-                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600, color: '#1F2933' }}>
                   ₹{Number(receipt.amount).toLocaleString('en-IN')}
                 </td>
               </tr>
               {Number(receipt.discount) > 0 && (
-                <tr style={{ color: '#059669', fontSize: '0.82rem' }}>
+                <tr style={{ color: '#166534', fontSize: '0.8125rem' }}>
                   <td style={{ padding: '6px 0' }}>Promotional Discount</td>
                   <td></td>
                   <td style={{ padding: '6px 0', textAlign: 'right' }}>
@@ -106,25 +106,25 @@ export default function ReceiptModal({ receipt, onClose }) {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan="2" style={{ padding: '14px 0 6px 0', fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
+                <td colSpan="2" style={{ padding: '14px 0 6px 0', fontWeight: 600, fontSize: '1rem', color: '#1F2933' }}>
                   Total Received
                 </td>
-                <td style={{ padding: '14px 0 6px 0', textAlign: 'right', fontWeight: 800, fontSize: '1.2rem', color: '#4f46e5' }}>
+                <td style={{ padding: '14px 0 6px 0', textAlign: 'right', fontWeight: 600, fontSize: '1.2rem', color: '#C2410C' }}>
                   ₹{Number(receipt.final_amount).toLocaleString('en-IN')}
                 </td>
               </tr>
               <tr>
-                <td colSpan="2" style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                <td colSpan="2" style={{ fontSize: '0.78rem', color: '#5C5C5C' }}>
                   Next Renewal Due Date:
                 </td>
-                <td style={{ textAlign: 'right', fontSize: '0.82rem', fontWeight: 600, color: '#dc2626' }}>
+                <td style={{ textAlign: 'right', fontSize: '0.8125rem', fontWeight: 600, color: '#991B1B' }}>
                   {receipt.next_due_date}
                 </td>
               </tr>
             </tfoot>
           </table>
 
-          <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', borderTop: '1px dashed #e2e8f0', paddingTop: '14px' }}>
+          <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#767676', borderTop: '1px dashed #E5E7EB', paddingTop: '14px' }}>
             Thank you for being part of {receipt.library_name}. Please keep your desk clean and quiet!
           </div>
         </div>

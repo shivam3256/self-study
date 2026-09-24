@@ -71,7 +71,7 @@ export default function Attendance({ students }) {
         <div className="card">
           <div className="card-header">
             <div className="card-title">
-              <QrCode size={20} color="var(--primary)" />
+              <QrCode size={20} color="var(--color-brand)" />
               <span>Front-Desk Check-In Terminal</span>
             </div>
           </div>
@@ -81,9 +81,9 @@ export default function Attendance({ students }) {
               style={{
                 background: statusMessage.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
                 border: `1px solid ${statusMessage.type === 'error' ? 'var(--danger-border)' : 'var(--success-border)'}`,
-                color: statusMessage.type === 'error' ? '#f87171' : '#34d399',
+                color: statusMessage.type === 'error' ? 'var(--danger-text)' : 'var(--success-text)',
                 padding: '10px 14px',
-                borderRadius: 8,
+                borderRadius: 'var(--radius-md)',
                 fontSize: '0.85rem',
                 marginBottom: 16,
               }}
@@ -126,16 +126,16 @@ export default function Attendance({ students }) {
         <div className="card">
           <div className="card-header">
             <div className="card-title">
-              <Clock size={20} color="var(--accent-cyan)" />
+              <Clock size={20} color="var(--info-solid)" />
               <span>Currently In The Library</span>
             </div>
           </div>
 
-          <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <div style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--accent-cyan)', fontFamily: 'var(--font-heading)' }}>
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '3rem', fontWeight: 600, color: 'var(--info-solid)', fontFamily: 'var(--font-heading)' }}>
               {attendanceList.filter((a) => !a.check_out_time).length}
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
               Active students studying right now
             </div>
           </div>
@@ -144,10 +144,10 @@ export default function Attendance({ students }) {
 
       {/* Attendance History Log for Today */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#fff' }}>Today's Complete Attendance Log</h3>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
+          <h3 style={{ fontSize: '1.1rem', color: 'var(--color-heading)' }}>Today's Complete Attendance Log</h3>
         </div>
-        <div className="table-container">
+        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
           <table className="data-table">
             <thead>
               <tr>
@@ -162,7 +162,7 @@ export default function Attendance({ students }) {
             <tbody>
               {attendanceList.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-secondary)' }}>
                     No check-ins recorded yet today.
                   </td>
                 </tr>
@@ -175,20 +175,20 @@ export default function Attendance({ students }) {
                   return (
                     <tr key={a.id}>
                       <td>
-                        <div style={{ fontWeight: 600, color: '#fff' }}>{a.student_name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{a.student_phone}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{a.student_name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{a.student_phone}</div>
                       </td>
                       <td>
                         {a.desk_number ? (
-                          <span style={{ fontWeight: 700, color: '#fff' }}>Desk {a.desk_number}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--color-heading)' }}>Desk {a.desk_number}</span>
                         ) : (
-                          <span style={{ color: 'var(--text-subtle)' }}>General</span>
+                          <span style={{ color: 'var(--color-text-secondary)' }}>General</span>
                         )}
                       </td>
-                      <td style={{ color: '#fff' }}>
+                      <td style={{ color: 'var(--color-text)' }}>
                         {checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      <td style={{ color: checkOutDate ? '#fff' : 'var(--text-subtle)' }}>
+                      <td style={{ color: checkOutDate ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
                         {checkOutDate
                           ? checkOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : '—'}
@@ -208,7 +208,7 @@ export default function Attendance({ students }) {
                             <span>Check Out</span>
                           </button>
                         ) : (
-                          <span style={{ color: 'var(--text-subtle)', fontSize: '0.8rem' }}>Completed</span>
+                          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>Completed</span>
                         )}
                       </td>
                     </tr>

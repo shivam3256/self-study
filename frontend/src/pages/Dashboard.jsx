@@ -37,22 +37,22 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', gap: 16 }}>
         <div style={{
-          width: 44,
-          height: 44,
+          width: 40,
+          height: 40,
           borderRadius: '50%',
-          border: '3px solid rgba(99, 102, 241, 0.2)',
-          borderTopColor: 'var(--primary)',
+          border: '3px solid #E5E7EB',
+          borderTopColor: 'var(--color-brand)',
           animation: 'spin 0.8s linear infinite',
         }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Loading dashboard metrics...</div>
+        <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>Loading dashboard metrics...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="card" style={{ color: 'var(--danger)', padding: 20 }}>
+      <div className="card" style={{ color: 'var(--danger-text)', backgroundColor: 'var(--danger-bg)', borderColor: 'var(--danger-border)', padding: 20 }}>
         Failed to load dashboard: {error}
       </div>
     );
@@ -65,7 +65,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
         <div className="kpi-card">
           <div className="kpi-title">
             <span>Occupancy Rate</span>
-            <Grid size={18} color="var(--primary)" />
+            <Grid size={18} color="var(--color-brand)" />
           </div>
           <div className="kpi-value">{summary.overall_occupancy_percentage}%</div>
           <div className="kpi-subtitle">
@@ -76,7 +76,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
         <div className="kpi-card cyan">
           <div className="kpi-title">
             <span>Active Students</span>
-            <Users size={18} color="var(--accent-cyan)" />
+            <Users size={18} color="var(--info-solid)" />
           </div>
           <div className="kpi-value">{summary.total_active_students}</div>
           <div className="kpi-subtitle">Enrolled members with active plans</div>
@@ -85,7 +85,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
         <div className="kpi-card success">
           <div className="kpi-title">
             <span>Revenue Today</span>
-            <IndianRupee size={18} color="var(--success)" />
+            <IndianRupee size={18} color="var(--success-solid)" />
           </div>
           <div className="kpi-value">
             ₹{Number(summary.revenue_today).toLocaleString('en-IN')}
@@ -98,7 +98,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
         <div className="kpi-card warning">
           <div className="kpi-title">
             <span>Expiring Soon (7d)</span>
-            <AlertTriangle size={18} color="var(--warning)" />
+            <AlertTriangle size={18} color="var(--warning-solid)" />
           </div>
           <div className="kpi-value">{summary.expiring_soon_count}</div>
           <div className="kpi-subtitle">
@@ -112,7 +112,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
         <div className="card">
           <div className="card-header">
             <div className="card-title">
-              <Clock size={20} color="var(--primary)" />
+              <Clock size={20} color="var(--color-brand)" />
               <span>Shift Occupancy & Capacity</span>
             </div>
             <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('seatmap')}>
@@ -121,29 +121,29 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {summary.shifts_breakdown.map((s) => (
-              <div key={s.shift_id} style={{ background: 'rgba(0,0,0,0.2)', padding: 14, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+              <div key={s.shift_id} style={{ backgroundColor: 'var(--bg-alt)', padding: 14, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div>
-                    <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.95rem' }}>{s.shift_name}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 8 }}>({s.start_time} - {s.end_time})</span>
+                    <span style={{ fontWeight: 600, color: 'var(--color-heading)', fontSize: '0.9375rem' }}>{s.shift_name}</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', marginLeft: 8 }}>({s.start_time} - {s.end_time})</span>
                   </div>
-                  <span style={{ fontWeight: 700, color: s.occupancy_rate > 80 ? 'var(--warning)' : 'var(--primary)', fontSize: '0.9rem' }}>
+                  <span style={{ fontWeight: 600, color: s.occupancy_rate > 80 ? 'var(--warning-solid)' : 'var(--color-brand)', fontSize: '0.875rem' }}>
                     {s.occupied_count} / {s.capacity} seats ({s.occupancy_rate}%)
                   </span>
                 </div>
                 {/* Progress bar */}
-                <div style={{ height: 8, width: '100%', background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: 6, width: '100%', backgroundColor: '#E5E7EB', borderRadius: 3, overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',
                       width: `${Math.min(s.occupancy_rate, 100)}%`,
-                      background: s.occupancy_rate > 80
-                        ? 'linear-gradient(90deg, #f59e0b, #ef4444)'
-                        : 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                      borderRadius: 4,
-                      transition: 'width 0.5s ease',
+                      backgroundColor: s.occupancy_rate > 80
+                        ? 'var(--warning-solid)'
+                        : 'var(--color-brand)',
+                      borderRadius: 3,
+                      transition: 'width 0.3s ease',
                     }}
                   />
                 </div>
@@ -156,7 +156,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
         <div className="card">
           <div className="card-header">
             <div className="card-title">
-              <CheckCircle2 size={20} color="var(--success)" />
+              <CheckCircle2 size={20} color="var(--success-solid)" />
               <span>Today's Library Activity</span>
             </div>
             <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('attendance')}>
@@ -165,11 +165,11 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
             </button>
           </div>
 
-          <div style={{ textAlign: 'center', padding: '24px 16px', background: 'rgba(0,0,0,0.2)', borderRadius: 12, marginBottom: 20 }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--success)', fontFamily: 'var(--font-heading)' }}>
+          <div style={{ textAlign: 'center', padding: '24px 16px', backgroundColor: 'var(--bg-alt)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 600, color: 'var(--success-solid)', fontFamily: 'var(--font-heading)' }}>
               {summary.today_checkins_count}
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
               Students checked in at the library today
             </div>
           </div>

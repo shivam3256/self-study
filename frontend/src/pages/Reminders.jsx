@@ -63,14 +63,14 @@ export default function Reminders() {
   return (
     <div>
       {/* Overview Card */}
-      <div className="card" style={{ marginBottom: 28 }}>
+      <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
           <div>
             <div className="card-title">
-              <BellRing size={20} color="var(--primary)" />
+              <BellRing size={20} color="var(--color-brand)" />
               <span>Automated WhatsApp Fee Reminders</span>
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, maxWidth: '640px' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: 4, maxWidth: '640px' }}>
               The background reminder engine automatically dispatches WhatsApp messages to students 7, 3, and 1 day prior to membership expiry, and upon becoming overdue.
             </div>
           </div>
@@ -90,9 +90,9 @@ export default function Reminders() {
             style={{
               background: resultMessage.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
               border: `1px solid ${resultMessage.type === 'error' ? 'var(--danger-border)' : 'var(--success-border)'}`,
-              color: resultMessage.type === 'error' ? '#f87171' : '#34d399',
+              color: resultMessage.type === 'error' ? 'var(--danger-text)' : 'var(--success-text)',
               padding: '12px 16px',
-              borderRadius: 8,
+              borderRadius: 'var(--radius-md)',
               fontSize: '0.88rem',
               marginTop: 18,
             }}
@@ -104,13 +104,13 @@ export default function Reminders() {
 
       {/* Reminder Audit History Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
           <div className="card-title">
-            <MessageSquare size={18} color="var(--primary)" />
+            <MessageSquare size={18} color="var(--color-brand)" />
             <span>Recent WhatsApp Notification Audit Logs</span>
           </div>
         </div>
-        <div className="table-container">
+        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
           <table className="data-table">
             <thead>
               <tr>
@@ -126,21 +126,23 @@ export default function Reminders() {
             <tbody>
               {logs.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-secondary)' }}>
                     No automated reminders dispatched yet. Click "Trigger Due-Date Reminders Now" above to evaluate student dues.
                   </td>
                 </tr>
               ) : (
                 logs.map((l) => (
                   <tr key={l.id}>
-                    <td style={{ fontWeight: 600, color: '#fff' }}>{l.student_name}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{l.phone}</td>
                     <td>
-                      <span style={{ textTransform: 'capitalize', fontSize: '0.78rem', background: 'rgba(255,255,255,0.06)', padding: '3px 8px', borderRadius: 4 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{l.student_name}</div>
+                    </td>
+                    <td style={{ color: 'var(--color-text-secondary)' }}>{l.phone}</td>
+                    <td>
+                      <span style={{ textTransform: 'capitalize', fontSize: '0.78rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-secondary)' }}>
                         {l.reminder_type.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.82rem', color: '#cbd5e1', maxWidth: 320 }}>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--color-text)', maxWidth: 320 }}>
                       {l.message}
                     </td>
                     <td>
@@ -151,7 +153,7 @@ export default function Reminders() {
                         {l.status.toUpperCase()}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                       {new Date(l.sent_at).toLocaleString()}
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -166,7 +168,7 @@ export default function Reminders() {
                           <span>{retryingId === l.id ? 'Retrying...' : 'Retry'}</span>
                         </button>
                       ) : (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>—</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>—</span>
                       )}
                     </td>
                   </tr>

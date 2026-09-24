@@ -150,7 +150,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
   return (
     <div>
       {/* Settings Navigation Tabs */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: 12 }}>
         <button
           className={`btn ${activeSection === 'library' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => { setActiveSection('library'); setFeedbackMessage({ type: '', text: '' }); }}
@@ -182,9 +182,9 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           style={{
             background: feedbackMessage.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
             border: `1px solid ${feedbackMessage.type === 'error' ? 'var(--danger-border)' : 'var(--success-border)'}`,
-            color: feedbackMessage.type === 'error' ? '#f87171' : '#34d399',
+            color: feedbackMessage.type === 'error' ? 'var(--danger-text)' : 'var(--success-text)',
             padding: '12px 16px',
-            borderRadius: 8,
+            borderRadius: 'var(--radius-md)',
             fontSize: '0.88rem',
             marginBottom: 24,
             display: 'flex',
@@ -204,7 +204,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
         <div className="card" style={{ maxWidth: 840 }}>
           <div className="card-header">
             <div className="card-title">
-              <Building2 size={20} color="var(--primary)" />
+              <Building2 size={20} color="var(--color-brand)" />
               <span>Library Profile & Workspace Details</span>
             </div>
             <span className="badge badge-active" style={{ textTransform: 'uppercase' }}>
@@ -338,8 +338,8 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff' }}>Library Slots & Shift Timings</h3>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-heading)' }}>Library Slots & Shift Timings</h3>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
                 Configure daily shifts, timing windows, and maximum seat capacities.
               </div>
             </div>
@@ -366,16 +366,16 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 {shifts.map((s) => (
                   <tr key={s.id}>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#fff' }}>{s.name}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{s.name}</div>
                     </td>
                     <td>
-                      <span style={{ fontSize: '0.78rem', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.78rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                         {s.code}
                       </span>
                     </td>
-                    <td style={{ color: '#fff' }}>{s.start_time}</td>
-                    <td style={{ color: '#fff' }}>{s.end_time}</td>
-                    <td style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{s.capacity} seats</td>
+                    <td style={{ color: 'var(--color-text)' }}>{s.start_time}</td>
+                    <td style={{ color: 'var(--color-text)' }}>{s.end_time}</td>
+                    <td style={{ color: 'var(--info-solid)', fontWeight: 600 }}>{s.capacity} seats</td>
                     <td>
                       <span className={`badge ${s.is_active ? 'badge-active' : 'badge-paused'}`}>
                         {s.is_active ? 'ACTIVE' : 'INACTIVE'}
@@ -386,7 +386,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                         className="btn btn-secondary btn-sm"
                         disabled={actionLoading === s.id}
                         onClick={() => handleDeleteShift(s.id, s.name)}
-                        style={{ color: '#f87171' }}
+                        style={{ color: 'var(--danger-text)' }}
                       >
                         <Trash2 size={13} />
                         <span>Delete</span>
@@ -407,8 +407,8 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff' }}>Membership & Pricing Plans</h3>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-heading)' }}>Membership & Pricing Plans</h3>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
                 Customize subscription packages, duration days, and monthly rates.
               </div>
             </div>
@@ -435,21 +435,21 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 {plans.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#fff' }}>{p.name}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{p.name}</div>
                       {p.description && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.description}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{p.description}</div>
                       )}
                     </td>
                     <td>
-                      <span style={{ fontSize: '0.78rem', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.78rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                         {p.code}
                       </span>
                     </td>
-                    <td style={{ color: '#fff' }}>{p.duration_days} days</td>
-                    <td style={{ color: 'var(--success)', fontWeight: 700 }}>
+                    <td style={{ color: 'var(--color-text)' }}>{p.duration_days} days</td>
+                    <td style={{ color: 'var(--success-solid)', fontWeight: 600 }}>
                       ₹{Number(p.price).toLocaleString('en-IN')}
                     </td>
-                    <td style={{ textTransform: 'capitalize', color: 'var(--text-muted)' }}>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--color-text-secondary)' }}>
                       {p.shift_type || 'Single Shift'}
                     </td>
                     <td>
@@ -462,7 +462,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                         className="btn btn-secondary btn-sm"
                         disabled={actionLoading === p.id}
                         onClick={() => handleDeletePlan(p.id, p.name)}
-                        style={{ color: '#f87171' }}
+                        style={{ color: 'var(--danger-text)' }}
                       >
                         <Trash2 size={13} />
                         <span>Delete</span>
@@ -480,11 +480,11 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           MODAL: ADD NEW SHIFT
          ───────────────────────────────────────────────────────────── */}
       {showNewShiftModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: 440 }}>
-            <div className="modal-header">
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: 440 }}>
+            <div className="card-header">
               <div className="card-title">
-                <Clock size={18} color="var(--primary)" />
+                <Clock size={18} color="var(--color-brand)" />
                 <span>Add Library Shift</span>
               </div>
               <button
@@ -495,7 +495,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               </button>
             </div>
 
-            <form onSubmit={handleCreateShift} style={{ padding: 24 }}>
+            <form onSubmit={handleCreateShift} style={{ padding: '8px 0' }}>
               <div className="form-group">
                 <label className="form-label">Shift Name</label>
                 <input
@@ -580,11 +580,11 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           MODAL: ADD NEW PLAN
          ───────────────────────────────────────────────────────────── */}
       {showNewPlanModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: 460 }}>
-            <div className="modal-header">
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: 460 }}>
+            <div className="card-header">
               <div className="card-title">
-                <CreditCard size={18} color="var(--primary)" />
+                <CreditCard size={18} color="var(--color-brand)" />
                 <span>Add Membership Plan</span>
               </div>
               <button
@@ -595,7 +595,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               </button>
             </div>
 
-            <form onSubmit={handleCreatePlan} style={{ padding: 24 }}>
+            <form onSubmit={handleCreatePlan} style={{ padding: '8px 0' }}>
               <div className="form-group">
                 <label className="form-label">Plan Name</label>
                 <input

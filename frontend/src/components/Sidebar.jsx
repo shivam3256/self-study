@@ -60,10 +60,10 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
               {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-heading)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user?.full_name || 'Owner'}
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-subtle)', textTransform: 'capitalize' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', textTransform: 'capitalize' }}>
                 {user?.role || 'Admin'}
               </div>
             </div>
@@ -74,7 +74,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--text-muted)',
+              color: 'var(--color-text-secondary)',
               cursor: 'pointer',
               padding: 6,
               borderRadius: 6,
