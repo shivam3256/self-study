@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     # Default is SQLite for zero-setup out of the box; supports postgresql+asyncpg://...
     DATABASE_URL: str = "sqlite+aiosqlite:///./study_center.db"
 
+    @field_validator("DATABASE_URL", mode="before")
+    def assemble_database_url(cls, v: str) -> str:
+        if isinstance(v, str):
+            # Render and Heroku inject postgres:// or postgresql:// without the asyncpg driver dialect
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+"):
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
     # Celery & Redis
     REDIS_URL: str = "redis://localhost:6379/0"
     
