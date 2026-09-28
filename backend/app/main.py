@@ -13,6 +13,17 @@ async def lifespan(app: FastAPI):
     # Initialize tables on startup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        def check_columns(sync_conn):
+            from sqlalchemy import inspect, text
+            inspector = inspect(sync_conn)
+            table_names = inspector.get_table_names()
+            if "tenants" in table_names:
+                columns = [c["name"] for c in inspector.get_columns("tenants")]
+                if "additional_email" not in columns:
+                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN additional_email VARCHAR(255)"))
+
+        await conn.run_sync(check_columns)
     yield
     # Cleanup on shutdown
     await engine.dispose()

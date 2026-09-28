@@ -5,7 +5,7 @@ import requests
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password, create_access_token
@@ -14,10 +14,18 @@ from app.core.config import settings
 from app.models.tenant import Tenant, User
 from app.models.shift import Shift
 from app.models.plan import Plan
+from app.models.student import Student
+from app.models.desk import Desk
+from app.models.allocation import SeatAllocation
+from app.models.payment import Payment
+from app.models.attendance import Attendance
+from app.models.reminder import ReminderLog
+from app.models.expense import Expense
 from app.schemas.auth import (
     TenantRegisterRequest,
     LoginRequest,
     GoogleAuthRequest,
+    GoogleAuthResponse,
     TokenResponse,
     UserResponse,
     TenantResponse,
@@ -61,6 +69,8 @@ async def register_tenant(data: TenantRegisterRequest, db: AsyncSession = Depend
         address=data.address,
         city=data.city,
         state=data.state,
+        pincode=data.pincode,
+        additional_email=data.additional_email,
         subscription_tier="pro",
         subscription_status="active"
     )
@@ -175,12 +185,43 @@ async def update_my_tenant(
     return TenantResponse.model_validate(tenant)
 
 
-@router.post("/google", response_model=TokenResponse)
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_account(
+    current_user: User = Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Permanently delete the current user's library workspace and all associated data.
+    """
+    if current_user.role != "owner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the workspace owner can delete the library account."
+        )
+
+    # Cascading delete in safe foreign-key order
+    await db.execute(delete(ReminderLog).where(ReminderLog.tenant_id == tenant.id))
+    await db.execute(delete(Attendance).where(Attendance.tenant_id == tenant.id))
+    await db.execute(delete(Payment).where(Payment.tenant_id == tenant.id))
+    await db.execute(delete(Expense).where(Expense.tenant_id == tenant.id))
+    await db.execute(delete(SeatAllocation).where(SeatAllocation.tenant_id == tenant.id))
+    await db.execute(delete(Desk).where(Desk.tenant_id == tenant.id))
+    await db.execute(delete(Student).where(Student.tenant_id == tenant.id))
+    await db.execute(delete(Shift).where(Shift.tenant_id == tenant.id))
+    await db.execute(delete(Plan).where(Plan.tenant_id == tenant.id))
+    await db.execute(delete(User).where(User.tenant_id == tenant.id))
+    await db.execute(delete(Tenant).where(Tenant.id == tenant.id))
+    await db.commit()
+    return None
+
+
+@router.post("/google", response_model=GoogleAuthResponse)
 async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db)):
     """
     Sign in or register via Google Identity Services.
     The frontend sends the Google ID token credential; we verify it server-side,
-    then either log in the existing user or create a new tenant workspace.
+    then either log in the existing user or prompt / register a new tenant workspace.
     """
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(
@@ -241,7 +282,7 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
     existing_user = user_check.scalar_one_or_none()
 
     if existing_user:
-        # Existing user: fetch their tenant and issue a token
+        # Existing user: fetch their tenant and issue a token directly
         tenant_query = select(Tenant).where(Tenant.id == existing_user.tenant_id, Tenant.is_active == True)
         tenant_res = await db.execute(tenant_query)
         tenant = tenant_res.scalar_one_or_none()
@@ -255,15 +296,32 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
             email=existing_user.email,
             tenant_name=tenant.name
         )
-        return TokenResponse(
+        return GoogleAuthResponse(
+            is_new_user=False,
             access_token=token,
             token_type="bearer",
             user=UserResponse.model_validate(existing_user),
             tenant=TenantResponse.model_validate(tenant)
         )
 
-    # --- New user: create tenant workspace ---
-    library_name = data.library_name or f"{google_name}'s Study Center"
+    # --- New user check: if library details not provided, prompt user with second page popup ---
+    if not data.library_name or not data.library_name.strip():
+        return GoogleAuthResponse(
+            is_new_user=True,
+            email=google_email,
+            name=google_name,
+        )
+
+    # --- New user registration with provided details ---
+    library_name = data.library_name.strip()
+    owner_name = (data.owner_name or google_name).strip()
+    phone = (data.phone or "").strip()
+    address = (data.address or "").strip()
+    city = (data.city or "").strip()
+    state = (data.state or "").strip()
+    pincode = (data.pincode or "").strip()
+    additional_email = (data.additional_email or "").strip() or None
+
     base_slug = slugify(library_name)
     slug = base_slug
     counter = 1
@@ -277,10 +335,14 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
     tenant = Tenant(
         name=library_name,
         slug=slug,
-        owner_name=google_name,
+        owner_name=owner_name,
         email=google_email,
-        phone=data.phone or "",
-        city=data.city or "",
+        phone=phone,
+        address=address,
+        city=city,
+        state=state,
+        pincode=pincode,
+        additional_email=additional_email,
         subscription_tier="pro",
         subscription_status="active"
     )
@@ -291,7 +353,7 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
     import secrets
     user = User(
         tenant_id=tenant.id,
-        full_name=google_name,
+        full_name=owner_name,
         email=google_email,
         hashed_password=await asyncio.to_thread(get_password_hash, secrets.token_hex(32)),
         role="owner",
@@ -324,7 +386,8 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
         email=user.email,
         tenant_name=tenant.name
     )
-    return TokenResponse(
+    return GoogleAuthResponse(
+        is_new_user=False,
         access_token=token,
         token_type="bearer",
         user=UserResponse.model_validate(user),

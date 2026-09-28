@@ -108,6 +108,10 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+    deleteAccount: () =>
+      request('/auth/account', {
+        method: 'DELETE',
+      }),
   },
 
   dashboard: {
@@ -247,6 +251,39 @@ export const api = {
     retry: (logId) =>
       request(`/reminders/retry/${logId}`, {
         method: 'POST',
+      }),
+  },
+
+  expenses: {
+    list: (params = {}) => {
+      const query = new URLSearchParams();
+      if (params.month) query.set('month', params.month);
+      if (params.year) query.set('year', params.year);
+      if (params.category) query.set('category', params.category);
+      if (params.search) query.set('search', params.search);
+      const qs = query.toString() ? `?${query.toString()}` : '';
+      return request(`/expenses${qs}`);
+    },
+    getSummary: (month, year) => {
+      const query = new URLSearchParams();
+      if (month) query.set('month', month);
+      if (year) query.set('year', year);
+      const qs = query.toString() ? `?${query.toString()}` : '';
+      return request(`/expenses/summary${qs}`);
+    },
+    create: (data) =>
+      request('/expenses', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id, data) =>
+      request(`/expenses/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id) =>
+      request(`/expenses/${id}`, {
+        method: 'DELETE',
       }),
   },
 };

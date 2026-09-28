@@ -12,6 +12,8 @@ class TenantRegisterRequest(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
+    pincode: Optional[str] = None
+    additional_email: Optional[str] = None
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -21,14 +23,28 @@ class GoogleAuthRequest(BaseModel):
     """Google OAuth flow: frontend sends the ID token credential from Google Identity Services."""
     credential: str  # Google ID token (JWT)
     library_name: Optional[str] = None  # Required only for first-time registration via Google
+    owner_name: Optional[str] = None
     phone: Optional[str] = None
+    address: Optional[str] = None
     city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    additional_email: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: "UserResponse"
     tenant: "TenantResponse"
+
+class GoogleAuthResponse(BaseModel):
+    is_new_user: bool = False
+    email: Optional[str] = None
+    name: Optional[str] = None
+    access_token: Optional[str] = None
+    token_type: Optional[str] = "bearer"
+    user: Optional["UserResponse"] = None
+    tenant: Optional["TenantResponse"] = None
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -54,6 +70,7 @@ class TenantResponse(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     pincode: Optional[str] = None
+    additional_email: Optional[str] = None
     logo_url: Optional[str] = None
     subscription_tier: str
     subscription_status: str
@@ -70,10 +87,12 @@ class TenantUpdateRequest(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     pincode: Optional[str] = None
+    additional_email: Optional[str] = None
     logo_url: Optional[str] = None
     currency: Optional[str] = None
     operating_hours: Optional[str] = None
 
 TokenResponse.model_rebuild()
+GoogleAuthResponse.model_rebuild()
 
 

@@ -8,6 +8,7 @@ from app.models.allocation import SeatAllocation
 from app.models.payment import Payment
 from app.models.attendance import Attendance
 from app.models.reminder import ReminderLog
+from app.models.expense import Expense
 
 __all__ = [
     "Base",
@@ -22,5 +23,6 @@ __all__ = [
     "SeatAllocation",
     "Payment",
     "Attendance",
-    "ReminderLog"
+    "ReminderLog",
+    "Expense",
 ]

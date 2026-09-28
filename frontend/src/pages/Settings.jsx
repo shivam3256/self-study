@@ -8,12 +8,17 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
+  ShieldAlert,
   Sparkles,
+  Users,
+  Receipt,
+  X,
 } from 'lucide-react';
 import { api, setStoredUser } from '../api';
 
-export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRefreshData }) {
-  const [activeSection, setActiveSection] = useState('library'); // 'library', 'shifts', 'plans'
+export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRefreshData, onLogout }) {
+  const [activeSection, setActiveSection] = useState('library'); // 'library', 'shifts', 'plans', 'danger'
 
   // Library Profile Form State
   const [profileForm, setProfileForm] = useState({
@@ -24,6 +29,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     city: tenant?.city || '',
     state: tenant?.state || '',
     pincode: tenant?.pincode || '',
+    additional_email: tenant?.additional_email || '',
     operating_hours: tenant?.operating_hours || '',
     currency: tenant?.currency || 'INR',
     logo_url: tenant?.logo_url || '',
@@ -53,6 +59,44 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
   const [savingProfile, setSavingProfile] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState('');
+
+  // Delete Account State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [deleteAgreed, setDeleteAgreed] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  // Handle Account & Workspace Deletion
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    const expectedName = (tenant?.name || '').trim().toLowerCase();
+    const typedName = deleteConfirmationText.trim().toLowerCase();
+
+    if (typedName !== expectedName) {
+      setDeleteError(`Please type "${tenant?.name}" exactly to confirm.`);
+      return;
+    }
+    if (!deleteAgreed) {
+      setDeleteError('Please check the confirmation box acknowledging that this cannot be undone.');
+      return;
+    }
+
+    setDeletingAccount(true);
+    setDeleteError('');
+    try {
+      await api.auth.deleteAccount();
+      setShowDeleteModal(false);
+      if (onLogout) {
+        onLogout();
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete workspace. Please try again.');
+      setDeletingAccount(false);
+    }
+  };
 
   // Handle Profile Update
   const handleProfileSubmit = async (e) => {
@@ -150,7 +194,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
   return (
     <div>
       {/* Settings Navigation Tabs */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: 12, flexWrap: 'wrap' }}>
         <button
           className={`btn ${activeSection === 'library' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => { setActiveSection('library'); setFeedbackMessage({ type: '', text: '' }); }}
@@ -173,6 +217,21 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
         >
           <CreditCard size={16} />
           <span>Membership Plans ({plans.length})</span>
+        </button>
+
+        <button
+          className="btn"
+          onClick={() => { setActiveSection('danger'); setFeedbackMessage({ type: '', text: '' }); }}
+          style={{
+            marginLeft: 'auto',
+            backgroundColor: activeSection === 'danger' ? '#FEF2F2' : '#FFFFFF',
+            color: '#DC2626',
+            borderColor: activeSection === 'danger' ? '#DC2626' : '#FCA5A5',
+            fontWeight: 600,
+          }}
+        >
+          <AlertTriangle size={16} />
+          <span>Account & Danger Zone</span>
         </button>
       </div>
 
@@ -321,6 +380,17 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               </div>
             </div>
 
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label">Additional Contact Email</label>
+              <input
+                type="email"
+                className="form-input"
+                placeholder="billing@mylibrary.com (optional secondary email)"
+                value={profileForm.additional_email}
+                onChange={(e) => setProfileForm({ ...profileForm, additional_email: e.target.value })}
+              />
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
               <button type="submit" className="btn btn-primary" disabled={savingProfile}>
                 <Save size={16} />
@@ -328,6 +398,70 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          DANGER ZONE CARD (Visible in Library Profile tab and Danger tab)
+         ───────────────────────────────────────────────────────────── */}
+      {(activeSection === 'library' || activeSection === 'danger') && (
+        <div
+          className="card"
+          style={{
+            maxWidth: 840,
+            marginTop: activeSection === 'library' ? 32 : 0,
+            borderColor: '#FCA5A5',
+            backgroundColor: '#FFFDFD',
+          }}
+        >
+          <div className="card-header" style={{ borderBottomColor: '#FEE2E2' }}>
+            <div className="card-title">
+              <AlertTriangle size={20} color="#DC2626" />
+              <span style={{ color: '#991B1B', fontWeight: 600 }}>Danger Zone — Account Deletion</span>
+            </div>
+            <span
+              className="badge"
+              style={{
+                backgroundColor: '#FEE2E2',
+                color: '#991B1B',
+                fontWeight: 600,
+                border: '1px solid #FCA5A5',
+              }}
+            >
+              Irreversible Action
+            </span>
+          </div>
+
+          <div style={{ padding: '20px 0 8px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+              <div style={{ maxWidth: 540 }}>
+                <h4 style={{ margin: '0 0 6px 0', fontSize: '0.98rem', color: '#1F2933', fontWeight: 600 }}>
+                  Permanently Delete Workspace & Account
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: '#5C5C5C', lineHeight: 1.5 }}>
+                  Delete <strong>{tenant?.name}</strong> and all associated student profiles, desks, shift allocations, payment history, attendance logs, and owner credentials.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  setShowDeleteModal(true);
+                  setDeleteConfirmationText('');
+                  setDeleteAgreed(false);
+                  setDeleteError('');
+                }}
+                style={{
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Trash2 size={16} />
+                <span>Delete Account & Workspace</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -689,6 +823,406 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          4. DELETE ACCOUNT & WORKSPACE CONFIRMATION POPUP MODAL
+         ───────────────────────────────────────────────────────────── */}
+      {showDeleteModal && (
+        <div
+          className="modal-overlay"
+          style={{
+            zIndex: 1000,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div
+            className="modal-card"
+            style={{
+              maxWidth: 580,
+              width: '100%',
+              borderRadius: '12px',
+              border: '1px solid #FCA5A5',
+              padding: 0,
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              backgroundColor: '#FFFFFF',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                backgroundColor: '#FEF2F2',
+                padding: '20px 24px',
+                borderBottom: '1px solid #FEE2E2',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 16,
+              }}
+            >
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    backgroundColor: '#FEE2E2',
+                    border: '1px solid #FECACA',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#DC2626',
+                    flexShrink: 0,
+                  }}
+                >
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#991B1B', fontWeight: 700 }}>
+                    Delete Account & Workspace?
+                  </h3>
+                  <div style={{ fontSize: '0.82rem', color: '#B91C1C', marginTop: 2 }}>
+                    Permanent, irreversible destruction of your study center data
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError('');
+                }}
+                disabled={deletingAccount}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#991B1B',
+                  padding: 4,
+                  borderRadius: 4,
+                }}
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '22px 24px', maxHeight: '78vh', overflowY: 'auto' }}>
+              {deleteError && (
+                <div
+                  style={{
+                    backgroundColor: 'var(--danger-bg)',
+                    border: '1px solid var(--danger-border)',
+                    color: 'var(--danger-text)',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.84rem',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              {/* SECTION: PRECAUTIONS */}
+              <div
+                style={{
+                  backgroundColor: '#FFFBEB',
+                  border: '1px solid #FDE68A',
+                  borderRadius: 8,
+                  padding: '14px 16px',
+                  marginBottom: 18,
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 700,
+                    color: '#92400E',
+                    fontSize: '0.88rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 6,
+                  }}
+                >
+                  <ShieldAlert size={16} color="#B45309" />
+                  <span>Precautions Before Proceeding</span>
+                </div>
+                <ul
+                  style={{
+                    margin: 0,
+                    paddingLeft: 18,
+                    fontSize: '0.8125rem',
+                    color: '#78350F',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  <li>
+                    <strong>Action is permanent:</strong> Once confirmed, this cannot be undone, restored, or recovered by any administrator.
+                  </li>
+                  <li>
+                    <strong>Immediate shutdown:</strong> All active seat bookings, ongoing student subscriptions, and automated reminders stop instantly.
+                  </li>
+                  <li>
+                    <strong>Export your records:</strong> Please ensure you have downloaded or copied any needed student fees or billing receipts beforehand.
+                  </li>
+                </ul>
+              </div>
+
+              {/* SECTION: RESULTS OF DELETING */}
+              <div style={{ marginBottom: 20 }}>
+                <div
+                  style={{
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    color: 'var(--color-heading)',
+                    marginBottom: 10,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Results of deleting your account:
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      backgroundColor: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: 8,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 600,
+                        fontSize: '0.83rem',
+                        color: '#1F2933',
+                      }}
+                    >
+                      <Users size={15} color="#DC2626" />
+                      <span>Student Records Purged</span>
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                      All registered student profiles, contact details, photos, and ID cards permanently deleted.
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: 8,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 600,
+                        fontSize: '0.83rem',
+                        color: '#1F2933',
+                      }}
+                    >
+                      <Building2 size={15} color="#DC2626" />
+                      <span>Desks & Seat Allocations Cleared</span>
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                      Seat layout grids, shift allocations, and desk reservation histories wiped out.
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: 8,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 600,
+                        fontSize: '0.83rem',
+                        color: '#1F2933',
+                      }}
+                    >
+                      <Receipt size={15} color="#DC2626" />
+                      <span>Billing & Invoices Erased</span>
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                      All payment receipts, invoices, fee collection records, and revenue logs destroyed.
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: 8,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 600,
+                        fontSize: '0.83rem',
+                        color: '#1F2933',
+                      }}
+                    >
+                      <Clock size={15} color="#DC2626" />
+                      <span>Shifts, Logs & Reminders</span>
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                      Daily student check-in/out attendance logs, shift timings, and WhatsApp histories erased.
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    backgroundColor: '#FEF2F2',
+                    border: '1px dashed #FCA5A5',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    marginTop: 10,
+                    fontSize: '0.78rem',
+                    color: '#991B1B',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  🔒 <strong>Workspace Shutdown:</strong> Your library workspace URL (<code>{tenant?.slug || 'workspace'}</code>) will be immediately deactivated and all owner login sessions terminated.
+                </div>
+              </div>
+
+              {/* CONFIRMATION FORM */}
+              <form onSubmit={handleDeleteAccount}>
+                <div className="form-group" style={{ marginBottom: 14 }}>
+                  <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                    To confirm, please type your library name: <span style={{ color: '#DC2626' }}>{tenant?.name}</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={`Type "${tenant?.name}" to confirm`}
+                    value={deleteConfirmationText}
+                    onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                    disabled={deletingAccount}
+                    autoFocus
+                    required
+                    style={{
+                      borderColor:
+                        deleteConfirmationText.trim().toLowerCase() === (tenant?.name || '').trim().toLowerCase()
+                          ? '#10B981'
+                          : undefined,
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    marginBottom: 20,
+                    padding: '8px 10px',
+                    backgroundColor: '#F9FAFB',
+                    borderRadius: 6,
+                    border: '1px solid #E5E7EB',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    id="delete-agree-checkbox"
+                    checked={deleteAgreed}
+                    onChange={(e) => setDeleteAgreed(e.target.checked)}
+                    disabled={deletingAccount}
+                    style={{ marginTop: 2, cursor: 'pointer' }}
+                    required
+                  />
+                  <label
+                    htmlFor="delete-agree-checkbox"
+                    style={{ fontSize: '0.8125rem', color: '#374151', cursor: 'pointer', lineHeight: 1.4 }}
+                  >
+                    I understand that this action is <strong>permanent and irreversible</strong>. I confirm the permanent deletion of my account and all associated study center data.
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeleteError('');
+                    }}
+                    disabled={deletingAccount}
+                  >
+                    Cancel / Keep Account
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn"
+                    disabled={
+                      deletingAccount ||
+                      !deleteAgreed ||
+                      deleteConfirmationText.trim().toLowerCase() !== (tenant?.name || '').trim().toLowerCase()
+                    }
+                    style={{
+                      backgroundColor: '#DC2626',
+                      borderColor: '#DC2626',
+                      color: '#FFFFFF',
+                      fontWeight: 600,
+                      opacity:
+                        deletingAccount ||
+                        !deleteAgreed ||
+                        deleteConfirmationText.trim().toLowerCase() !== (tenant?.name || '').trim().toLowerCase()
+                          ? 0.5
+                          : 1,
+                      cursor:
+                        deletingAccount ||
+                        !deleteAgreed ||
+                        deleteConfirmationText.trim().toLowerCase() !== (tenant?.name || '').trim().toLowerCase()
+                          ? 'not-allowed'
+                          : 'pointer',
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    <span>{deletingAccount ? 'Deleting Account...' : 'Permanently Delete Workspace'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

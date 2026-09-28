@@ -14,6 +14,7 @@ class Tenant(BaseModel):
     city = Column(String(100), nullable=True)
     state = Column(String(100), nullable=True)
     pincode = Column(String(20), nullable=True)
+    additional_email = Column(String(255), nullable=True)
     logo_url = Column(String(500), nullable=True)
     
     # Subscription status for SaaS platform
@@ -30,6 +31,7 @@ class Tenant(BaseModel):
     shifts = relationship("Shift", back_populates="tenant", cascade="all, delete-orphan")
     plans = relationship("Plan", back_populates="tenant", cascade="all, delete-orphan")
     desks = relationship("Desk", back_populates="tenant", cascade="all, delete-orphan")
+    expenses = relationship("Expense", back_populates="tenant", cascade="all, delete-orphan")
 
 class User(BaseModel):
     __tablename__ = "users"

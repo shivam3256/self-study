@@ -57,21 +57,34 @@ export default function Auth({ onLoginSuccess }) {
   const [regPassword, setRegPassword] = useState('');
 
   // Google new-user extra info modal
-  const [googlePendingCred, setGooglePendingCred] = useState(null);
+  const [googlePendingCred, setGooglePendingCred] = useState(null); // stores credential JWT
+  const [googleNewUserInfo, setGoogleNewUserInfo] = useState(null); // { email, name } from Google
   const [googleExtraLibrary, setGoogleExtraLibrary] = useState('');
   const [googleExtraPhone, setGoogleExtraPhone] = useState('');
+  const [googleExtraAddress, setGoogleExtraAddress] = useState('');
   const [googleExtraCity, setGoogleExtraCity] = useState('');
+  const [googleExtraAdditionalEmail, setGoogleExtraAdditionalEmail] = useState('');
 
   const googleButtonRef = useRef(null);
   const gsiReady = useRef(false);
 
   // ─── Google credential callback ──────────────────────────────────────────
-  // Defined with useRef so it's stable across renders (GSI callback reference)
+  // Called by Google Identity Services when user selects an account.
   const handleGoogleCredential = async (response) => {
     setGoogleLoading(true);
     setError('');
     try {
       const res = await api.auth.googleAuth(response.credential);
+
+      if (res.is_new_user) {
+        // First-time user: show the detail-collection modal instead of logging in
+        setGooglePendingCred(response.credential);
+        setGoogleNewUserInfo({ email: res.email, name: res.name });
+        setGoogleLoading(false);
+        return;
+      }
+
+      // Existing user: log in directly
       setAuthToken(res.access_token);
       setStoredUser(res.user, res.tenant);
       onLoginSuccess(res.user, res.tenant);
@@ -136,8 +149,15 @@ export default function Auth({ onLoginSuccess }) {
       const res = await api.auth.googleAuth(googlePendingCred, {
         library_name: googleExtraLibrary,
         phone: googleExtraPhone,
+        address: googleExtraAddress,
         city: googleExtraCity,
+        additional_email: googleExtraAdditionalEmail || undefined,
       });
+      if (res.is_new_user) {
+        // Should not happen after submission, but guard anyway
+        setError('Please fill in all required details.');
+        return;
+      }
       setAuthToken(res.access_token);
       setStoredUser(res.user, res.tenant);
       onLoginSuccess(res.user, res.tenant);
@@ -202,7 +222,7 @@ export default function Auth({ onLoginSuccess }) {
     setSuccess('');
   };
 
-  // ─── Google Extra Info Modal ──────────────────────────────────────────────
+  // ─── Google Extra Info Modal (new-user onboarding) ───────────────────────
   if (googlePendingCred) {
     return (
       <div className="auth-root">
@@ -213,57 +233,132 @@ export default function Auth({ onLoginSuccess }) {
               <div className="auth-brand-icon">
                 <Building2 size={24} />
               </div>
-              <h2>One More Step</h2>
-              <p>Tell us about your study center to complete setup</p>
+              <h2>Set Up Your Workspace</h2>
+              {googleNewUserInfo?.email && (
+                <div className="auth-google-id-badge">
+                  <span className="auth-google-id-avatar">
+                    {(googleNewUserInfo.name || googleNewUserInfo.email)[0].toUpperCase()}
+                  </span>
+                  <span>{googleNewUserInfo.email}</span>
+                </div>
+              )}
+              <p>Tell us about your study center to complete your account setup</p>
             </div>
+
             {error && <div className="auth-alert auth-alert-error">{error}</div>}
+
             <form onSubmit={handleGoogleExtraSubmit} className="auth-extra-form">
+              {/* Library Name */}
               <div className="auth-field">
                 <label>Library / Study Center Name *</label>
                 <div className="auth-input-wrap">
                   <Building2 size={16} className="auth-input-icon" />
                   <input
+                    id="gextra-library"
                     type="text"
-                    placeholder="Takshashila Reading Lounge"
+                    placeholder="e.g. Takshashila Reading Lounge"
                     value={googleExtraLibrary}
                     onChange={(e) => setGoogleExtraLibrary(e.target.value)}
+                    autoFocus
                     required
                   />
                 </div>
               </div>
+
+              {/* Phone & City */}
               <div className="auth-field-row">
                 <div className="auth-field">
-                  <label>Phone Number</label>
+                  <label>Mobile Number *</label>
                   <div className="auth-input-wrap">
                     <Phone size={16} className="auth-input-icon" />
                     <input
+                      id="gextra-phone"
                       type="tel"
                       placeholder="+91 98765 43210"
                       value={googleExtraPhone}
                       onChange={(e) => setGoogleExtraPhone(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
                 <div className="auth-field">
-                  <label>City</label>
+                  <label>City *</label>
                   <div className="auth-input-wrap">
                     <MapPin size={16} className="auth-input-icon" />
                     <input
+                      id="gextra-city"
                       type="text"
-                      placeholder="Jaipur"
+                      placeholder="e.g. Jaipur"
                       value={googleExtraCity}
                       onChange={(e) => setGoogleExtraCity(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
               </div>
-              <button type="submit" className="auth-btn-primary" disabled={googleLoading}>
+
+              {/* Address */}
+              <div className="auth-field">
+                <label>Address / Locality</label>
+                <div className="auth-input-wrap">
+                  <MapPin size={16} className="auth-input-icon" />
+                  <input
+                    id="gextra-address"
+                    type="text"
+                    placeholder="Plot no., Street, Landmark"
+                    value={googleExtraAddress}
+                    onChange={(e) => setGoogleExtraAddress(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Additional / Contact Email */}
+              <div className="auth-field">
+                <label>Additional Contact Email</label>
+                <div className="auth-input-wrap">
+                  <Mail size={16} className="auth-input-icon" />
+                  <input
+                    id="gextra-additional-email"
+                    type="email"
+                    placeholder="billing@mylibrary.com (optional)"
+                    value={googleExtraAdditionalEmail}
+                    onChange={(e) => setGoogleExtraAdditionalEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button
+                id="gextra-submit"
+                type="submit"
+                className="auth-btn-primary"
+                disabled={googleLoading}
+                style={{ marginTop: 8 }}
+              >
                 {googleLoading ? (
                   <span className="auth-spinner" />
                 ) : (
                   <>Launch My Workspace <ArrowRight size={16} /></>
                 )}
               </button>
+
+              <p className="auth-switch-hint" style={{ marginTop: 12 }}>
+                Wrong account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGooglePendingCred(null);
+                    setGoogleNewUserInfo(null);
+                    setGoogleExtraLibrary('');
+                    setGoogleExtraPhone('');
+                    setGoogleExtraAddress('');
+                    setGoogleExtraCity('');
+                    setGoogleExtraAdditionalEmail('');
+                    setError('');
+                  }}
+                >
+                  Go back
+                </button>
+              </p>
             </form>
           </div>
         </div>
@@ -1147,39 +1242,75 @@ function AuthStyles() {
       .auth-modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(31, 41, 51, 0.55);
+        background: rgba(31, 41, 51, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 24px;
         z-index: 100;
+        overflow-y: auto;
       }
       .auth-extra-card {
         width: 100%;
-        max-width: 440px;
+        max-width: 520px;
         background: #FFFFFF;
         border: 1px solid #E5E7EB;
-        border-radius: 8px;
-        padding: 32px 28px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        padding: 36px 32px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.18);
+        animation: authCardIn 0.22s ease;
+      }
+      @keyframes authCardIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
       }
       .auth-extra-header {
         text-align: center;
-        margin-bottom: 24px;
+        margin-bottom: 22px;
       }
       .auth-extra-header .auth-brand-icon {
         margin: 0 auto 12px;
       }
       .auth-extra-header h2 {
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 1.35rem;
+        font-size: 1.4rem;
         color: #1F2933;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
       }
       .auth-extra-header p {
         font-size: 0.8125rem;
         color: #5C5C5C;
+        line-height: 1.5;
       }
+
+      /* Google account identity badge shown in modal header */
+      .auth-google-id-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #F7F5F2;
+        border: 1px solid #E5E7EB;
+        border-radius: 20px;
+        padding: 4px 12px 4px 4px;
+        margin: 8px auto 10px;
+        font-size: 0.8125rem;
+        color: #1F2933;
+        font-weight: 500;
+      }
+      .auth-google-id-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #C2410C;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
       .auth-extra-form .auth-field {
         margin-bottom: 14px;
       }

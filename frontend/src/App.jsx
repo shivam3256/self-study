@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import SeatMap from './pages/SeatMap';
 import Students from './pages/Students';
 import Billing from './pages/Billing';
+import Budget from './pages/Budget';
 import Attendance from './pages/Attendance';
 import Reminders from './pages/Reminders';
 import Settings from './pages/Settings';
@@ -113,6 +114,11 @@ export default function App() {
           title: 'Fee Billing & Receipt Generation',
           subtitle: 'Collect fees, monitor outstanding dues, and generate printable GST/standard receipts.',
         };
+      case 'budget':
+        return {
+          title: 'Budget, Expenses & Profit Analytics',
+          subtitle: 'Monitor monthly revenue, log center operating expenses (electricity, rent, salaries, misc), and track net profit margins.',
+        };
       case 'attendance':
         return {
           title: 'Daily Attendance & QR Check-In',
@@ -189,6 +195,10 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'budget' && (
+            <Budget tenant={tenant} />
+          )}
+
           {activeTab === 'attendance' && (
             <Attendance students={students} />
           )}
@@ -204,6 +214,7 @@ export default function App() {
               plans={plans}
               onTenantUpdated={(newTenant) => setTenant(newTenant)}
               onRefreshData={loadSharedData}
+              onLogout={handleLogout}
             />
           )}
         </main>

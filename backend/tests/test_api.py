@@ -168,4 +168,98 @@ async def test_whatsapp_reminders_flow():
             assert "id" in logs[0]
             assert "message" in logs[0]
 
+@pytest.mark.asyncio
+async def test_delete_account_flow():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Register a disposable tenant to delete
+        import uuid
+        unique_suffix = str(uuid.uuid4())[:8]
+        reg_resp = await ac.post("/api/v1/auth/register", json={
+            "library_name": f"Disposable Library {unique_suffix}",
+            "owner_name": "Test Owner",
+            "phone": "9998887776",
+            "city": "TestCity",
+            "email": f"delete_test_{unique_suffix}@example.com",
+            "password": "Password123!"
+        })
+        assert reg_resp.status_code == 201
+        token = reg_resp.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Delete account
+        del_resp = await ac.delete("/api/v1/auth/account", headers=headers)
+        assert del_resp.status_code == 204
+
+        # Verify login now fails
+        login_resp = await ac.post("/api/v1/auth/login", json={
+            "email": f"delete_test_{unique_suffix}@example.com",
+            "password": "Password123!"
+        })
+        assert login_resp.status_code == 401
+
+@pytest.mark.asyncio
+async def test_expenses_and_budget_summary():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        login_resp = await ac.post("/api/v1/auth/login", json={
+            "email": "owner@apexlibrary.com",
+            "password": "admin123"
+        })
+        token = login_resp.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Create expenses: electricity, rent, salary, misc
+        exp1 = await ac.post("/api/v1/expenses", json={
+            "title": "July Electricity Bill",
+            "category": "electricity",
+            "amount": 4200.0,
+            "expense_date": "2026-07-15",
+            "payment_mode": "upi",
+            "vendor_name": "State Discom"
+        }, headers=headers)
+        assert exp1.status_code == 201
+        exp1_id = exp1.json()["id"]
+
+        exp2 = await ac.post("/api/v1/expenses", json={
+            "title": "Study Center Property Rent",
+            "category": "rent",
+            "amount": 18000.0,
+            "expense_date": "2026-07-05",
+            "payment_mode": "bank_transfer",
+            "vendor_name": "Landlord Sharma"
+        }, headers=headers)
+        assert exp2.status_code == 201
+
+        exp3 = await ac.post("/api/v1/expenses", json={
+            "title": "Housekeeping & Cleaning Supplies",
+            "category": "cleaning",
+            "amount": 1500.0,
+            "expense_date": "2026-07-10",
+            "payment_mode": "cash"
+        }, headers=headers)
+        assert exp3.status_code == 201
+
+        # 2. Get Budget / P&L Summary for July 2026
+        summary_resp = await ac.get("/api/v1/expenses/summary?month=7&year=2026", headers=headers)
+        assert summary_resp.status_code == 200
+        summary = summary_resp.json()
+        assert summary["month"] == 7
+        assert summary["year"] == 2026
+        assert summary["total_expenses"] == 23700.0
+        assert "net_profit" in summary
+        assert "profit_margin_pct" in summary
+        assert len(summary["category_breakdown"]) >= 3
+        assert len(summary["monthly_trend"]) == 6
+
+        # 3. List expenses
+        list_resp = await ac.get("/api/v1/expenses?month=7&year=2026", headers=headers)
+        assert list_resp.status_code == 200
+        assert len(list_resp.json()) >= 3
+
+        # 4. Clean up created test expense
+        del_resp = await ac.delete(f"/api/v1/expenses/{exp1_id}", headers=headers)
+        assert del_resp.status_code == 204
+
+
 

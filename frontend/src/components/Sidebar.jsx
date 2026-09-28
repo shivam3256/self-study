@@ -9,7 +9,8 @@ import {
   LogOut,
   Building2,
   Settings as SettingsIcon,
-  Sparkles
+  Sparkles,
+  Wallet,
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogout }) {
@@ -18,6 +19,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
     { id: 'seatmap', label: 'Visual Seat Map', icon: Grid },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'billing', label: 'Fee & Billing', icon: CreditCard },
+    { id: 'budget', label: 'Budget & Profit', icon: Wallet },
     { id: 'attendance', label: 'Attendance & QR', icon: QrCode },
     { id: 'reminders', label: 'WhatsApp Reminders', icon: BellRing },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
