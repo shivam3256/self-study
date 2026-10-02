@@ -44,6 +44,21 @@ class Settings(BaseSettings):
     # Google OAuth
     GOOGLE_CLIENT_ID: str = ""  # Set in .env: your Google OAuth 2.0 client ID
 
+    # Email & OTP Verification Configuration
+    EMAIL_PROVIDER: str = "console"  # "console" (logs/prints in dev), "smtp", "mock"
+    EMAIL_FROM: str = "StudyHub <noreply@studyhub.com>"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_TLS: bool = True
+    OTP_SECRET: str = "studyhub-otp-secret-hmac-key-2026"
+    OTP_EXPIRY_MINUTES: int = 10
+    OTP_MAX_ATTEMPTS: int = 5
+    OTP_RESEND_COOLDOWN_SECONDS: int = 60
+    OTP_HOURLY_LIMIT: int = 5
+    DEBUG_LOG_OTP: bool = False
+
     # WhatsApp Meta Cloud API Configuration
     WHATSAPP_PROVIDER: str = "mock"  # "mock" for local dev/testing, "meta" for Meta Cloud API
     WHATSAPP_ACCESS_TOKEN: str = ""  # System user or temporary Meta Graph API token

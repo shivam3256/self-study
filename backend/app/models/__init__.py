@@ -1,5 +1,6 @@
 from app.core.database import Base, BaseModel, TenantScopedModel
 from app.models.tenant import Tenant, User
+from app.models.otp import EmailOTP
 from app.models.shift import Shift
 from app.models.plan import Plan
 from app.models.desk import Desk
@@ -16,6 +17,7 @@ __all__ = [
     "TenantScopedModel",
     "Tenant",
     "User",
+    "EmailOTP",
     "Shift",
     "Plan",
     "Desk",
@@ -26,3 +28,4 @@ __all__ = [
     "ReminderLog",
     "Expense",
 ]
+

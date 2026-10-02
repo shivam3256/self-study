@@ -2,8 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 
-class TenantRegisterRequest(BaseModel):
-    # Tenant details
+class SignupRequest(BaseModel):
     library_name: str
     owner_name: str
     email: EmailStr
@@ -14,6 +13,29 @@ class TenantRegisterRequest(BaseModel):
     state: Optional[str] = None
     pincode: Optional[str] = None
     additional_email: Optional[str] = None
+
+# Backward compatibility alias
+TenantRegisterRequest = SignupRequest
+
+class SignupResponse(BaseModel):
+    success: bool = True
+    message: str
+    email: str
+    resend_cooldown_seconds: int = 60
+    email_verified: bool = False
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+class ResendOTPRequest(BaseModel):
+    email: EmailStr
+
+class ResendOTPResponse(BaseModel):
+    success: bool = True
+    message: str
+    email: str
+    resend_cooldown_seconds: int = 60
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -50,11 +72,13 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    tenant_id: str
+    tenant_id: Optional[str] = None
     full_name: str
     email: str
     role: str
     is_active: bool
+    email_verified: bool = False
+    email_verified_at: Optional[datetime] = None
     created_at: datetime
 
 class TenantResponse(BaseModel):
@@ -94,5 +118,3 @@ class TenantUpdateRequest(BaseModel):
 
 TokenResponse.model_rebuild()
 GoogleAuthResponse.model_rebuild()
-
-

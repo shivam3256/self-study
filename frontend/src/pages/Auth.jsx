@@ -16,11 +16,12 @@ import {
   Shield,
   CheckCircle2,
   ChevronRight,
+  ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { api, setAuthToken, setStoredUser } from '../api';
 
 // ─── Google Client ID ────────────────────────────────────────────────────────
-// Replace with your actual Google OAuth 2.0 client ID
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 // ─── Feature highlights shown on the left panel ─────────────────────────────
@@ -31,16 +32,14 @@ const FEATURES = [
   { icon: Shield, label: 'Multi-tenant SaaS', desc: 'Isolated workspace for every library owner.' },
 ];
 
-// ─── Animated floating orb component ────────────────────────────────────────
-function FloatingOrb({ style }) {
-  return <div className="auth-orb" style={style} />;
-}
-
 export default function Auth({ onLoginSuccess }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [verifyEmail, setVerifyEmail] = useState(() => sessionStorage.getItem('study_pending_verify_email') || '');
+  const [mode, setMode] = useState(() => sessionStorage.getItem('study_pending_verify_email') ? 'verify' : 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(60);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -56,6 +55,10 @@ export default function Auth({ onLoginSuccess }) {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
+  // OTP Digits (6 individual boxes)
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const otpInputsRef = useRef([]);
+
   // Google new-user extra info modal
   const [googlePendingCred, setGooglePendingCred] = useState(null); // stores credential JWT
   const [googleNewUserInfo, setGoogleNewUserInfo] = useState(null); // { email, name } from Google
@@ -68,8 +71,27 @@ export default function Auth({ onLoginSuccess }) {
   const googleButtonRef = useRef(null);
   const gsiReady = useRef(false);
 
+  // ─── Resend Cooldown Countdown ──────────────────────────────────────────
+  useEffect(() => {
+    if (mode !== 'verify' || resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [mode, resendCooldown]);
+
+  // ─── Focus first empty OTP box when entering verify mode ────────────────
+  useEffect(() => {
+    if (mode === 'verify') {
+      const firstEmpty = otpDigits.findIndex((d) => !d);
+      const targetIdx = firstEmpty !== -1 ? firstEmpty : 0;
+      setTimeout(() => {
+        otpInputsRef.current[targetIdx]?.focus();
+      }, 50);
+    }
+  }, [mode]);
+
   // ─── Google credential callback ──────────────────────────────────────────
-  // Called by Google Identity Services when user selects an account.
   const handleGoogleCredential = async (response) => {
     setGoogleLoading(true);
     setError('');
@@ -77,14 +99,13 @@ export default function Auth({ onLoginSuccess }) {
       const res = await api.auth.googleAuth(response.credential);
 
       if (res.is_new_user) {
-        // First-time user: show the detail-collection modal instead of logging in
         setGooglePendingCred(response.credential);
         setGoogleNewUserInfo({ email: res.email, name: res.name });
         setGoogleLoading(false);
         return;
       }
 
-      // Existing user: log in directly
+      sessionStorage.removeItem('study_pending_verify_email');
       setAuthToken(res.access_token);
       setStoredUser(res.user, res.tenant);
       onLoginSuccess(res.user, res.tenant);
@@ -101,44 +122,47 @@ export default function Auth({ onLoginSuccess }) {
 
   // ─── Google Identity Services — init + renderButton ─────────────────────
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
+    if (!GOOGLE_CLIENT_ID || mode === 'verify') return;
     let cancelled = false;
 
-    const initAndRender = () => {
-      if (cancelled || !googleButtonRef.current) return;
-      if (gsiReady.current) return; // already initialised
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-      // Render the real Google button inside our styled wrapper div
-      window.google.accounts.id.renderButton(googleButtonRef.current, {
-        type: 'standard',
-        theme: 'filled_black',
-        size: 'large',
-        text: 'continue_with',
-        shape: 'rectangular',
-        logo_alignment: 'left',
-        width: googleButtonRef.current.offsetWidth || 400,
-      });
-      gsiReady.current = true;
-    };
-
-    // Poll until GSI script loads, then render
-    const interval = setInterval(() => {
-      if (window.google?.accounts?.id) {
-        clearInterval(interval);
-        initAndRender();
+    const renderGsi = () => {
+      if (cancelled || !googleButtonRef.current || !window.google?.accounts?.id) return;
+      try {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          type: 'standard',
+          theme: 'filled_black',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+          width: googleButtonRef.current.offsetWidth || 360,
+        });
+      } catch (err) {
+        console.warn('GSI render error:', err);
       }
-    }, 150);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
     };
-  }, [GOOGLE_CLIENT_ID]);
+
+    if (window.google?.accounts?.id) {
+      renderGsi();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(interval);
+          renderGsi();
+        }
+      }, 150);
+      return () => {
+        cancelled = true;
+        clearInterval(interval);
+      };
+    }
+  }, [GOOGLE_CLIENT_ID, mode]);
 
   // ─── Complete Google registration with extra info ─────────────────────────
   const handleGoogleExtraSubmit = async (e) => {
@@ -154,10 +178,10 @@ export default function Auth({ onLoginSuccess }) {
         additional_email: googleExtraAdditionalEmail || undefined,
       });
       if (res.is_new_user) {
-        // Should not happen after submission, but guard anyway
         setError('Please fill in all required details.');
         return;
       }
+      sessionStorage.removeItem('study_pending_verify_email');
       setAuthToken(res.access_token);
       setStoredUser(res.user, res.tenant);
       onLoginSuccess(res.user, res.tenant);
@@ -173,40 +197,168 @@ export default function Auth({ onLoginSuccess }) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
+    const cleanEmail = email.trim().toLowerCase();
     try {
-      const res = await api.auth.login(email, password);
+      const res = await api.auth.login(cleanEmail, password);
+      sessionStorage.removeItem('study_pending_verify_email');
       setAuthToken(res.access_token);
       setStoredUser(res.user, res.tenant);
       onLoginSuccess(res.user, res.tenant);
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'EMAIL_NOT_VERIFIED' || err.detail?.code === 'EMAIL_NOT_VERIFIED') {
+        const pending = err.detail?.email || cleanEmail;
+        setVerifyEmail(pending);
+        sessionStorage.setItem('study_pending_verify_email', pending);
+        setResendCooldown(60);
+        setMode('verify');
+        setOtpDigits(['', '', '', '', '', '']);
+        setSuccess('Your email address is not verified yet. We sent a verification code to your email.');
+      } else {
+        setError(err.message || 'Invalid email or password.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── Email register ───────────────────────────────────────────────────────
+  // ─── Email register (Step 1 -> OTP screen) ────────────────────────────────
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
+    const cleanEmail = regEmail.trim().toLowerCase();
     try {
-      const res = await api.auth.register({
+      const res = await api.auth.signup({
         library_name: libraryName,
         owner_name: ownerName,
-        email: regEmail,
+        email: cleanEmail,
         phone,
         city,
         password: regPassword,
       });
+      setVerifyEmail(cleanEmail);
+      sessionStorage.setItem('study_pending_verify_email', cleanEmail);
+      setResendCooldown(res.resend_cooldown_seconds || 60);
+      setMode('verify');
+      setOtpDigits(['', '', '', '', '', '']);
+      setSuccess(`We've sent a 6-digit verification code to ${cleanEmail}`);
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please check your details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── OTP Digit Handlers ───────────────────────────────────────────────────
+  const handleDigitChange = (index, value) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = digit;
+    setOtpDigits(newDigits);
+    setError('');
+
+    if (digit && index < 5) {
+      otpInputsRef.current[index + 1]?.focus();
+    }
+
+    if (newDigits.every((d) => d !== '')) {
+      handleVerifyCode(newDigits.join(''));
+    }
+  };
+
+  const handleDigitKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      if (!otpDigits[index] && index > 0) {
+        otpInputsRef.current[index - 1]?.focus();
+        const newDigits = [...otpDigits];
+        newDigits[index - 1] = '';
+        setOtpDigits(newDigits);
+      } else {
+        const newDigits = [...otpDigits];
+        newDigits[index] = '';
+        setOtpDigits(newDigits);
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      otpInputsRef.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      otpInputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').trim();
+    const digits = pasted.replace(/\D/g, '').slice(0, 6).split('');
+    if (digits.length === 0) return;
+
+    const newDigits = [...otpDigits];
+    for (let i = 0; i < 6; i++) {
+      newDigits[i] = digits[i] || '';
+    }
+    setOtpDigits(newDigits);
+    setError('');
+
+    const nextEmpty = newDigits.findIndex((d) => !d);
+    if (nextEmpty !== -1) {
+      otpInputsRef.current[nextEmpty]?.focus();
+    } else {
+      otpInputsRef.current[5]?.focus();
+    }
+
+    if (newDigits.every((d) => d !== '')) {
+      handleVerifyCode(newDigits.join(''));
+    }
+  };
+
+  // ─── Verify Email Submit (Step 2) ─────────────────────────────────────────
+  const handleVerifyCode = async (codeOverride) => {
+    const code = codeOverride || otpDigits.join('');
+    if (code.length !== 6) {
+      setError('Please enter all 6 digits of the verification code.');
+      return;
+    }
+
+    setVerifyLoading(true);
+    setError('');
+    try {
+      const res = await api.auth.verifyEmail(verifyEmail, code);
+      sessionStorage.removeItem('study_pending_verify_email');
       setAuthToken(res.access_token);
       setStoredUser(res.user, res.tenant);
       onLoginSuccess(res.user, res.tenant);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Verification failed. Please check your code.');
     } finally {
-      setLoading(false);
+      setVerifyLoading(false);
     }
+  };
+
+  // ─── Resend Verification Code ─────────────────────────────────────────────
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || verifyLoading) return;
+    setVerifyLoading(true);
+    setError('');
+    try {
+      const res = await api.auth.resendOtp(verifyEmail);
+      setResendCooldown(res.resend_cooldown_seconds || 60);
+      setSuccess('A fresh verification code has been sent to your email.');
+      setOtpDigits(['', '', '', '', '', '']);
+      otpInputsRef.current[0]?.focus();
+    } catch (err) {
+      setError(err.message || 'Failed to resend code. Please try again.');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleBackFromVerify = () => {
+    sessionStorage.removeItem('study_pending_verify_email');
+    setMode('register');
+    setError('');
+    setSuccess('');
+    setOtpDigits(['', '', '', '', '', '']);
   };
 
   const fillDemo = () => {
@@ -214,6 +366,7 @@ export default function Auth({ onLoginSuccess }) {
     setPassword('admin123');
     setMode('login');
     setError('');
+    setSuccess('');
   };
 
   const switchMode = (newMode) => {
@@ -226,7 +379,6 @@ export default function Auth({ onLoginSuccess }) {
   if (googlePendingCred) {
     return (
       <div className="auth-root">
-        <AuthOrbs />
         <div className="auth-modal-overlay">
           <div className="auth-extra-card">
             <div className="auth-extra-header">
@@ -248,7 +400,6 @@ export default function Auth({ onLoginSuccess }) {
             {error && <div className="auth-alert auth-alert-error">{error}</div>}
 
             <form onSubmit={handleGoogleExtraSubmit} className="auth-extra-form">
-              {/* Library Name */}
               <div className="auth-field">
                 <label>Library / Study Center Name *</label>
                 <div className="auth-input-wrap">
@@ -265,7 +416,6 @@ export default function Auth({ onLoginSuccess }) {
                 </div>
               </div>
 
-              {/* Phone & City */}
               <div className="auth-field-row">
                 <div className="auth-field">
                   <label>Mobile Number *</label>
@@ -297,7 +447,6 @@ export default function Auth({ onLoginSuccess }) {
                 </div>
               </div>
 
-              {/* Address */}
               <div className="auth-field">
                 <label>Address / Locality</label>
                 <div className="auth-input-wrap">
@@ -312,7 +461,6 @@ export default function Auth({ onLoginSuccess }) {
                 </div>
               </div>
 
-              {/* Additional / Contact Email */}
               <div className="auth-field">
                 <label>Additional Contact Email</label>
                 <div className="auth-input-wrap">
@@ -370,8 +518,6 @@ export default function Auth({ onLoginSuccess }) {
   // ─── Main Auth Layout ─────────────────────────────────────────────────────
   return (
     <div className="auth-root">
-      <AuthOrbs />
-
       <div className="auth-layout">
         {/* ── Left Panel ── */}
         <div className="auth-left">
@@ -429,67 +575,79 @@ export default function Auth({ onLoginSuccess }) {
         {/* ── Right Panel ── */}
         <div className="auth-right">
           <div className="auth-card">
-            {/* Tab switcher */}
-            <div className="auth-tabs">
-              <button
-                id="auth-tab-login"
-                className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
-                onClick={() => switchMode('login')}
-              >
-                Sign In
-              </button>
-              <button
-                id="auth-tab-register"
-                className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
-                onClick={() => switchMode('register')}
-              >
-                Create Account
-              </button>
-              <div className={`auth-tab-indicator ${mode === 'register' ? 'right' : ''}`} />
-            </div>
+            {/* Tab switcher (Visible only for Login and Register) */}
+            {mode !== 'verify' && (
+              <div className="auth-tabs">
+                <button
+                  id="auth-tab-login"
+                  className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+                  onClick={() => switchMode('login')}
+                >
+                  Sign In
+                </button>
+                <button
+                  id="auth-tab-register"
+                  className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
+                  onClick={() => switchMode('register')}
+                >
+                  Create Account
+                </button>
+                <div className={`auth-tab-indicator ${mode === 'register' ? 'right' : ''}`} />
+              </div>
+            )}
 
-            {/* Google Sign-In button — rendered by Google Identity Services */}
-            <div className="auth-google-wrapper">
-              {googleLoading && (
-                <div className="auth-google-loading">
-                  <span className="auth-spinner dark" />
-                  <span>Signing in with Google...</span>
+            {/* Google Sign-In button (only shown for login/register) */}
+            {mode !== 'verify' && (
+              <>
+                <div className="auth-google-wrapper">
+                  {googleLoading && (
+                    <div className="auth-google-loading">
+                      <span className="auth-spinner dark" />
+                      <span>Signing in with Google...</span>
+                    </div>
+                  )}
+                  <div
+                    ref={googleButtonRef}
+                    id="auth-google-btn-container"
+                    style={{ display: googleLoading ? 'none' : 'block' }}
+                  />
+                  {!GOOGLE_CLIENT_ID && (
+                    <div className="auth-google-unconfigured">
+                      <svg viewBox="0 0 24 24" width="18" height="18" style={{ flexShrink: 0 }}>
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      Google Sign-In not configured
+                    </div>
+                  )}
                 </div>
-              )}
-              <div
-                ref={googleButtonRef}
-                id="auth-google-btn-container"
-                style={{ display: googleLoading ? 'none' : 'block' }}
-              />
-              {!GOOGLE_CLIENT_ID && (
-                <div className="auth-google-unconfigured">
-                  <svg viewBox="0 0 24 24" width="18" height="18" style={{ flexShrink: 0 }}>
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  Google Sign-In not configured
+
+                {/* Divider */}
+                <div className="auth-divider">
+                  <span>or continue with email</span>
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
-            {/* Divider */}
-            <div className="auth-divider">
-              <span>or continue with email</span>
-            </div>
-
-            {/* Error */}
+            {/* Error Banner */}
             {error && (
               <div className="auth-alert auth-alert-error" id="auth-error-banner">
                 {error}
               </div>
             )}
 
+            {/* Success Banner */}
+            {success && (
+              <div className="auth-alert auth-alert-success" id="auth-success-banner">
+                {success}
+              </div>
+            )}
+
             {/* ── Login Form ── */}
             {mode === 'login' && (
               <form onSubmit={handleLogin} id="auth-login-form">
-                {/* Demo autofill */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
                   <button
                     type="button"
@@ -690,7 +848,6 @@ export default function Auth({ onLoginSuccess }) {
                   </div>
                 </div>
 
-                {/* Perks checklist */}
                 <div className="auth-perks">
                   {['Free forever plan', 'Instant desk & shift setup', 'No credit card required'].map((p) => (
                     <div key={p} className="auth-perk-item">
@@ -721,6 +878,94 @@ export default function Auth({ onLoginSuccess }) {
                 </p>
               </form>
             )}
+
+            {/* ── Verify Email Screen (Step 2) ── */}
+            {mode === 'verify' && (
+              <div className="auth-verify-view" id="auth-verify-screen">
+                <div className="auth-verify-header">
+                  <div className="auth-brand-icon" style={{ margin: '0 auto 16px' }}>
+                    <ShieldCheck size={24} />
+                  </div>
+                  <h2 className="auth-verify-title">Verify your email</h2>
+                  <p className="auth-verify-sub">
+                    We sent a 6-digit verification code to
+                    <br />
+                    <span className="auth-verify-email-badge">{verifyEmail}</span>
+                  </p>
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); handleVerifyCode(); }}>
+                  {/* 6 Digit Input Boxes */}
+                  <div className="auth-otp-row">
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => (otpInputsRef.current[idx] = el)}
+                        id={`otp-digit-${idx}`}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={1}
+                        autoComplete={idx === 0 ? "one-time-code" : "off"}
+                        value={digit}
+                        onChange={(e) => handleDigitChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                        onPaste={handleOtpPaste}
+                        className={`auth-otp-input ${digit ? 'filled' : ''}`}
+                        disabled={verifyLoading}
+                        required
+                      />
+                    ))}
+                  </div>
+
+                  <p className="auth-otp-hint">
+                    Enter the 6-digit code or paste it directly. Code expires in 10 minutes.
+                  </p>
+
+                  <button
+                    id="auth-verify-submit"
+                    type="submit"
+                    className="auth-btn-primary"
+                    disabled={verifyLoading || otpDigits.join('').length !== 6}
+                    style={{ marginTop: 20 }}
+                  >
+                    {verifyLoading ? (
+                      <span className="auth-spinner" />
+                    ) : (
+                      <>Verify & Continue <ArrowRight size={16} /></>
+                    )}
+                  </button>
+
+                  <div className="auth-resend-row">
+                    <span style={{ color: '#6B7280' }}>Didn't get the code?</span>
+                    <button
+                      id="auth-resend-btn"
+                      type="button"
+                      className="auth-link-btn"
+                      onClick={handleResendOtp}
+                      disabled={verifyLoading || resendCooldown > 0}
+                    >
+                      {resendCooldown > 0 ? (
+                        `Resend code in ${resendCooldown}s`
+                      ) : (
+                        'Resend code'
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="auth-verify-footer">
+                    <button
+                      id="auth-back-to-signup"
+                      type="button"
+                      className="auth-back-link"
+                      onClick={handleBackFromVerify}
+                    >
+                      Wrong email? Go back
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -728,11 +973,6 @@ export default function Auth({ onLoginSuccess }) {
       <AuthStyles />
     </div>
   );
-}
-
-// ─── Background accents ──────────────────────────────────────────────────────
-function AuthOrbs() {
-  return null;
 }
 
 // ─── Scoped styles ───────────────────────────────────────────────────────────
@@ -748,7 +988,6 @@ function AuthStyles() {
         align-items: stretch;
       }
 
-      /* ── Split layout ───────────────────────────────────────────────────── */
       .auth-layout {
         display: flex;
         width: 100%;
@@ -756,7 +995,6 @@ function AuthStyles() {
         position: relative;
       }
 
-      /* ── Left panel ─────────────────────────────────────────────────────── */
       .auth-left {
         flex: 1;
         display: flex;
@@ -782,7 +1020,7 @@ function AuthStyles() {
       .auth-brand-icon {
         width: 44px;
         height: 44px;
-        border-radius: 6px;
+        border-radius: 8px;
         background: #C2410C;
         display: flex;
         align-items: center;
@@ -793,7 +1031,7 @@ function AuthStyles() {
       .auth-brand-icon.large {
         width: 48px;
         height: 48px;
-        border-radius: 8px;
+        border-radius: 10px;
       }
 
       .auth-logo-title {
@@ -858,253 +1096,174 @@ function AuthStyles() {
         font-size: 0.875rem;
         font-weight: 600;
         color: #1F2933;
-        margin-bottom: 2px;
       }
       .auth-feature-desc {
         font-size: 0.8125rem;
         color: #5C5C5C;
-        line-height: 1.5;
+        margin-top: 1px;
       }
 
       .auth-proof {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 16px;
-        background: #F7F5F2;
-        border: 1px solid #E5E7EB;
-        border-radius: 8px;
+        padding-top: 24px;
+        border-top: 1px solid #F0ECE6;
       }
       .auth-proof-avatars {
         display: flex;
       }
       .auth-proof-avatar {
-        width: 28px;
-        height: 28px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
-        background: #E5E7EB;
+        background: #F3F4F6;
+        border: 2px solid #FFFFFF;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 13px;
-        margin-right: -6px;
-        border: 2px solid #FFFFFF;
+        font-size: 14px;
+        margin-left: -6px;
+      }
+      .auth-proof-avatar:first-child {
+        margin-left: 0;
       }
       .auth-proof-text {
         font-size: 0.8125rem;
         color: #5C5C5C;
-        padding-left: 8px;
-      }
-      .auth-proof-text strong {
-        color: #1F2933;
       }
 
-      /* ── Right panel / card ──────────────────────────────────────────────── */
       .auth-right {
-        width: 500px;
-        flex-shrink: 0;
+        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 48px 36px;
-        background: #F7F5F2;
+        padding: 48px 32px;
       }
 
       .auth-card {
-        width: 100%;
         background: #FFFFFF;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
         border: 1px solid #E5E7EB;
-        border-radius: 8px;
-        padding: 32px 28px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 40px;
+        width: 100%;
+        max-width: 440px;
       }
 
-      /* ── Tabs ────────────────────────────────────────────────────────────── */
       .auth-tabs {
         display: flex;
-        background: #F7F5F2;
-        border: 1px solid #E5E7EB;
-        border-radius: 6px;
-        padding: 3px;
-        margin-bottom: 22px;
         position: relative;
+        background: #F3F4F6;
+        padding: 4px;
+        border-radius: 8px;
+        margin-bottom: 24px;
       }
       .auth-tab {
         flex: 1;
         padding: 8px;
+        text-align: center;
         font-size: 0.875rem;
         font-weight: 500;
-        color: #5C5C5C;
-        background: transparent;
+        color: #4B5563;
         border: none;
+        background: none;
         cursor: pointer;
-        border-radius: 4px;
-        transition: all 150ms ease;
-        position: relative;
         z-index: 1;
-        font-family: inherit;
+        transition: color 0.15s ease;
       }
       .auth-tab.active {
-        color: #C2410C;
+        color: #111827;
         font-weight: 600;
       }
       .auth-tab-indicator {
         position: absolute;
-        top: 3px;
-        left: 3px;
-        width: calc(50% - 3px);
-        bottom: 3px;
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px);
+        height: calc(100% - 8px);
         background: #FFFFFF;
-        border-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        border: 1px solid #E5E7EB;
-        transition: transform 200ms ease;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
       }
       .auth-tab-indicator.right {
         transform: translateX(100%);
       }
 
-      /* ── Google button wrapper ───────────────────────────────────────────── */
       .auth-google-wrapper {
-        width: 100%;
-        margin-bottom: 18px;
-        border-radius: 6px;
-        overflow: hidden;
-      }
-      .auth-google-wrapper > div,
-      #auth-google-btn-container > div,
-      #auth-google-btn-container iframe {
-        width: 100% !important;
+        margin-bottom: 20px;
       }
       .auth-google-loading {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        padding: 10px 16px;
-        background: #F7F5F2;
-        border: 1px solid #E5E7EB;
+        gap: 8px;
+        padding: 10px;
+        background: #F3F4F6;
         border-radius: 6px;
         font-size: 0.875rem;
-        color: #5C5C5C;
+        color: #4B5563;
       }
       .auth-google-unconfigured {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        padding: 10px 16px;
-        background: #F7F5F2;
-        border: 1px solid #E5E7EB;
+        gap: 8px;
+        padding: 10px;
+        background: #F9FAFB;
+        border: 1px dashed #D1D5DB;
         border-radius: 6px;
-        font-size: 0.875rem;
-        color: #5C5C5C;
-        cursor: not-allowed;
+        font-size: 0.8125rem;
+        color: #6B7280;
       }
 
-      /* ── Divider ─────────────────────────────────────────────────────────── */
       .auth-divider {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-        font-size: 0.78rem;
+        text-align: center;
+        margin: 20px 0;
+        color: #9CA3AF;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
       .auth-divider::before,
       .auth-divider::after {
         content: '';
         flex: 1;
-        height: 1px;
-        background: #E5E7EB;
+        border-bottom: 1px solid #E5E7EB;
       }
       .auth-divider span {
-        color: #767676;
-        white-space: nowrap;
+        padding: 0 12px;
       }
 
-      /* ── Alerts ──────────────────────────────────────────────────────────── */
-      .auth-alert {
-        padding: 10px 14px;
-        border-radius: 6px;
-        font-size: 0.83rem;
-        margin-bottom: 16px;
-        line-height: 1.5;
-      }
-      .auth-alert-error {
-        background: #FEE2E2;
-        border: 1px solid #FCA5A5;
-        color: #991B1B;
-      }
-      .auth-alert-success {
-        background: #DCFCE7;
-        border: 1px solid #86EFAC;
-        color: #166534;
-      }
-
-      /* ── Demo banner ─────────────────────────────────────────────────────── */
-      .auth-demo-banner {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 9px 12px;
-        margin-bottom: 16px;
-        background: #FFF3E8;
-        border: 1px solid #FED7AA;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.8125rem;
-        color: #9A3412;
-        font-family: inherit;
-        transition: background 150ms ease, border-color 150ms ease;
-        text-align: left;
-      }
-      .auth-demo-banner:hover {
-        background: #FEE8D6;
-        border-color: #FDBA74;
-      }
-      .auth-demo-banner span { flex: 1; }
-      .auth-demo-banner strong { color: #C2410C; }
-
-      /* ── Form fields ─────────────────────────────────────────────────────── */
       .auth-field {
-        margin-bottom: 14px;
-        flex: 1;
+        margin-bottom: 16px;
       }
       .auth-field label {
         display: block;
         font-size: 0.8125rem;
-        font-weight: 600;
-        color: #1F2933;
-        margin-bottom: 5px;
-      }
-      .auth-field-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 6px;
       }
       .auth-label-row {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 5px;
+        align-items: center;
+        margin-bottom: 6px;
       }
       .auth-label-row label {
-        margin-bottom: 0 !important;
+        margin-bottom: 0;
       }
       .auth-forgot-link {
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         color: #C2410C;
         background: none;
         border: none;
         cursor: pointer;
-        font-family: inherit;
-        font-weight: 500;
         padding: 0;
-      }
-      .auth-forgot-link:hover {
-        color: #9A3412;
-        text-decoration: underline;
       }
 
       .auth-input-wrap {
@@ -1115,95 +1274,85 @@ function AuthStyles() {
       .auth-input-icon {
         position: absolute;
         left: 12px;
-        color: #5C5C5C;
+        color: #9CA3AF;
         pointer-events: none;
-        flex-shrink: 0;
       }
       .auth-input-wrap input {
         width: 100%;
-        padding: 9px 12px 9px 36px;
-        background: #FFFFFF;
+        padding: 10px 12px 10px 36px;
+        font-size: 0.875rem;
         border: 1px solid #D1D5DB;
         border-radius: 6px;
-        color: #1A1A1A;
-        font-size: 0.9375rem;
-        font-family: inherit;
-        transition: border-color 150ms ease, box-shadow 150ms ease;
+        background: #FFFFFF;
+        color: #111827;
         outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
       }
-      .auth-input-wrap input::placeholder { color: #767676; }
       .auth-input-wrap input:focus {
         border-color: #C2410C;
-        box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.2);
+        box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.15);
       }
-
       .auth-eye-btn {
         position: absolute;
-        right: 10px;
+        right: 12px;
         background: none;
         border: none;
+        color: #9CA3AF;
         cursor: pointer;
-        color: #5C5C5C;
+        padding: 0;
         display: flex;
-        padding: 4px;
-        transition: color 150ms ease;
+        align-items: center;
       }
-      .auth-eye-btn:hover { color: #1F2933; }
 
-      /* ── Primary button ──────────────────────────────────────────────────── */
+      .auth-field-row {
+        display: grid;
+        grid-templateColumns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .auth-perks {
+        margin: 16px 0 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .auth-perk-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8125rem;
+        color: #4B5563;
+      }
+
       .auth-btn-primary {
         width: 100%;
-        padding: 10px 16px;
+        padding: 11px 16px;
         background: #C2410C;
-        border: 1px solid #C2410C;
-        border-radius: 6px;
         color: #FFFFFF;
-        font-size: 0.9375rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
         font-weight: 600;
         cursor: pointer;
-        font-family: inherit;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        transition: background-color 150ms ease, border-color 150ms ease;
-        margin-top: 6px;
+        transition: background 0.15s;
       }
       .auth-btn-primary:hover:not(:disabled) {
         background: #9A3412;
-        border-color: #9A3412;
-      }
-      .auth-btn-primary:focus-visible {
-        outline: 2px solid #C2410C;
-        outline-offset: 2px;
       }
       .auth-btn-primary:disabled {
         opacity: 0.6;
         cursor: not-allowed;
       }
 
-      /* ── Perks ───────────────────────────────────────────────────────────── */
-      .auth-perks {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 14px;
-        margin-top: -2px;
-      }
-      .auth-perk-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 0.78rem;
-        color: #5C5C5C;
-      }
-
-      /* ── Switch hint ─────────────────────────────────────────────────────── */
       .auth-switch-hint {
         text-align: center;
-        font-size: 0.8125rem;
-        color: #5C5C5C;
         margin-top: 16px;
+        font-size: 0.8125rem;
+        color: #6B7280;
       }
       .auth-switch-hint button {
         background: none;
@@ -1211,129 +1360,234 @@ function AuthStyles() {
         color: #C2410C;
         font-weight: 600;
         cursor: pointer;
-        font-family: inherit;
-        font-size: 0.8125rem;
         padding: 0;
-      }
-      .auth-switch-hint button:hover {
-        color: #9A3412;
-        text-decoration: underline;
+        margin-left: 4px;
       }
 
-      /* ── Spinner ─────────────────────────────────────────────────────────── */
+      .auth-alert {
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 0.8125rem;
+        margin-bottom: 16px;
+      }
+      .auth-alert-error {
+        background: #FEF2F2;
+        color: #991B1B;
+        border: 1px solid #FCA5A5;
+      }
+      .auth-alert-success {
+        background: #ECFDF5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+      }
+
+      .auth-demo-banner {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        background: #FFF7ED;
+        border: 1px solid #FED7AA;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #9A3412;
+        cursor: pointer;
+      }
+
       .auth-spinner {
         width: 18px;
         height: 18px;
         border: 2px solid rgba(255, 255, 255, 0.3);
         border-top-color: #FFFFFF;
         border-radius: 50%;
-        animation: authSpin 0.65s linear infinite;
-        display: inline-block;
+        animation: spin 0.6s linear infinite;
       }
       .auth-spinner.dark {
-        border: 2px solid rgba(0, 0, 0, 0.15);
-        border-top-color: #1F2933;
+        border-color: rgba(0, 0, 0, 0.1);
+        border-top-color: #111827;
       }
-      @keyframes authSpin {
+      @keyframes spin {
         to { transform: rotate(360deg); }
       }
 
-      /* ── Extra info modal overlay ────────────────────────────────────────── */
+      /* ── Verification Screen Styles ──────────────────────────────────────── */
+      .auth-verify-view {
+        text-align: center;
+      }
+      .auth-verify-header {
+        margin-bottom: 24px;
+      }
+      .auth-verify-title {
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #1F2933;
+        margin: 0 0 8px;
+      }
+      .auth-verify-sub {
+        font-size: 0.875rem;
+        color: #5C5C5C;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .auth-verify-email-badge {
+        font-weight: 600;
+        color: #111827;
+        background: #F3F4F6;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-top: 4px;
+      }
+
+      .auth-otp-row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 20px 0 12px;
+      }
+      .auth-otp-input {
+        width: 48px;
+        height: 54px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-align: center;
+        border: 1.5px solid #D1D5DB;
+        border-radius: 8px;
+        background: #FFFFFF;
+        color: #111827;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        transition: all 0.15s ease;
+        outline: none;
+      }
+      .auth-otp-input:focus {
+        border-color: #C2410C;
+        box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.2);
+        background: #FFF7ED;
+      }
+      .auth-otp-input.filled {
+        border-color: #9CA3AF;
+        background: #FAFAFA;
+      }
+
+      .auth-otp-hint {
+        font-size: 0.75rem;
+        color: #9CA3AF;
+        margin: 0 0 16px;
+      }
+
+      .auth-resend-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 18px;
+        font-size: 0.8125rem;
+      }
+
+      .auth-link-btn {
+        background: none;
+        border: none;
+        color: #C2410C;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        font-size: 0.8125rem;
+        text-decoration: underline;
+      }
+      .auth-link-btn:disabled {
+        color: #9CA3AF;
+        cursor: not-allowed;
+        text-decoration: none;
+      }
+
+      .auth-verify-footer {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #F3F4F6;
+      }
+      .auth-back-link {
+        background: none;
+        border: none;
+        color: #6B7280;
+        font-size: 0.8125rem;
+        cursor: pointer;
+        padding: 0;
+      }
+      .auth-back-link:hover {
+        color: #111827;
+        text-decoration: underline;
+      }
+
+      /* ── Modal Overlay for Onboarding ────────────────────────────────────── */
       .auth-modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(31, 41, 51, 0.6);
+        background: rgba(17, 24, 39, 0.6);
+        backdrop-filter: blur(4px);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24px;
-        z-index: 100;
-        overflow-y: auto;
+        z-index: 50;
+        padding: 20px;
       }
       .auth-extra-card {
-        width: 100%;
-        max-width: 520px;
         background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 10px;
-        padding: 36px 32px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.18);
-        animation: authCardIn 0.22s ease;
-      }
-      @keyframes authCardIn {
-        from { opacity: 0; transform: translateY(12px) scale(0.98); }
-        to   { opacity: 1; transform: translateY(0) scale(1); }
+        border-radius: 12px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        padding: 32px;
+        width: 100%;
+        max-width: 480px;
+        max-height: 90vh;
+        overflow-y: auto;
       }
       .auth-extra-header {
         text-align: center;
-        margin-bottom: 22px;
-      }
-      .auth-extra-header .auth-brand-icon {
-        margin: 0 auto 12px;
+        margin-bottom: 24px;
       }
       .auth-extra-header h2 {
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 1.4rem;
+        font-size: 1.35rem;
+        font-weight: 600;
         color: #1F2933;
-        margin-bottom: 8px;
+        margin: 12px 0 6px;
       }
       .auth-extra-header p {
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
         color: #5C5C5C;
-        line-height: 1.5;
+        margin: 0;
       }
-
-      /* Google account identity badge shown in modal header */
       .auth-google-id-badge {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        background: #F7F5F2;
-        border: 1px solid #E5E7EB;
+        gap: 6px;
+        background: #F3F4F6;
+        padding: 4px 10px;
         border-radius: 20px;
-        padding: 4px 12px 4px 4px;
-        margin: 8px auto 10px;
         font-size: 0.8125rem;
-        color: #1F2933;
-        font-weight: 500;
+        color: #374151;
+        margin-top: 8px;
       }
       .auth-google-id-avatar {
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background: #C2410C;
-        color: #fff;
+        color: #FFFFFF;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.75rem;
+        font-size: 10px;
         font-weight: 700;
-        flex-shrink: 0;
       }
 
-      .auth-extra-form .auth-field {
-        margin-bottom: 14px;
-      }
-      .auth-extra-form .auth-field-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 14px;
-      }
-
-      /* ── Responsive ──────────────────────────────────────────────────────── */
       @media (max-width: 900px) {
-        .auth-left { display: none; }
+        .auth-left {
+          display: none;
+        }
         .auth-right {
-          width: 100%;
-          padding: 32px 16px;
+          padding: 24px 16px;
         }
-      }
-      @media (max-width: 480px) {
-        .auth-field-row {
-          grid-template-columns: 1fr;
-        }
-        .auth-card { padding: 24px 16px; }
       }
     `}</style>
   );

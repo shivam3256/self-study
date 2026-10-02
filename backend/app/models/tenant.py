@@ -36,12 +36,25 @@ class Tenant(BaseModel):
 class User(BaseModel):
     __tablename__ = "users"
 
-    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=True, index=True)
     full_name = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="owner", nullable=False)  # owner, manager, front_desk
     is_active = Column(Boolean, default=True, nullable=False)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Pending onboarding details stored until email verification
+    pending_library_name = Column(String(255), nullable=True)
+    pending_phone = Column(String(50), nullable=True)
+    pending_city = Column(String(100), nullable=True)
+    pending_address = Column(Text, nullable=True)
+    pending_state = Column(String(100), nullable=True)
+    pending_pincode = Column(String(20), nullable=True)
+    pending_additional_email = Column(String(255), nullable=True)
+
     tenant = relationship("Tenant", back_populates="users")
+    otps = relationship("EmailOTP", back_populates="user", cascade="all, delete-orphan")
+

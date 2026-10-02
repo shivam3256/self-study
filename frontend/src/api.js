@@ -45,7 +45,7 @@ async function request(endpoint, options = {}) {
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
 
   let response;
   try {
@@ -77,8 +77,13 @@ async function request(endpoint, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const errorMsg = data?.detail || 'An error occurred while processing your request.';
-    throw new Error(errorMsg);
+    const errorMsg = typeof data?.detail === 'string' ? data.detail : (data?.detail?.message || 'An error occurred while processing your request.');
+    const error = new Error(errorMsg);
+    if (data?.detail && typeof data.detail === 'object') {
+      error.code = data.detail.code;
+      error.detail = data.detail;
+    }
+    throw error;
   }
 
   return data;
@@ -91,10 +96,25 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
-    register: (data) =>
-      request('/auth/register', {
+    signup: (data) =>
+      request('/auth/signup', {
         method: 'POST',
         body: JSON.stringify(data),
+      }),
+    register: (data) =>
+      request('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    verifyEmail: (email, code) =>
+      request('/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ email, code }),
+      }),
+    resendOtp: (email) =>
+      request('/auth/resend-otp', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
       }),
     googleAuth: (credential, extraData = {}) =>
       request('/auth/google', {

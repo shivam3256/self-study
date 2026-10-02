@@ -172,19 +172,39 @@ async def test_whatsapp_reminders_flow():
 async def test_delete_account_flow():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        # Register a disposable tenant to delete
+        # Register a disposable tenant to delete via Signup -> Verify Email
         import uuid
         unique_suffix = str(uuid.uuid4())[:8]
-        reg_resp = await ac.post("/api/v1/auth/register", json={
+        test_email = f"delete_test_{unique_suffix}@example.com"
+        reg_resp = await ac.post("/api/v1/auth/signup", json={
             "library_name": f"Disposable Library {unique_suffix}",
             "owner_name": "Test Owner",
             "phone": "9998887776",
             "city": "TestCity",
-            "email": f"delete_test_{unique_suffix}@example.com",
+            "email": test_email,
             "password": "Password123!"
         })
-        assert reg_resp.status_code == 201
-        token = reg_resp.json()["access_token"]
+        assert reg_resp.status_code == 200
+
+        # Set known OTP in DB for test
+        from app.services.otp_service import hash_otp_code
+        from app.models.otp import EmailOTP
+        from sqlalchemy import select
+        async with AsyncSessionLocal() as db:
+            user_res = await db.execute(select(User).where(User.email == test_email))
+            user = user_res.scalar_one()
+            otp_res = await db.execute(select(EmailOTP).where(EmailOTP.user_id == user.id))
+            otp = otp_res.scalar_one()
+            otp.code_hash = hash_otp_code("778899")
+            await db.commit()
+
+        # Verify email and get access token
+        verify_resp = await ac.post("/api/v1/auth/verify-email", json={
+            "email": test_email,
+            "code": "778899"
+        })
+        assert verify_resp.status_code == 200
+        token = verify_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
         # Delete account
@@ -193,7 +213,7 @@ async def test_delete_account_flow():
 
         # Verify login now fails
         login_resp = await ac.post("/api/v1/auth/login", json={
-            "email": f"delete_test_{unique_suffix}@example.com",
+            "email": test_email,
             "password": "Password123!"
         })
         assert login_resp.status_code == 401
@@ -208,6 +228,10 @@ async def test_expenses_and_budget_summary():
         })
         token = login_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
+
+        # Baseline summary before adding new expenses
+        base_resp = await ac.get("/api/v1/expenses/summary?month=7&year=2026", headers=headers)
+        base_total = base_resp.json().get("total_expenses", 0.0) if base_resp.status_code == 200 else 0.0
 
         # 1. Create expenses: electricity, rent, salary, misc
         exp1 = await ac.post("/api/v1/expenses", json={
@@ -230,6 +254,7 @@ async def test_expenses_and_budget_summary():
             "vendor_name": "Landlord Sharma"
         }, headers=headers)
         assert exp2.status_code == 201
+        exp2_id = exp2.json()["id"]
 
         exp3 = await ac.post("/api/v1/expenses", json={
             "title": "Housekeeping & Cleaning Supplies",
@@ -239,6 +264,7 @@ async def test_expenses_and_budget_summary():
             "payment_mode": "cash"
         }, headers=headers)
         assert exp3.status_code == 201
+        exp3_id = exp3.json()["id"]
 
         # 2. Get Budget / P&L Summary for July 2026
         summary_resp = await ac.get("/api/v1/expenses/summary?month=7&year=2026", headers=headers)
@@ -246,7 +272,7 @@ async def test_expenses_and_budget_summary():
         summary = summary_resp.json()
         assert summary["month"] == 7
         assert summary["year"] == 2026
-        assert summary["total_expenses"] == 23700.0
+        assert summary["total_expenses"] == base_total + 23700.0
         assert "net_profit" in summary
         assert "profit_margin_pct" in summary
         assert len(summary["category_breakdown"]) >= 3
@@ -257,9 +283,10 @@ async def test_expenses_and_budget_summary():
         assert list_resp.status_code == 200
         assert len(list_resp.json()) >= 3
 
-        # 4. Clean up created test expense
-        del_resp = await ac.delete(f"/api/v1/expenses/{exp1_id}", headers=headers)
-        assert del_resp.status_code == 204
+        # 4. Clean up created test expenses
+        await ac.delete(f"/api/v1/expenses/{exp1_id}", headers=headers)
+        await ac.delete(f"/api/v1/expenses/{exp2_id}", headers=headers)
+        await ac.delete(f"/api/v1/expenses/{exp3_id}", headers=headers)
 
 
 
