@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
                 if "additional_email" not in columns:
                     sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN additional_email VARCHAR(255)"))
 
-            if "users" in table_names:
+            if "users" in table_names and sync_conn.dialect.name == "sqlite":
                 user_info = sync_conn.execute(text("PRAGMA table_info(users)")).fetchall()
                 cols_dict = {col[1]: col for col in user_info}
                 tenant_id_col = cols_dict.get("tenant_id")
