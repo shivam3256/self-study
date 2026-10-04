@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # Database
     # Default is SQLite for zero-setup out of the box; supports postgresql+asyncpg://...
-    DATABASE_URL: str = "sqlite+aiosqlite:///./study_center.db"
+    DATABASE_URL: str 
 
     @field_validator("DATABASE_URL", mode="before")
     def assemble_database_url(cls, v: str) -> str:
