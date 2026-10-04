@@ -23,12 +23,17 @@ from app.models.attendance import Attendance
 from app.models.reminder import ReminderLog
 from app.models.expense import Expense
 from app.services.otp_service import otp_service
+from app.services.email_service import email_service
 from app.schemas.auth import (
     SignupRequest,
     SignupResponse,
     VerifyEmailRequest,
     ResendOTPRequest,
     ResendOTPResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
     LoginRequest,
     GoogleAuthRequest,
     GoogleAuthResponse,
@@ -86,8 +91,8 @@ async def signup(request: Request, data: SignupRequest, db: AsyncSession = Depen
     user_check = await db.execute(select(User).where(User.email == normalized_email))
     existing_user = user_check.scalar_one_or_none()
 
-    # User is ONLY registered if verified AND workspace (tenant_id) exists
-    if existing_user and existing_user.email_verified and existing_user.tenant_id is not None:
+    # User is ONLY registered if verified
+    if existing_user and existing_user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="An account with this email address is already registered and verified. Please sign in or use Google sign-in if you registered with Google."
@@ -95,7 +100,7 @@ async def signup(request: Request, data: SignupRequest, db: AsyncSession = Depen
 
     hashed_pwd = await asyncio.to_thread(get_password_hash, data.password)
 
-    if existing_user and (not existing_user.email_verified or existing_user.tenant_id is None):
+    if existing_user:
         # Update pending registration details for unverified/pending user (avoid duplicate rows)
         user = existing_user
         user.full_name = data.owner_name.strip()
@@ -299,6 +304,85 @@ async def resend_otp(request: Request, data: ResendOTPRequest, db: AsyncSession 
         email=normalized_email,
         resend_cooldown_seconds=cooldown
     )
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse, status_code=status.HTTP_200_OK)
+async def forgot_password(request: Request, data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Step 1 of password reset flow.
+    Accepts an email address, generates a password_reset OTP and emails it.
+    Always returns a generic success response to prevent account enumeration.
+    Rate-limited per IP; OTP layer enforces per-email cooldown and hourly cap.
+    """
+    check_ip_rate_limit(request, "auth_forgot", max_requests=5, window_seconds=60)
+    normalized_email = data.email.strip().lower()
+
+    _GENERIC_MSG = "If an account with that email exists, a password-reset code has been sent."
+
+    user_check = await db.execute(select(User).where(User.email == normalized_email))
+    user = user_check.scalar_one_or_none()
+
+    if user:
+        # Silently absorb cooldown / hourly-cap errors — never reveal the reason.
+        await otp_service.create_and_send_otp(db, user, purpose="password_reset")
+        await db.commit()
+
+    return ForgotPasswordResponse(success=True, message=_GENERIC_MSG)
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse, status_code=status.HTTP_200_OK)
+async def reset_password(request: Request, data: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Step 2 of password reset flow.
+    Validates the 6-digit reset OTP (expiry, max-5 attempts, single-use, constant-time compare),
+    validates and hashes the new password, updates the user record, and sends a security notification.
+    Does NOT issue a JWT — the user must sign in afterward.
+    Supports Google-only accounts (sets a password for the first time) and
+    marks unverified emails as verified on success.
+    """
+    check_ip_rate_limit(request, "auth_reset", max_requests=10, window_seconds=60)
+    normalized_email = data.email.strip().lower()
+
+    # Validate new password length (same 8-char rule as signup)
+    if len(data.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Password must be at least 8 characters long."
+        )
+
+    user_check = await db.execute(select(User).where(User.email == normalized_email))
+    user = user_check.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code."
+        )
+
+    # Validate OTP (expiry, attempts, constant-time compare, marks consumed)
+    is_valid, err_msg, _otp = await otp_service.verify_otp(
+        db, user, data.code, purpose="password_reset"
+    )
+    if not is_valid:
+        await db.commit()  # persist incremented attempt count
+        status_code = status.HTTP_429_TOO_MANY_REQUESTS if "Too many" in (err_msg or "") else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=status_code, detail=err_msg or "Invalid or expired verification code.")
+
+    # Hash and persist the new password
+    hashed_pwd = await asyncio.to_thread(get_password_hash, data.new_password)
+    user.hashed_password = hashed_pwd
+
+    # If the user's email was never verified (e.g. Google-flow or abandoned signup),
+    # a successful password reset proves ownership — mark it verified.
+    if not user.email_verified:
+        user.email_verified = True
+        user.email_verified_at = get_utc_now()
+
+    await db.commit()
+
+    # Fire-and-forget notification email (non-blocking; failure is silent)
+    await email_service.send_password_changed_email(normalized_email)
+
+    return ResetPasswordResponse(success=True, message="Password reset successfully. You can now sign in with your new password.")
 
 
 @router.post("/login", response_model=TokenResponse)

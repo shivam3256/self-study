@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ShieldCheck,
   RefreshCw,
+  Lock,
 } from 'lucide-react';
 import { api, setAuthToken, setStoredUser } from '../api';
 
@@ -71,18 +72,24 @@ export default function Auth({ onLoginSuccess }) {
   const googleButtonRef = useRef(null);
   const gsiReady = useRef(false);
 
-  // ─── Resend Cooldown Countdown ──────────────────────────────────────────
+  // ─── Forgot / Reset password state ──────────────────────────────────────
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // ─── Resend Cooldown Countdown (verify + reset modes) ──────────────────
   useEffect(() => {
-    if (mode !== 'verify' || resendCooldown <= 0) return;
+    if ((mode !== 'verify' && mode !== 'reset') || resendCooldown <= 0) return;
     const timer = setInterval(() => {
       setResendCooldown((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => clearInterval(timer);
   }, [mode, resendCooldown]);
 
-  // ─── Focus first empty OTP box when entering verify mode ────────────────
+  // ─── Focus first empty OTP box when entering verify or reset mode ───────
   useEffect(() => {
-    if (mode === 'verify') {
+    if (mode === 'verify' || mode === 'reset') {
       const firstEmpty = otpDigits.findIndex((d) => !d);
       const targetIdx = firstEmpty !== -1 ? firstEmpty : 0;
       setTimeout(() => {
@@ -264,7 +271,11 @@ export default function Auth({ onLoginSuccess }) {
     }
 
     if (newDigits.every((d) => d !== '')) {
-      handleVerifyCode(newDigits.join(''));
+      if (mode === 'reset') {
+        handleResetPassword(newDigits.join(''));
+      } else {
+        handleVerifyCode(newDigits.join(''));
+      }
     }
   };
 
@@ -308,7 +319,11 @@ export default function Auth({ onLoginSuccess }) {
     }
 
     if (newDigits.every((d) => d !== '')) {
-      handleVerifyCode(newDigits.join(''));
+      if (mode === 'reset') {
+        handleResetPassword(newDigits.join(''));
+      } else {
+        handleVerifyCode(newDigits.join(''));
+      }
     }
   };
 
@@ -373,6 +388,85 @@ export default function Auth({ onLoginSuccess }) {
     setMode(newMode);
     setError('');
     setSuccess('');
+  };
+
+  // ─── Forgot Password: Step 1 — email submission ───────────────────────
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    const cleanEmail = forgotEmail.trim().toLowerCase();
+    try {
+      const res = await api.auth.forgotPassword(cleanEmail);
+      // Store the email so the reset screen can use it
+      setVerifyEmail(cleanEmail);
+      setResendCooldown(60);
+      setOtpDigits(['', '', '', '', '', '']);
+      setResetNewPassword('');
+      setResetConfirmPassword('');
+      setMode('reset');
+      setSuccess(`If an account exists for ${cleanEmail}, a 6-digit code was sent.`);
+    } catch (err) {
+      // Even on error, show a generic message to avoid enumeration
+      setSuccess(`If an account exists for ${cleanEmail}, a 6-digit code was sent.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Forgot Password: Step 2 — code + new password submission ────────────
+  const handleResetPassword = async (codeOverride) => {
+    const code = codeOverride || otpDigits.join('');
+    if (code.length !== 6) {
+      setError('Please enter all 6 digits of the verification code.');
+      return;
+    }
+    if (resetNewPassword.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    setVerifyLoading(true);
+    setError('');
+    try {
+      await api.auth.resetPassword(verifyEmail, code, resetNewPassword);
+      // Clear all reset state and go back to login with a success message
+      setMode('login');
+      setOtpDigits(['', '', '', '', '', '']);
+      setResetNewPassword('');
+      setResetConfirmPassword('');
+      setForgotEmail('');
+      setVerifyEmail('');
+      setSuccess('Password reset successfully! You can now sign in with your new password.');
+    } catch (err) {
+      setError(err.message || 'Reset failed. Please check your code and try again.');
+      setOtpDigits(['', '', '', '', '', '']);
+      setTimeout(() => otpInputsRef.current[0]?.focus(), 50);
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  // ─── Resend reset OTP ─────────────────────────────────────────────────────
+  const handleResendForgotOtp = async () => {
+    if (resendCooldown > 0 || verifyLoading) return;
+    setVerifyLoading(true);
+    setError('');
+    try {
+      await api.auth.forgotPassword(verifyEmail);
+      setResendCooldown(60);
+      setSuccess('A fresh code has been sent to your email.');
+      setOtpDigits(['', '', '', '', '', '']);
+      otpInputsRef.current[0]?.focus();
+    } catch (err) {
+      setError(err.message || 'Failed to resend code. Please try again.');
+    } finally {
+      setVerifyLoading(false);
+    }
   };
 
   // ─── Google Extra Info Modal (new-user onboarding) ───────────────────────
@@ -576,7 +670,7 @@ export default function Auth({ onLoginSuccess }) {
         <div className="auth-right">
           <div className="auth-card">
             {/* Tab switcher (Visible only for Login and Register) */}
-            {mode !== 'verify' && (
+            {mode !== 'verify' && mode !== 'forgot' && mode !== 'reset' && (
               <div className="auth-tabs">
                 <button
                   id="auth-tab-login"
@@ -597,7 +691,7 @@ export default function Auth({ onLoginSuccess }) {
             )}
 
             {/* Google Sign-In button (only shown for login/register) */}
-            {mode !== 'verify' && (
+            {mode !== 'verify' && mode !== 'forgot' && mode !== 'reset' && (
               <>
                 <div className="auth-google-wrapper">
                   {googleLoading && (
@@ -695,7 +789,18 @@ export default function Auth({ onLoginSuccess }) {
                 <div className="auth-field">
                   <div className="auth-label-row">
                     <label htmlFor="login-password">Password</label>
-                    <button type="button" className="auth-forgot-link" tabIndex={-1}>
+                    <button
+                      type="button"
+                      className="auth-forgot-link"
+                      tabIndex={-1}
+                      id="auth-forgot-link"
+                      onClick={() => {
+                        setForgotEmail(email || '');
+                        setError('');
+                        setSuccess('');
+                        setMode('forgot');
+                      }}
+                    >
                       Forgot password?
                     </button>
                   </div>
@@ -879,7 +984,7 @@ export default function Auth({ onLoginSuccess }) {
               </form>
             )}
 
-            {/* ── Verify Email Screen (Step 2) ── */}
+            {/* ── Verify Email Screen (Step 2 of signup / login re-verify) ── */}
             {mode === 'verify' && (
               <div className="auth-verify-view" id="auth-verify-screen">
                 <div className="auth-verify-header">
@@ -906,7 +1011,7 @@ export default function Auth({ onLoginSuccess }) {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         maxLength={1}
-                        autoComplete={idx === 0 ? "one-time-code" : "off"}
+                        autoComplete={idx === 0 ? 'one-time-code' : 'off'}
                         value={digit}
                         onChange={(e) => handleDigitChange(idx, e.target.value)}
                         onKeyDown={(e) => handleDigitKeyDown(idx, e)}
@@ -932,7 +1037,7 @@ export default function Auth({ onLoginSuccess }) {
                     {verifyLoading ? (
                       <span className="auth-spinner" />
                     ) : (
-                      <>Verify & Continue <ArrowRight size={16} /></>
+                      <>Verify &amp; Continue <ArrowRight size={16} /></>
                     )}
                   </button>
 
@@ -945,11 +1050,7 @@ export default function Auth({ onLoginSuccess }) {
                       onClick={handleResendOtp}
                       disabled={verifyLoading || resendCooldown > 0}
                     >
-                      {resendCooldown > 0 ? (
-                        `Resend code in ${resendCooldown}s`
-                      ) : (
-                        'Resend code'
-                      )}
+                      {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
                     </button>
                   </div>
 
@@ -961,6 +1062,214 @@ export default function Auth({ onLoginSuccess }) {
                       onClick={handleBackFromVerify}
                     >
                       Wrong email? Go back
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* ── Forgot Password Screen ── */}
+            {mode === 'forgot' && (
+              <div className="auth-verify-view" id="auth-forgot-screen">
+                <div className="auth-verify-header">
+                  <div className="auth-brand-icon" style={{ margin: '0 auto 16px', background: '#1D4ED8' }}>
+                    <Lock size={22} />
+                  </div>
+                  <h2 className="auth-verify-title">Forgot your password?</h2>
+                  <p className="auth-verify-sub">
+                    Enter your account email and we'll send you a 6-digit reset code.
+                  </p>
+                </div>
+
+                <form onSubmit={handleForgotPassword} id="auth-forgot-form">
+                  <div className="auth-field" style={{ marginBottom: 20 }}>
+                    <label htmlFor="forgot-email">Email Address</label>
+                    <div className="auth-input-wrap">
+                      <Mail size={15} className="auth-input-icon" />
+                      <input
+                        id="forgot-email"
+                        type="email"
+                        placeholder="owner@library.com"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        autoComplete="email"
+                        autoFocus
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    id="auth-forgot-submit"
+                    type="submit"
+                    className="auth-btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="auth-spinner" />
+                    ) : (
+                      <>Send Reset Code <ArrowRight size={16} /></>
+                    )}
+                  </button>
+
+                  <div className="auth-verify-footer">
+                    <button
+                      id="auth-back-to-login-from-forgot"
+                      type="button"
+                      className="auth-back-link"
+                      onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+                    >
+                      ← Back to Sign In
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* ── Reset Password Screen ── */}
+            {mode === 'reset' && (
+              <div className="auth-verify-view" id="auth-reset-screen">
+                <div className="auth-verify-header">
+                  <div className="auth-brand-icon" style={{ margin: '0 auto 16px', background: '#1D4ED8' }}>
+                    <Lock size={22} />
+                  </div>
+                  <h2 className="auth-verify-title">Reset your password</h2>
+                  <p className="auth-verify-sub">
+                    Enter the 6-digit code sent to<br />
+                    <span className="auth-verify-email-badge">{verifyEmail}</span>
+                    <br />then choose a new password.
+                  </p>
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); handleResetPassword(); }} id="auth-reset-form">
+                  {/* 6-digit OTP boxes — reuse existing component */}
+                  <div className="auth-otp-row">
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => (otpInputsRef.current[idx] = el)}
+                        id={`reset-otp-digit-${idx}`}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={1}
+                        autoComplete={idx === 0 ? 'one-time-code' : 'off'}
+                        value={digit}
+                        onChange={(e) => handleDigitChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                        onPaste={handleOtpPaste}
+                        className={`auth-otp-input ${digit ? 'filled' : ''}`}
+                        disabled={verifyLoading}
+                      />
+                    ))}
+                  </div>
+
+                  <p className="auth-otp-hint">Enter or paste the 6-digit code. Expires in 10 minutes.</p>
+
+                  {/* New Password */}
+                  <div className="auth-field" style={{ marginTop: 16 }}>
+                    <label htmlFor="reset-new-password">New Password</label>
+                    <div className="auth-input-wrap">
+                      <KeyRound size={15} className="auth-input-icon" />
+                      <input
+                        id="reset-new-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Min. 8 characters"
+                        value={resetNewPassword}
+                        onChange={(e) => setResetNewPassword(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                        disabled={verifyLoading}
+                      />
+                      <button
+                        type="button"
+                        className="auth-eye-btn"
+                        onClick={() => setShowPassword((v) => !v)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="auth-field">
+                    <label htmlFor="reset-confirm-password">Confirm Password</label>
+                    <div className="auth-input-wrap">
+                      <KeyRound size={15} className="auth-input-icon" />
+                      <input
+                        id="reset-confirm-password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="Re-enter new password"
+                        value={resetConfirmPassword}
+                        onChange={(e) => setResetConfirmPassword(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                        disabled={verifyLoading}
+                      />
+                      <button
+                        type="button"
+                        className="auth-eye-btn"
+                        onClick={() => setShowConfirmPassword((v) => !v)}
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                    {resetNewPassword && resetConfirmPassword && resetNewPassword !== resetConfirmPassword && (
+                      <p className="auth-field-hint-error">Passwords do not match.</p>
+                    )}
+                  </div>
+
+                  <button
+                    id="auth-reset-submit"
+                    type="submit"
+                    className="auth-btn-primary"
+                    disabled={
+                      verifyLoading ||
+                      otpDigits.join('').length !== 6 ||
+                      resetNewPassword.length < 8 ||
+                      resetNewPassword !== resetConfirmPassword
+                    }
+                    style={{ marginTop: 4 }}
+                  >
+                    {verifyLoading ? (
+                      <span className="auth-spinner" />
+                    ) : (
+                      <>Set New Password <ArrowRight size={16} /></>
+                    )}
+                  </button>
+
+                  <div className="auth-resend-row">
+                    <span style={{ color: '#6B7280' }}>Didn't receive the code?</span>
+                    <button
+                      id="auth-reset-resend-btn"
+                      type="button"
+                      className="auth-link-btn"
+                      onClick={handleResendForgotOtp}
+                      disabled={verifyLoading || resendCooldown > 0}
+                    >
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+                    </button>
+                  </div>
+
+                  <div className="auth-verify-footer">
+                    <button
+                      id="auth-back-to-forgot"
+                      type="button"
+                      className="auth-back-link"
+                      onClick={() => {
+                        setMode('forgot');
+                        setError('');
+                        setSuccess('');
+                        setOtpDigits(['', '', '', '', '', '']);
+                        setResetNewPassword('');
+                        setResetConfirmPassword('');
+                      }}
+                    >
+                      ← Use a different email
                     </button>
                   </div>
                 </form>
@@ -1517,6 +1826,12 @@ function AuthStyles() {
       .auth-back-link:hover {
         color: #111827;
         text-decoration: underline;
+      }
+
+      .auth-field-hint-error {
+        font-size: 0.75rem;
+        color: #991B1B;
+        margin: 4px 0 0;
       }
 
       /* ── Modal Overlay for Onboarding ────────────────────────────────────── */

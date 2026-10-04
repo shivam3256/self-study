@@ -116,6 +116,16 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email }),
       }),
+    forgotPassword: (email) =>
+      request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+    resetPassword: (email, code, new_password) =>
+      request('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email, code, new_password }),
+      }),
     googleAuth: (credential, extraData = {}) =>
       request('/auth/google', {
         method: 'POST',

@@ -103,6 +103,22 @@ class TenantResponse(BaseModel):
     is_active: bool
     created_at: datetime
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ForgotPasswordResponse(BaseModel):
+    success: bool = True
+    message: str
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+class ResetPasswordResponse(BaseModel):
+    success: bool = True
+    message: str
+
 class TenantUpdateRequest(BaseModel):
     name: Optional[str] = None
     owner_name: Optional[str] = None
