@@ -54,7 +54,7 @@ async def run_migration():
                     for p in existing_plans:
                         p_id, t_id, s_type = p[0], p[1], (p[2] or "").lower()
                         t_shifts = sync_conn.execute(
-                            text("SELECT id FROM shifts WHERE tenant_id = :tid AND is_active = 1"),
+                            text("SELECT id FROM shifts WHERE tenant_id = :tid AND is_active = true"),
                             {"tid": t_id}
                         ).fetchall()
                         if not t_shifts:
