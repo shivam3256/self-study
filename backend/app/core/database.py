@@ -23,7 +23,9 @@ engine = create_async_engine(
     db_url,
     echo=False,
     future=True,
-    connect_args=connect_args
+    connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=300
 )
 
 AsyncSessionLocal = async_sessionmaker(
