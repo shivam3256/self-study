@@ -108,8 +108,6 @@ async def lifespan(app: FastAPI):
                 ps_count = sync_conn.execute(text("SELECT COUNT(*) FROM plan_shifts")).scalar()
                 if ps_count == 0:
                     import uuid
-                    from datetime import datetime, timezone
-                    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
                     existing_plans = sync_conn.execute(text("SELECT id, tenant_id, shift_type FROM plans")).fetchall()
                     for p in existing_plans:
                         p_id, t_id, s_type = p[0], p[1], (p[2] or "").lower()
@@ -127,9 +125,9 @@ async def lifespan(app: FastAPI):
                             sync_conn.execute(
                                 text("""
                                     INSERT INTO plan_shifts (id, tenant_id, plan_id, shift_id, created_at, updated_at)
-                                    VALUES (:id, :tid, :pid, :shid, :now, :now)
+                                    VALUES (:id, :tid, :pid, :shid, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                                 """),
-                                {"id": str(uuid.uuid4()), "tid": t_id, "pid": p_id, "shid": sh_id, "now": now_str}
+                                {"id": str(uuid.uuid4()), "tid": t_id, "pid": p_id, "shid": sh_id}
                             )
 
             # Data migration: populate allocations & allocation_shifts from legacy seat_allocations if empty
@@ -140,6 +138,21 @@ async def lifespan(app: FastAPI):
                         text("SELECT id, tenant_id, student_id, desk_id, shift_id, start_date, end_date, status, created_at, updated_at FROM seat_allocations")
                     ).fetchall()
                     import uuid
+                    from datetime import date, datetime
+                    def parse_d(val):
+                        if isinstance(val, str):
+                            try:
+                                return date.fromisoformat(val[:10])
+                            except Exception:
+                                pass
+                        return val
+                    def parse_dt(val):
+                        if isinstance(val, str):
+                            try:
+                                return datetime.fromisoformat(val.replace(" ", "T"))
+                            except Exception:
+                                pass
+                        return val
                     for la in legacy_allocs:
                         la_id, t_id, st_id, d_id, sh_id, s_date, e_date, status, c_at, u_at = la
                         new_status = "active" if status == "active" else "cancelled"
@@ -148,14 +161,14 @@ async def lifespan(app: FastAPI):
                                 INSERT INTO allocations (id, tenant_id, student_id, seat_id, start_date, end_date, status, created_at, updated_at)
                                 VALUES (:id, :tid, :stid, :seatid, :sdate, :edate, :status, :cat, :uat)
                             """),
-                            {"id": la_id, "tid": t_id, "stid": st_id, "seatid": d_id, "sdate": s_date, "edate": e_date, "status": new_status, "cat": c_at, "uat": u_at}
+                            {"id": la_id, "tid": t_id, "stid": st_id, "seatid": d_id, "sdate": parse_d(s_date), "edate": parse_d(e_date), "status": new_status, "cat": parse_dt(c_at), "uat": parse_dt(u_at)}
                         )
                         sync_conn.execute(
                             text("""
                                 INSERT INTO allocation_shifts (id, tenant_id, allocation_id, shift_id, seat_id, start_date, end_date, status, created_at, updated_at)
                                 VALUES (:id, :tid, :aid, :shid, :seatid, :sdate, :edate, :status, :cat, :uat)
                             """),
-                            {"id": str(uuid.uuid4()), "tid": t_id, "aid": la_id, "shid": sh_id, "seatid": d_id, "sdate": s_date, "edate": e_date, "status": new_status, "cat": c_at, "uat": u_at}
+                            {"id": str(uuid.uuid4()), "tid": t_id, "aid": la_id, "shid": sh_id, "seatid": d_id, "sdate": parse_d(s_date), "edate": parse_d(e_date), "status": new_status, "cat": parse_dt(c_at), "uat": parse_dt(u_at)}
                         )
 
             # PostgreSQL exclusion constraint setup

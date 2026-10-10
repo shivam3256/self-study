@@ -67,9 +67,9 @@ async def run_migration():
                             sync_conn.execute(
                                 text("""
                                     INSERT INTO plan_shifts (id, tenant_id, plan_id, shift_id, created_at, updated_at)
-                                    VALUES (:id, :tid, :pid, :shid, :now, :now)
+                                    VALUES (:id, :tid, :pid, :shid, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                                 """),
-                                {"id": str(uuid.uuid4()), "tid": t_id, "pid": p_id, "shid": sh_id, "now": now_str}
+                                {"id": str(uuid.uuid4()), "tid": t_id, "pid": p_id, "shid": sh_id}
                             )
                         migrated_plans += 1
                     print(f"Successfully migrated {migrated_plans} plan(s) to plan_shifts.")
@@ -82,6 +82,21 @@ async def run_migration():
                     legacy_allocs = sync_conn.execute(
                         text("SELECT id, tenant_id, student_id, desk_id, shift_id, start_date, end_date, status, created_at, updated_at FROM seat_allocations")
                     ).fetchall()
+                    from datetime import date, datetime
+                    def parse_d(val):
+                        if isinstance(val, str):
+                            try:
+                                return date.fromisoformat(val[:10])
+                            except Exception:
+                                pass
+                        return val
+                    def parse_dt(val):
+                        if isinstance(val, str):
+                            try:
+                                return datetime.fromisoformat(val.replace(" ", "T"))
+                            except Exception:
+                                pass
+                        return val
                     for la in legacy_allocs:
                         la_id, t_id, st_id, d_id, sh_id, s_date, e_date, status, c_at, u_at = la
                         new_status = "active" if status == "active" else "cancelled"
@@ -90,14 +105,14 @@ async def run_migration():
                                 INSERT INTO allocations (id, tenant_id, student_id, seat_id, start_date, end_date, status, created_at, updated_at)
                                 VALUES (:id, :tid, :stid, :seatid, :sdate, :edate, :status, :cat, :uat)
                             """),
-                            {"id": la_id, "tid": t_id, "stid": st_id, "seatid": d_id, "sdate": s_date, "edate": e_date, "status": new_status, "cat": c_at, "uat": u_at}
+                            {"id": la_id, "tid": t_id, "stid": st_id, "seatid": d_id, "sdate": parse_d(s_date), "edate": parse_d(e_date), "status": new_status, "cat": parse_dt(c_at), "uat": parse_dt(u_at)}
                         )
                         sync_conn.execute(
                             text("""
                                 INSERT INTO allocation_shifts (id, tenant_id, allocation_id, shift_id, seat_id, start_date, end_date, status, created_at, updated_at)
                                 VALUES (:id, :tid, :aid, :shid, :seatid, :sdate, :edate, :status, :cat, :uat)
                             """),
-                            {"id": str(uuid.uuid4()), "tid": t_id, "aid": la_id, "shid": sh_id, "seatid": d_id, "sdate": s_date, "edate": e_date, "status": new_status, "cat": c_at, "uat": u_at}
+                            {"id": str(uuid.uuid4()), "tid": t_id, "aid": la_id, "shid": sh_id, "seatid": d_id, "sdate": parse_d(s_date), "edate": parse_d(e_date), "status": new_status, "cat": parse_dt(c_at), "uat": parse_dt(u_at)}
                         )
                     print(f"Successfully migrated {len(legacy_allocs)} allocation(s).")
 
