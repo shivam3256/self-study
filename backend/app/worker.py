@@ -39,6 +39,19 @@ if HAS_CELERY:
             send_daily_reminders.s(),
             name="send-daily-reminders-8am"
         )
+        # Trigger daily at midnight to update active -> overdue -> expired allocations
+        sender.add_periodic_task(
+            crontab(hour=0, minute=5),
+            process_daily_allocations_lifecycle.s(),
+            name="process-daily-allocations-lifecycle"
+        )
+
+@celery_app.task
+def process_daily_allocations_lifecycle():
+    """
+    Synchronous entry point for Celery to process allocations active -> overdue -> expired.
+    """
+    return asyncio.run(_process_allocations_lifecycle_async())
 
 @celery_app.task
 def send_daily_reminders():
@@ -46,6 +59,7 @@ def send_daily_reminders():
     Synchronous entry point for Celery to process all tenants' reminders.
     """
     return asyncio.run(_process_all_tenants())
+
 
 @celery_app.task(
     name="app.worker.send_whatsapp_task",
@@ -148,3 +162,11 @@ async def _process_all_tenants():
             await ReminderService.process_tenant_reminders(db, tenant.id)
     
     await engine.dispose()
+
+async def _process_allocations_lifecycle_async():
+    from app.services.allocation_service import AllocationService
+    engine = create_async_engine(settings.DATABASE_URL)
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_factory() as db:
+        await AllocationService.process_overdue_and_expirations(db)
+    await engine.dispose()

@@ -1,0 +1,428 @@
+{
+    "metrics": {
+        "group_duration": {
+            "med": 1797.4543,
+            "max": 68337.1604,
+            "p(90)": 4442.76794,
+            "p(95)": 5864.827780000003,
+            "avg": 2919.456311877989,
+            "min": 115.9225
+        },
+        "vus_max": {
+            "value": 100,
+            "min": 100,
+            "max": 100
+        },
+        "custom_error_rate": {
+            "fails": 1486,
+            "passes": 9,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0.006020066889632107
+        },
+        "http_req_receiving": {
+            "avg": 6.573734499679966,
+            "min": 0,
+            "med": 0,
+            "max": 4292.6118,
+            "p(90)": 9.812210000000036,
+            "p(95)": 22.62036000000001
+        },
+        "data_received": {
+            "count": 200828490,
+            "rate": 665722.3464123417
+        },
+        "checks": {
+            "passes": 9821,
+            "fails": 46,
+            "value": 0.9953379953379954
+        },
+        "iterations": {
+            "rate": 1.3988793631123164,
+            "count": 422
+        },
+        "custom_students_created": {
+            "count": 92,
+            "rate": 0.3049689606785145
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0.9661288884147641,
+            "min": 0,
+            "med": 0,
+            "max": 272.8906,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "data_sent": {
+            "count": 1247670,
+            "rate": 4135.876338801762
+        },
+        "iteration_duration": {
+            "min": 11366.2425,
+            "med": 34959.905249999996,
+            "max": 114104.4179,
+            "p(90)": 75214.37382000002,
+            "p(95)": 86354.07037999999,
+            "avg": 35373.956678909955
+        },
+        "http_req_blocked": {
+            "avg": 2.034803296351609,
+            "min": 0,
+            "med": 0,
+            "max": 1096.8895,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_connecting": {
+            "p(95)": 0,
+            "avg": 1.048798399829315,
+            "min": 0,
+            "med": 0,
+            "max": 1049.9329,
+            "p(90)": 0
+        },
+        "custom_expenses_created": {
+            "rate": 0.2983392006637641,
+            "count": 90
+        },
+        "http_req_duration": {
+            "p(90)": 2303.80963,
+            "p(95)": 3033.3479,
+            "avg": 1640.8881390975032,
+            "min": 31.4222,
+            "med": 995.1348,
+            "max": 60000.9382,
+            "thresholds": {
+                "p(95)<2000": true
+            }
+        },
+        "vus": {
+            "value": 3,
+            "min": 0,
+            "max": 100
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 1494.2892458083204,
+            "min": 31.4222,
+            "med": 988.8056,
+            "max": 43693.4484,
+            "p(90)": 2268.97371,
+            "p(95)": 2905.2165449999957
+        },
+        "custom_api_duration": {
+            "avg": 1646.6965059081585,
+            "min": 31.4222,
+            "med": 1005.827,
+            "max": 60000.6253,
+            "p(90)": 2333.5863400000003,
+            "p(95)": 3267.7744899999993
+        },
+        "http_req_failed": {
+            "passes": 46,
+            "fails": 9328,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0.004907190100277363
+        },
+        "http_req_sending": {
+            "max": 1465.1057,
+            "p(90)": 0.51937,
+            "p(95)": 0.594735,
+            "avg": 0.43368451034777145,
+            "min": 0,
+            "med": 0
+        },
+        "http_req_waiting": {
+            "max": 60000.9382,
+            "p(90)": 2291.0419600000005,
+            "p(95)": 3007.6861850000005,
+            "avg": 1633.8807200874733,
+            "min": 25.3372,
+            "med": 991.39005
+        },
+        "http_reqs": {
+            "count": 9374,
+            "rate": 31.07368518913472
+        }
+    },
+    "setup_data": {
+        "tokens": [
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNzkwZTA0Yy00ODEyLTQ0YTUtYjMzNi02NTVhNmQ4NjU5NGMiLCJ0ZW5hbnRfaWQiOiJiZmQzMTEwOC03Y2VjLTRiNGYtOTUyNS1lMzRkNmRjMjRiYjQiLCJyb2xlIjoib3duZXIiLCJlbWFpbCI6Imt1bWFyc2luZ2hzaGl2YW0zMjVAZ21haWwuY29tIiwidGVuYW50X25hbWUiOiJhcGV4IHByZWRhdG9yIGxpYnJhcnkiLCJleHAiOjE3OTE5ODU0MTcsImlhdCI6MTc5MTM4MDYxN30.7VLbo7uUucanpml3rGo1A0LD1DpCrEAwjfwOiqlp-ws",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyODNiNDFiNi00YTg0LTQ0OTgtYWJmNy1mNGFlMGU0MzkyNDAiLCJ0ZW5hbnRfaWQiOiIwNTc3ZjNkYi1iOThhLTQ3NjgtOTZmNC0wYjRiZjE0NjhmNGUiLCJyb2xlIjoib3duZXIiLCJlbWFpbCI6Imt1bWFyc2luZ2hzaGl2YW05MDVAZ21haWwuY29tIiwidGVuYW50X25hbWUiOiJzaGl2YW0iLCJleHAiOjE3OTE5ODU0MTgsImlhdCI6MTc5MTM4MDYxOH0.uEj0eOMMFKgrS-PeZVtPzR2EOgIRtRV5FGB7nZeoWpo"
+        ]
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "01_Frontend_Static_Assets": {
+                "name": "01_Frontend_Static_Assets",
+                "path": "::01_Frontend_Static_Assets",
+                "id": "986d258b2cfdc8b27948f1d27657ddb3",
+                "groups": {},
+                "checks": {
+                        "Frontend Home status is 200": {
+                            "id": "6f1886ccee7c04be477a0b298b47acec",
+                            "passes": 501,
+                            "fails": 0,
+                            "name": "Frontend Home status is 200",
+                            "path": "::01_Frontend_Static_Assets::Frontend Home status is 200"
+                        },
+                        "Frontend Health status is 200": {
+                            "id": "3c6b2e6b4ee6b14bd7a64a163d794bba",
+                            "passes": 501,
+                            "fails": 0,
+                            "name": "Frontend Health status is 200",
+                            "path": "::01_Frontend_Static_Assets::Frontend Health status is 200"
+                        },
+                        "JS Asset status is 200": {
+                            "name": "JS Asset status is 200",
+                            "path": "::01_Frontend_Static_Assets::JS Asset status is 200",
+                            "id": "6e71cdab61323da72fe5207b96e3a06f",
+                            "passes": 501,
+                            "fails": 0
+                        }
+                    }
+            },
+            "02_Auth_Profile": {
+                "path": "::02_Auth_Profile",
+                "id": "660f1f0c222f82d94278488077180db1",
+                "groups": {},
+                "checks": {
+                        "Auth /me status is 200": {
+                            "name": "Auth /me status is 200",
+                            "path": "::02_Auth_Profile::Auth /me status is 200",
+                            "id": "e16b6c5cb7a22318d0722e8055f16bc0",
+                            "passes": 492,
+                            "fails": 7
+                        },
+                        "Auth /tenant status is 200": {
+                            "name": "Auth /tenant status is 200",
+                            "path": "::02_Auth_Profile::Auth /tenant status is 200",
+                            "id": "301a3cb2c6a283e5719533a77e02ecde",
+                            "passes": 494,
+                            "fails": 4
+                        }
+                    },
+                "name": "02_Auth_Profile"
+            },
+            "03_Dashboard_Summary": {
+                "path": "::03_Dashboard_Summary",
+                "id": "bb80845ada3a425e8f16edf4628383c2",
+                "groups": {},
+                "checks": {
+                        "Dashboard Summary status is 200": {
+                            "name": "Dashboard Summary status is 200",
+                            "path": "::03_Dashboard_Summary::Dashboard Summary status is 200",
+                            "id": "e082349a834dbace2bee44af0122f86a",
+                            "passes": 493,
+                            "fails": 2
+                        },
+                        "Dashboard has valid structure": {
+                            "name": "Dashboard has valid structure",
+                            "path": "::03_Dashboard_Summary::Dashboard has valid structure",
+                            "id": "0928125c6142e8bebd8a5d70ce909999",
+                            "passes": 495,
+                            "fails": 0
+                        }
+                    },
+                "name": "03_Dashboard_Summary"
+            },
+            "04_Desks_SeatMap": {
+                "name": "04_Desks_SeatMap",
+                "path": "::04_Desks_SeatMap",
+                "id": "6df9c7ed8e6d390b11f411dec65c683d",
+                "groups": {},
+                "checks": {
+                        "Desks list status is 200": {
+                            "passes": 487,
+                            "fails": 4,
+                            "name": "Desks list status is 200",
+                            "path": "::04_Desks_SeatMap::Desks list status is 200",
+                            "id": "4217ecd6cb1cf235727ee2136d38fca6"
+                        },
+                        "Seat Map status is 200": {
+                            "path": "::04_Desks_SeatMap::Seat Map status is 200",
+                            "id": "0b092fa7495aae7814e69285a7b4d932",
+                            "passes": 489,
+                            "fails": 1,
+                            "name": "Seat Map status is 200"
+                        }
+                    }
+            },
+            "05_Shifts_and_Plans": {
+                "name": "05_Shifts_and_Plans",
+                "path": "::05_Shifts_and_Plans",
+                "id": "35b90761fcfddfb5ff5019e71e18c98b",
+                "groups": {},
+                "checks": {
+                        "Shifts list status is 200": {
+                            "id": "978a4424573517d47617c36e16079b20",
+                            "passes": 481,
+                            "fails": 5,
+                            "name": "Shifts list status is 200",
+                            "path": "::05_Shifts_and_Plans::Shifts list status is 200"
+                        },
+                        "Plans list status is 200": {
+                            "path": "::05_Shifts_and_Plans::Plans list status is 200",
+                            "id": "23988e4516ce46aedbe5152241dc864b",
+                            "passes": 478,
+                            "fails": 4,
+                            "name": "Plans list status is 200"
+                        }
+                    }
+            },
+            "06_Students_Directory": {
+                "name": "06_Students_Directory",
+                "path": "::06_Students_Directory",
+                "id": "a9d03369734f4db655da07b6f93cad4b",
+                "groups": {},
+                "checks": {
+                        "Students list status is 200": {
+                            "id": "fc01581360429dc615ef10677c172d2b",
+                            "passes": 473,
+                            "fails": 4,
+                            "name": "Students list status is 200",
+                            "path": "::06_Students_Directory::Students list status is 200"
+                        },
+                        "Students search status is 200": {
+                            "passes": 469,
+                            "fails": 4,
+                            "name": "Students search status is 200",
+                            "path": "::06_Students_Directory::Students search status is 200",
+                            "id": "a6d30a3ab73366f80941012d3cded888"
+                        }
+                    }
+            },
+            "07_Allocations": {
+                "name": "07_Allocations",
+                "path": "::07_Allocations",
+                "id": "27311b05d93ac250ad91baee7dd3094d",
+                "groups": {},
+                "checks": {
+                        "Allocations list status is 200": {
+                            "name": "Allocations list status is 200",
+                            "path": "::07_Allocations::Allocations list status is 200",
+                            "id": "645204ea93732b4da05bf2860f6556e6",
+                            "passes": 465,
+                            "fails": 1
+                        }
+                    }
+            },
+            "08_Payments_Dues": {
+                "name": "08_Payments_Dues",
+                "path": "::08_Payments_Dues",
+                "id": "59f14864f68263a256606e8800d573d2",
+                "groups": {},
+                "checks": {
+                        "Payments list status is 200": {
+                            "fails": 3,
+                            "name": "Payments list status is 200",
+                            "path": "::08_Payments_Dues::Payments list status is 200",
+                            "id": "5c31741a625b5c020f5d771a783a1fa8",
+                            "passes": 458
+                        },
+                        "Outstanding dues status is 200": {
+                            "name": "Outstanding dues status is 200",
+                            "path": "::08_Payments_Dues::Outstanding dues status is 200",
+                            "id": "7fe4b0f9f5f89d1add81fa7691b68baa",
+                            "passes": 451,
+                            "fails": 2
+                        }
+                    }
+            },
+            "09_Attendance_Today": {
+                "name": "09_Attendance_Today",
+                "path": "::09_Attendance_Today",
+                "id": "635161f0f7bd93fae105464c217e973e",
+                "groups": {},
+                "checks": {
+                        "Attendance today status is 200": {
+                            "id": "c8ea01b78793b293d3ceba79f9a98b68",
+                            "passes": 442,
+                            "fails": 0,
+                            "name": "Attendance today status is 200",
+                            "path": "::09_Attendance_Today::Attendance today status is 200"
+                        }
+                    }
+            },
+            "10_Expenses_Budget": {
+                "name": "10_Expenses_Budget",
+                "path": "::10_Expenses_Budget",
+                "id": "18c6bcb9e90403e175bab439886f4bb8",
+                "groups": {},
+                "checks": {
+                        "Expenses list status is 200": {
+                            "id": "b61ef1f7fddfa9ed09bc778ddff8d3ed",
+                            "passes": 436,
+                            "fails": 1,
+                            "name": "Expenses list status is 200",
+                            "path": "::10_Expenses_Budget::Expenses list status is 200"
+                        },
+                        "Expenses summary status is 200": {
+                            "name": "Expenses summary status is 200",
+                            "path": "::10_Expenses_Budget::Expenses summary status is 200",
+                            "id": "db440b9b98090736a9e443cd30a6d735",
+                            "passes": 428,
+                            "fails": 1
+                        }
+                    }
+            },
+            "11_Reminders_Logs": {
+                "name": "11_Reminders_Logs",
+                "path": "::11_Reminders_Logs",
+                "id": "dfe4cce0d36a5eeedbc88407eefe3302",
+                "groups": {},
+                "checks": {
+                        "Reminders log status is 200": {
+                            "name": "Reminders log status is 200",
+                            "path": "::11_Reminders_Logs::Reminders log status is 200",
+                            "id": "05381f3698a0f763426cd039a1702909",
+                            "passes": 425,
+                            "fails": 2
+                        }
+                    }
+            },
+            "12_Safe_Mutation_Lifecycle": {
+                "checks": {
+                    "Create Student status is 201": {
+                        "id": "ee754167b82575ee10bd071110432472",
+                        "passes": 92,
+                        "fails": 0,
+                        "name": "Create Student status is 201",
+                        "path": "::12_Safe_Mutation_Lifecycle::Create Student status is 201"
+                    },
+                    "Delete Student status is 200 or 204": {
+                        "name": "Delete Student status is 200 or 204",
+                        "path": "::12_Safe_Mutation_Lifecycle::Delete Student status is 200 or 204",
+                        "id": "11d8f570b7d9cf45a599a116cd6a2980",
+                        "passes": 91,
+                        "fails": 1
+                    },
+                    "Create Expense status is 201": {
+                        "path": "::12_Safe_Mutation_Lifecycle::Create Expense status is 201",
+                        "id": "8f3c3f50e6c69bc3909a932812072521",
+                        "passes": 90,
+                        "fails": 0,
+                        "name": "Create Expense status is 201"
+                    },
+                    "Delete Expense status is 200 or 204": {
+                        "name": "Delete Expense status is 200 or 204",
+                        "path": "::12_Safe_Mutation_Lifecycle::Delete Expense status is 200 or 204",
+                        "id": "237a93c69add3f4c3739b1ff06b824e8",
+                        "passes": 89,
+                        "fails": 0
+                    }
+                },
+                "name": "12_Safe_Mutation_Lifecycle",
+                "path": "::12_Safe_Mutation_Lifecycle",
+                "id": "260ecc8eaeb755202413124c3232d50d",
+                "groups": {}
+            }
+        },
+        "checks": {},
+        "name": ""
+    }
+}

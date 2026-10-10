@@ -56,7 +56,9 @@ async def seed_data():
             email="owner@apexlibrary.com",
             hashed_password=get_password_hash("admin123"),
             role="owner",
-            is_active=True
+            is_active=True,
+            email_verified=True,
+            email_verified_at=get_utc_now()
         )
         staff = User(
             tenant_id=tenant.id,
@@ -64,7 +66,9 @@ async def seed_data():
             email="staff@apexlibrary.com",
             hashed_password=get_password_hash("staff123"),
             role="front_desk",
-            is_active=True
+            is_active=True,
+            email_verified=True,
+            email_verified_at=get_utc_now()
         )
         db.add_all([owner, staff])
 

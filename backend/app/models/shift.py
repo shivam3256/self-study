@@ -13,4 +13,4 @@ class Shift(TenantScopedModel):
     capacity = Column(Integer, default=50, nullable=False)
 
     tenant = relationship("Tenant", back_populates="shifts")
-    allocations = relationship("SeatAllocation", back_populates="shift", cascade="all, delete-orphan")
+    allocation_shifts = relationship("AllocationShift", back_populates="shift", cascade="all, delete-orphan")

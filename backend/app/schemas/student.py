@@ -5,6 +5,7 @@ from datetime import date, datetime
 class StudentCreate(BaseModel):
     admission_number: Optional[str] = None
     full_name: str
+    gender: Optional[str] = None  # "male", "female", "other"
     phone: str
     email: Optional[EmailStr] = None
     photo_url: Optional[str] = None
@@ -17,8 +18,16 @@ class StudentCreate(BaseModel):
     expiry_date: Optional[date] = None
     notes: Optional[str] = None
 
+    # Optional seat allocation directly during student registration
+    assign_seat: bool = False
+    desk_id: Optional[str] = None
+    shift_id: Optional[str] = None
+    allocation_start_date: Optional[date] = None
+    allocation_end_date: Optional[date] = None
+
 class StudentUpdate(BaseModel):
     full_name: Optional[str] = None
+    gender: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[EmailStr] = None
     photo_url: Optional[str] = None
@@ -38,6 +47,7 @@ class StudentResponse(BaseModel):
     tenant_id: str
     admission_number: str
     full_name: str
+    gender: Optional[str] = None
     phone: str
     email: Optional[str] = None
     photo_url: Optional[str] = None
@@ -55,6 +65,11 @@ class StudentResponse(BaseModel):
     created_at: datetime
     
     # Active allocation if any
+    current_allocation_id: Optional[str] = None
+    current_desk_id: Optional[str] = None
     current_desk_number: Optional[str] = None
+    current_shift_id: Optional[str] = None
     current_shift_name: Optional[str] = None
+    current_desk_category: Optional[str] = None
+
 

@@ -13,7 +13,7 @@ from app.models.attendance import Attendance
 from app.models.payment import Payment
 
 from app.models.shift import Shift
-from app.models.allocation import SeatAllocation
+from app.models.allocation import SeatAllocation, AllocationShift
 from app.schemas.dashboard import DashboardSummary, ShiftOccupancyStat
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
@@ -73,21 +73,24 @@ async def get_dashboard_summary(
         select(Shift).where(Shift.tenant_id == tenant_id, Shift.is_active == True).order_by(Shift.start_time.asc())
     )
     shifts = shifts_res.scalars().all()
+    full_shifts_res = await db.execute(
+        select(Shift.id).where(Shift.tenant_id == tenant_id, Shift.code == "FULL")
+    )
+    full_shift_ids = [row[0] for row in full_shifts_res.all()]
+
     shifts_breakdown = []
     for s in shifts:
-        # Count active allocations for this shift or full day
-        is_match = (
-            (SeatAllocation.shift_id == s.id)
-            if s.code == "FULL"
-            else or_(SeatAllocation.shift_id == s.id, SeatAllocation.shift.has(code="FULL"))
-        )
+        target_shift_ids = [s.id]
+        if s.code != "FULL":
+            target_shift_ids.extend([fid for fid in full_shift_ids if fid != s.id])
+
         occ_count = await db.scalar(
-            select(func.count(func.distinct(SeatAllocation.desk_id))).where(
-                SeatAllocation.tenant_id == tenant_id,
-                SeatAllocation.status == "active",
-                SeatAllocation.start_date <= today,
-                SeatAllocation.end_date >= today,
-                is_match
+            select(func.count(func.distinct(AllocationShift.seat_id))).where(
+                AllocationShift.tenant_id == tenant_id,
+                AllocationShift.status == "active",
+                AllocationShift.shift_id.in_(target_shift_ids),
+                AllocationShift.start_date <= today,
+                AllocationShift.end_date >= today
             )
         ) or 0
         cap = s.capacity if s.capacity > 0 else (total_desks or 1)

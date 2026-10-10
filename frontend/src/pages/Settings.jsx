@@ -13,9 +13,13 @@ import {
   Sparkles,
   Users,
   Receipt,
+  Grid,
+  Layers,
   X,
 } from 'lucide-react';
 import { api, setStoredUser } from '../api';
+import SeatManagementModal from '../components/SeatManagementModal';
+import OnboardingSeatsModal from '../components/OnboardingSeatsModal';
 
 export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRefreshData, onLogout }) {
   const [activeSection, setActiveSection] = useState('library'); // 'library', 'shifts', 'plans', 'danger'
@@ -52,7 +56,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     code: '',
     duration_days: 30,
     price: '',
-    shift_type: 'single',
+    shift_ids: [],
     description: '',
   });
 
@@ -155,6 +159,10 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
   // Handle New Plan Creation
   const handleCreatePlan = async (e) => {
     e.preventDefault();
+    if (!newPlan.shift_ids || newPlan.shift_ids.length === 0) {
+      setFeedbackMessage({ type: 'error', text: 'At least one operating shift is required for a membership plan.' });
+      return;
+    }
     setActionLoading('create-plan');
     try {
       await api.plans.create({
@@ -163,10 +171,11 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
         price: Number(newPlan.price),
         duration_days: Number(newPlan.duration_days),
         duration_months: Math.round(Number(newPlan.duration_days) / 30) || 1,
+        shift_ids: newPlan.shift_ids,
         is_active: true,
       });
       setShowNewPlanModal(false);
-      setNewPlan({ name: '', code: '', duration_days: 30, price: '', shift_type: 'single', description: '' });
+      setNewPlan({ name: '', code: '', duration_days: 30, price: '', shift_ids: [], description: '' });
       setFeedbackMessage({ type: 'success', text: `Membership plan "${newPlan.name}" added!` });
       onRefreshData();
     } catch (err) {
@@ -200,7 +209,15 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           onClick={() => { setActiveSection('library'); setFeedbackMessage({ type: '', text: '' }); }}
         >
           <Building2 size={16} />
-          <span>Library Profile & Branding</span>
+          <span>Library Profile &amp; Branding</span>
+        </button>
+
+        <button
+          className={`btn ${activeSection === 'seats' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => { setActiveSection('seats'); setFeedbackMessage({ type: '', text: '' }); }}
+        >
+          <Grid size={16} />
+          <span>Seats &amp; Floor Zones</span>
         </button>
 
         <button
@@ -231,7 +248,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           }}
         >
           <AlertTriangle size={16} />
-          <span>Account & Danger Zone</span>
+          <span>Account &amp; Danger Zone</span>
         </button>
       </div>
 
@@ -466,6 +483,18 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
       )}
 
       {/* ─────────────────────────────────────────────────────────────
+          1.5 SEATS & FLOOR ZONES CONFIGURATION SECTION
+         ───────────────────────────────────────────────────────────── */}
+      {activeSection === 'seats' && (
+        <SeatManagementModal
+          onClose={() => setActiveSection('library')}
+          onSeatsChanged={() => {
+            onRefreshData();
+          }}
+        />
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
           2. SHIFTS CONFIGURATION SECTION
          ───────────────────────────────────────────────────────────── */}
       {activeSection === 'shifts' && (
@@ -560,7 +589,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   <th>Code</th>
                   <th>Duration</th>
                   <th>Price</th>
-                  <th>Shift Access</th>
+                  <th>Included Shifts</th>
                   <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -583,8 +612,31 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                     <td style={{ color: 'var(--success-solid)', fontWeight: 600 }}>
                       ₹{Number(p.price).toLocaleString('en-IN')}
                     </td>
-                    <td style={{ textTransform: 'capitalize', color: 'var(--color-text-secondary)' }}>
-                      {p.shift_type || 'Single Shift'}
+                    <td>
+                      {p.shifts && p.shifts.length > 0 ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                          {p.shifts.map((s) => (
+                            <span
+                              key={s.id}
+                              style={{
+                                fontSize: '0.74rem',
+                                background: '#EFF6FF',
+                                border: '1px solid #BFDBFE',
+                                color: '#1E40AF',
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {s.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
+                          {p.shift_type || 'Custom'}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <span className={`badge ${p.is_active ? 'badge-active' : 'badge-paused'}`}>
@@ -767,32 +819,71 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="form-group">
-                  <label className="form-label">Price (₹)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    placeholder="e.g. 3500"
-                    min="0"
-                    step="0.01"
-                    required
-                    value={newPlan.price}
-                    onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
-                  />
+              <div className="form-group">
+                <label className="form-label">Price (₹)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="e.g. 3500"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={newPlan.price}
+                  onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Included Shifts *{' '}
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-secondary)' }}>
+                    (select operating shift building blocks)
+                  </span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, marginTop: 4 }}>
+                  {shifts.map((s) => {
+                    const isChecked = newPlan.shift_ids?.includes(s.id);
+                    return (
+                      <label
+                        key={s.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '8px 10px',
+                          borderRadius: 6,
+                          border: isChecked ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
+                          background: isChecked ? 'rgba(59, 130, 246, 0.05)' : '#FFFFFF',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const current = newPlan.shift_ids || [];
+                            const next = e.target.checked
+                              ? [...current, s.id]
+                              : current.filter((id) => id !== s.id);
+                            setNewPlan({ ...newPlan, shift_ids: next });
+                          }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{s.name}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+                            {s.start_time} - {s.end_time}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Shift Coverage</label>
-                  <select
-                    className="form-select"
-                    value={newPlan.shift_type}
-                    onChange={(e) => setNewPlan({ ...newPlan, shift_type: e.target.value })}
-                  >
-                    <option value="single">Single Shift</option>
-                    <option value="full">Full Day / 24x7</option>
-                    <option value="flexible">Flexible Walk-In</option>
-                  </select>
-                </div>
+                {(!newPlan.shift_ids || newPlan.shift_ids.length === 0) && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--danger-text)', marginTop: 4 }}>
+                    At least one operating shift is required.
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

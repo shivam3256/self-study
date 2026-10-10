@@ -1,5 +1,6 @@
 import React from 'react';
 import { Printer, X, CheckCircle2 } from 'lucide-react';
+import { formatDateDDMMYYYY } from '../utils/dateUtils';
 
 export default function ReceiptModal({ receipt, onClose }) {
   if (!receipt) return null;
@@ -42,7 +43,7 @@ export default function ReceiptModal({ receipt, onClose }) {
                 {receipt.receipt_number}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#5C5C5C' }}>
-                Date: {receipt.payment_date}
+                Date: {formatDateDDMMYYYY(receipt.payment_date)}
               </div>
             </div>
           </div>
@@ -88,7 +89,7 @@ export default function ReceiptModal({ receipt, onClose }) {
                   {receipt.plan_name || 'Study Desk Subscription'}
                 </td>
                 <td style={{ padding: '12px 0', color: '#5C5C5C', fontSize: '0.8125rem' }}>
-                  {receipt.period_start} to {receipt.period_end}
+                  {formatDateDDMMYYYY(receipt.period_start)} to {formatDateDDMMYYYY(receipt.period_end)}
                 </td>
                 <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600, color: '#1F2933' }}>
                   ₹{Number(receipt.amount).toLocaleString('en-IN')}
@@ -118,7 +119,7 @@ export default function ReceiptModal({ receipt, onClose }) {
                   Next Renewal Due Date:
                 </td>
                 <td style={{ textAlign: 'right', fontSize: '0.8125rem', fontWeight: 600, color: '#991B1B' }}>
-                  {receipt.next_due_date}
+                  {formatDateDDMMYYYY(receipt.next_due_date)}
                 </td>
               </tr>
             </tfoot>

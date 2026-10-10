@@ -44,6 +44,10 @@ async function request(endpoint, options = {}) {
     ...options.headers,
   };
 
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 20000);
 
@@ -79,6 +83,7 @@ async function request(endpoint, options = {}) {
   if (!response.ok) {
     const errorMsg = typeof data?.detail === 'string' ? data.detail : (data?.detail?.message || 'An error occurred while processing your request.');
     const error = new Error(errorMsg);
+    error.status = response.status;
     if (data?.detail && typeof data.detail === 'object') {
       error.code = data.detail.code;
       error.detail = data.detail;
@@ -161,6 +166,57 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    update: (id, data) =>
+      request(`/desks/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id) =>
+      request(`/desks/${id}`, {
+        method: 'DELETE',
+      }),
+    onboardingSetup: (floors) =>
+      request('/desks/onboarding-setup', {
+        method: 'POST',
+        body: JSON.stringify({ floors }),
+      }),
+    bulkAdd: (data) =>
+      request('/desks/bulk-add', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    bulkUpdate: (data) =>
+      request('/desks/bulk-update', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    listZones: () => request('/desks/zones'),
+    renameZone: (old_name, new_name) =>
+      request('/desks/zones/rename', {
+        method: 'PUT',
+        body: JSON.stringify({ old_name, new_name }),
+      }),
+    deleteZone: (name) =>
+      request(`/desks/zones?name=${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+      }),
+    backfill: () =>
+      request('/desks/backfill', {
+        method: 'POST',
+      }),
+  },
+
+  seats: {
+    getAvailable: (params = {}) => {
+      const sp = new URLSearchParams();
+      if (params.plan_id) sp.append('plan_id', params.plan_id);
+      if (params.shift_id) sp.append('shift_id', params.shift_id);
+      if (params.start_date) sp.append('start_date', params.start_date);
+      if (params.end_date) sp.append('end_date', params.end_date);
+      if (params.zone_id) sp.append('zone_id', params.zone_id);
+      if (params.gender) sp.append('gender', params.gender);
+      return request(`/seats/available?${sp.toString()}`);
+    },
   },
 
   shifts: {
@@ -229,10 +285,54 @@ export const api = {
       request(`/students/${id}`, {
         method: 'DELETE',
       }),
+    downloadTemplate: async () => {
+      const token = getAuthToken();
+      const response = await fetch(`${BASE_URL}/students/import/template`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to download student import template.');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'student_import_template.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    validateImport: (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return request('/students/import/validate', {
+        method: 'POST',
+        body: formData,
+      });
+    },
+    confirmImport: (rows) =>
+      request('/students/import/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ rows }),
+      }),
   },
 
   allocations: {
     list: (status = 'active') => request(`/allocations?status_filter=${status}`),
+    getAvailableDesks: (params = {}) => {
+      const sp = new URLSearchParams();
+      if (params.plan_id) sp.append('plan_id', params.plan_id);
+      if (params.shift_id) sp.append('shift_id', params.shift_id);
+      if (params.start_date) sp.append('start_date', params.start_date);
+      if (params.end_date) sp.append('end_date', params.end_date);
+      if (params.zone_id) sp.append('zone_id', params.zone_id);
+      if (params.gender) sp.append('gender', params.gender);
+      if (params.current_student_id) sp.append('current_student_id', params.current_student_id);
+      return request(`/allocations/available-desks?${sp.toString()}`);
+    },
     create: (data) =>
       request('/allocations', {
         method: 'POST',
@@ -242,6 +342,11 @@ export const api = {
       request(`/allocations/${id}/vacate`, {
         method: 'POST',
         body: JSON.stringify({ notes }),
+      }),
+    reassign: (id, data) =>
+      request(`/allocations/${id}/reassign`, {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
   },
 

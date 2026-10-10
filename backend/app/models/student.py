@@ -8,6 +8,7 @@ class Student(TenantScopedModel):
 
     admission_number = Column(String(50), nullable=False, index=True)
     full_name = Column(String(255), nullable=False, index=True)
+    gender = Column(String(20), nullable=True)  # "male", "female", "other"
     phone = Column(String(50), nullable=False, index=True)
     email = Column(String(255), nullable=True)
     photo_url = Column(String(500), nullable=True)
@@ -28,7 +29,7 @@ class Student(TenantScopedModel):
     notes = Column(Text, nullable=True)
 
     tenant = relationship("Tenant", back_populates="students")
-    allocations = relationship("SeatAllocation", back_populates="student", cascade="all, delete-orphan")
+    allocations = relationship("Allocation", back_populates="student", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="student", cascade="all, delete-orphan")
     attendances = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
     reminders = relationship("ReminderLog", back_populates="student", cascade="all, delete-orphan")

@@ -83,8 +83,99 @@ async def lifespan(app: FastAPI):
                         sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_state VARCHAR(100)"))
                     if "pending_pincode" not in user_columns:
                         sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_pincode VARCHAR(20)"))
-                    if "pending_additional_email" not in user_columns:
-                        sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_additional_email VARCHAR(255)"))
+            if "tenants" in table_names:
+                tenant_cols = [c["name"] for c in inspector.get_columns("tenants")]
+                if "additional_email" not in tenant_cols:
+                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN additional_email VARCHAR(255)"))
+                if "grace_period_days" not in tenant_cols:
+                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN grace_period_days INTEGER DEFAULT 5"))
+
+            if "plans" in table_names:
+                plan_cols = [c["name"] for c in inspector.get_columns("plans")]
+                if "zone_id" not in plan_cols:
+                    sync_conn.execute(text("ALTER TABLE plans ADD COLUMN zone_id VARCHAR(100)"))
+
+            if "students" in table_names:
+                student_columns = [c["name"] for c in inspector.get_columns("students")]
+                if "gender" not in student_columns:
+                    sync_conn.execute(text("ALTER TABLE students ADD COLUMN gender VARCHAR(20)"))
+
+            if "desks" in table_names:
+                sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_desk_number ON desks (tenant_id, desk_number)"))
+
+            # Data migration: populate plan_shifts for existing plans if empty
+            if "plan_shifts" in table_names and "plans" in table_names and "shifts" in table_names:
+                ps_count = sync_conn.execute(text("SELECT COUNT(*) FROM plan_shifts")).scalar()
+                if ps_count == 0:
+                    import uuid
+                    from datetime import datetime, timezone
+                    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                    existing_plans = sync_conn.execute(text("SELECT id, tenant_id, shift_type FROM plans")).fetchall()
+                    for p in existing_plans:
+                        p_id, t_id, s_type = p[0], p[1], (p[2] or "").lower()
+                        t_shifts = sync_conn.execute(
+                            text("SELECT id FROM shifts WHERE tenant_id = :tid AND is_active = 1"),
+                            {"tid": t_id}
+                        ).fetchall()
+                        if not t_shifts:
+                            continue
+                        if "full" in s_type:
+                            target_shift_ids = [s[0] for s in t_shifts]
+                        else:
+                            target_shift_ids = [t_shifts[0][0]]
+                        for sh_id in target_shift_ids:
+                            sync_conn.execute(
+                                text("""
+                                    INSERT INTO plan_shifts (id, tenant_id, plan_id, shift_id, created_at, updated_at)
+                                    VALUES (:id, :tid, :pid, :shid, :now, :now)
+                                """),
+                                {"id": str(uuid.uuid4()), "tid": t_id, "pid": p_id, "shid": sh_id, "now": now_str}
+                            )
+
+            # Data migration: populate allocations & allocation_shifts from legacy seat_allocations if empty
+            if "seat_allocations" in table_names and "allocations" in table_names:
+                alloc_count = sync_conn.execute(text("SELECT COUNT(*) FROM allocations")).scalar()
+                if alloc_count == 0:
+                    legacy_allocs = sync_conn.execute(
+                        text("SELECT id, tenant_id, student_id, desk_id, shift_id, start_date, end_date, status, created_at, updated_at FROM seat_allocations")
+                    ).fetchall()
+                    import uuid
+                    for la in legacy_allocs:
+                        la_id, t_id, st_id, d_id, sh_id, s_date, e_date, status, c_at, u_at = la
+                        new_status = "active" if status == "active" else "cancelled"
+                        sync_conn.execute(
+                            text("""
+                                INSERT INTO allocations (id, tenant_id, student_id, seat_id, start_date, end_date, status, created_at, updated_at)
+                                VALUES (:id, :tid, :stid, :seatid, :sdate, :edate, :status, :cat, :uat)
+                            """),
+                            {"id": la_id, "tid": t_id, "stid": st_id, "seatid": d_id, "sdate": s_date, "edate": e_date, "status": new_status, "cat": c_at, "uat": u_at}
+                        )
+                        sync_conn.execute(
+                            text("""
+                                INSERT INTO allocation_shifts (id, tenant_id, allocation_id, shift_id, seat_id, start_date, end_date, status, created_at, updated_at)
+                                VALUES (:id, :tid, :aid, :shid, :seatid, :sdate, :edate, :status, :cat, :uat)
+                            """),
+                            {"id": str(uuid.uuid4()), "tid": t_id, "aid": la_id, "shid": sh_id, "seatid": d_id, "sdate": s_date, "edate": e_date, "status": new_status, "cat": c_at, "uat": u_at}
+                        )
+
+            # PostgreSQL exclusion constraint setup
+            if sync_conn.dialect.name == "postgresql" and "allocation_shifts" in table_names:
+                sync_conn.execute(text("CREATE EXTENSION IF NOT EXISTS btree_gist;"))
+                sync_conn.execute(text("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_no_double_booking') THEN
+                            ALTER TABLE allocation_shifts ADD CONSTRAINT uq_no_double_booking 
+                            EXCLUDE USING gist (
+                                tenant_id WITH =, 
+                                seat_id WITH =, 
+                                shift_id WITH =, 
+                                daterange(start_date, end_date, '[]') WITH &&
+                            ) WHERE (status IN ('active', 'overdue'));
+                        END IF;
+                    END $$;
+                """))
+
 
         await conn.run_sync(check_columns)
     yield

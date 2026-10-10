@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserCheck, ShieldAlert, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { X, UserCheck, ShieldAlert, Calendar, Clock, CheckCircle, ArrowRightLeft } from 'lucide-react';
 import { api } from '../api';
 
 export default function AllocateModal({ desk, activeShift, shifts, students, onClose, onAllocationSuccess }) {
@@ -11,6 +11,35 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Reassign flow state
+  const [isReassigning, setIsReassigning] = useState(false);
+  const [newDeskId, setNewDeskId] = useState('');
+  const [availableDesks, setAvailableDesks] = useState([]);
+  const [loadingAvailable, setLoadingAvailable] = useState(false);
+
+  useEffect(() => {
+    if (isReassigning && desk) {
+      loadAvailableDesks();
+    }
+  }, [isReassigning]);
+
+  const loadAvailableDesks = async () => {
+    try {
+      setLoadingAvailable(true);
+      const data = await api.allocations.getAvailableDesks({
+        shift_id: desk.shift_id || activeShift?.id,
+        start_date: desk.start_date || startDate,
+        end_date: desk.end_date || endDate,
+      });
+      // Filter out current desk
+      setAvailableDesks(data.filter((d) => d.id !== desk.id));
+    } catch (err) {
+      setError(err.message || 'Failed to fetch vacant desks.');
+    } finally {
+      setLoadingAvailable(false);
+    }
+  };
 
   if (!desk) return null;
 
@@ -35,7 +64,11 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
       onAllocationSuccess();
       onClose();
     } catch (err) {
-      setError(err.message);
+      if (err.status === 409 || err.message?.toLowerCase().includes('occupied') || err.message?.toLowerCase().includes('conflict')) {
+        setError(`Seat Conflict (409): ${err.message}`);
+      } else {
+        setError(err.message || 'Failed to allocate desk.');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,6 +81,27 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
     setError('');
     try {
       await api.allocations.vacate(desk.allocation_id, 'Manual vacate from seat map');
+      onAllocationSuccess();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReassignSubmit = async (e) => {
+    e.preventDefault();
+    if (!desk.allocation_id || !newDeskId) {
+      setError('Please select a destination desk.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await api.allocations.reassign(desk.allocation_id, {
+        new_desk_id: newDeskId,
+      });
       onAllocationSuccess();
       onClose();
     } catch (err) {
@@ -83,7 +137,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
 
         {isOccupied ? (
           <div>
-            <div style={{ background: 'var(--color-brand-tint)', border: '1px solid #FED7AA', borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 24 }}>
+            <div style={{ background: 'var(--color-brand-tint)', border: '1px solid #FED7AA', borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-brand)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>
                 <UserCheck size={16} />
                 <span>Currently Occupied</span>
@@ -110,13 +164,73 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button className="btn btn-secondary" onClick={onClose}>
-                Close
-              </button>
-              <button className="btn btn-danger" onClick={handleVacate} disabled={loading}>
-                {loading ? 'Vacating...' : 'Vacate This Desk'}
-              </button>
+            {/* Reassign Panel */}
+            {isReassigning ? (
+              <form onSubmit={handleReassignSubmit} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-heading)', marginBottom: 10 }}>
+                  Reassign {desk.student_name} to Another Desk
+                </h4>
+
+                <div className="form-group">
+                  <label className="form-label">Select Available Destination Desk *</label>
+                  {loadingAvailable ? (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Loading vacant desks...</div>
+                  ) : (
+                    <select
+                      className="form-select"
+                      value={newDeskId}
+                      onChange={(e) => setNewDeskId(e.target.value)}
+                      required
+                    >
+                      <option value="">-- Choose destination desk --</option>
+                      {availableDesks.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.desk_number} ({d.zone} - {d.category.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {availableDesks.length === 0 && !loadingAvailable && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--danger-text)', marginTop: 4, display: 'block' }}>
+                      No other vacant desks available for this shift.
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsReassigning(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={loading || !newDeskId}>
+                    {loading ? 'Reassigning...' : 'Confirm Reassign'}
+                  </button>
+                </div>
+              </form>
+            ) : null}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <div>
+                {!isReassigning && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    onClick={() => setIsReassigning(true)}
+                  >
+                    <ArrowRightLeft size={15} />
+                    <span>Change Seat</span>
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-secondary" onClick={onClose}>
+                  Close
+                </button>
+                <button className="btn btn-danger" onClick={handleVacate} disabled={loading}>
+                  {loading ? 'Vacating...' : 'Vacate This Desk'}
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -196,3 +310,4 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
     </div>
   );
 }
+

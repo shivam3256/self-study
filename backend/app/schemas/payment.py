@@ -6,6 +6,8 @@ from datetime import date, datetime
 class PaymentCreate(BaseModel):
     student_id: str
     plan_id: Optional[str] = None
+    seat_id: Optional[str] = None
+    desk_id: Optional[str] = None
     amount: Decimal
     discount: Decimal = Decimal("0.00")
     payment_mode: str = "upi"  # cash, upi, card, netbanking

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { X, UserPlus, AlertCircle } from 'lucide-react';
+import { X, UserPlus } from 'lucide-react';
 import { api } from '../api';
 
 export default function NewStudentModal({ onClose, onSuccess }) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [gender, setGender] = useState('other');
   const [idProofType, setIdProofType] = useState('Aadhaar');
   const [idProofNumber, setIdProofNumber] = useState('');
   const [notes, setNotes] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,21 +20,25 @@ export default function NewStudentModal({ onClose, onSuccess }) {
       setError('Please provide at least a name and phone number.');
       return;
     }
+
     setLoading(true);
     setError('');
     try {
-      await api.students.create({
+      const payload = {
         full_name: fullName,
         phone,
         email: email || undefined,
+        gender,
         id_proof_type: idProofType,
         id_proof_number: idProofNumber || undefined,
         notes: notes || undefined,
-      });
+      };
+
+      await api.students.create(payload);
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to register student.');
     } finally {
       setLoading(false);
     }
@@ -40,7 +46,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
           <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <UserPlus size={20} color="var(--color-brand)" />
@@ -72,7 +78,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="form-group">
-              <label className="form-label">Phone Number *</label>
+              <label className="form-label">Mobile Number *</label>
               <input
                 type="tel"
                 className="form-input"
@@ -87,14 +93,27 @@ export default function NewStudentModal({ onClose, onSuccess }) {
               <input
                 type="email"
                 className="form-input"
-                placeholder="aarav@gmail.com"
+                placeholder="student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="form-group">
+            <label className="form-label">Gender *</label>
+            <select
+              className="form-select"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 12 }}>
             <div className="form-group">
               <label className="form-label">ID Proof Type</label>
               <select
@@ -105,7 +124,9 @@ export default function NewStudentModal({ onClose, onSuccess }) {
                 <option value="Aadhaar">Aadhaar Card</option>
                 <option value="Driving License">Driving License</option>
                 <option value="Voter ID">Voter ID</option>
-                <option value="College ID">College / Student ID</option>
+                <option value="College ID">College ID</option>
+                <option value="Passport">Passport</option>
+                <option value="PAN Card">PAN Card</option>
               </select>
             </div>
             <div className="form-group">

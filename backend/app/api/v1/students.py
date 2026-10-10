@@ -13,8 +13,14 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.tenant import User
 from app.models.student import Student
-from app.models.allocation import SeatAllocation
+from app.models.allocation import Allocation, AllocationShift, SeatAllocation
 from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse
+from app.schemas.import_student import (
+    ImportValidationSummary,
+    ImportConfirmRequest,
+    ImportResultSummary,
+)
+from app.services.excel_import_service import ExcelImportService
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -33,8 +39,10 @@ async def list_students(
 ):
     query = (
         select(Student)
-        .options(selectinload(Student.allocations).selectinload(SeatAllocation.desk),
-                 selectinload(Student.allocations).selectinload(SeatAllocation.shift))
+        .options(
+            selectinload(Student.allocations).selectinload(Allocation.desk),
+            selectinload(Student.allocations).selectinload(Allocation.allocation_shifts).selectinload(AllocationShift.shift)
+        )
         .where(Student.tenant_id == current_user.tenant_id)
     )
     if search:
@@ -57,13 +65,19 @@ async def list_students(
     output = []
     for s in students:
         resp = StudentResponse.model_validate(s)
-        # Attach active allocation info
+        # Attach active or overdue allocation info
         active_alloc = next(
-            (a for a in s.allocations if a.status == "active"), None
+            (a for a in s.allocations if a.status in ("active", "overdue")), None
         )
         if active_alloc:
+            resp.current_allocation_id = active_alloc.id
+            resp.current_desk_id = active_alloc.seat_id
             resp.current_desk_number = active_alloc.desk.desk_number if active_alloc.desk else None
-            resp.current_shift_name = active_alloc.shift.name if active_alloc.shift else None
+            if active_alloc.allocation_shifts:
+                sh_names = [ash.shift.name for ash in active_alloc.allocation_shifts if ash.shift]
+                resp.current_shift_name = " / ".join(sh_names) if sh_names else None
+                resp.current_shift_id = active_alloc.allocation_shifts[0].shift_id
+            resp.current_desk_category = active_alloc.desk.category if active_alloc.desk else None
         output.append(resp)
     return output
 
@@ -82,6 +96,7 @@ async def create_student(
         tenant_id=current_user.tenant_id,
         admission_number=adm_no,
         full_name=data.full_name,
+        gender=data.gender,
         phone=data.phone,
         email=data.email,
         id_proof_type=data.id_proof_type or "Aadhaar",
@@ -98,7 +113,30 @@ async def create_student(
     db.add(student)
     await db.commit()
     await db.refresh(student)
-    resp = StudentResponse.model_validate(student)
+    
+    # Reload with allocations
+    query = (
+        select(Student)
+        .options(
+            selectinload(Student.allocations).selectinload(Allocation.desk),
+            selectinload(Student.allocations).selectinload(Allocation.allocation_shifts).selectinload(AllocationShift.shift)
+        )
+        .where(Student.id == student.id)
+    )
+    res = await db.execute(query)
+    loaded_student = res.scalar_one()
+
+    resp = StudentResponse.model_validate(loaded_student)
+    active_alloc = next((a for a in loaded_student.allocations if a.status in ("active", "overdue")), None)
+    if active_alloc:
+        resp.current_allocation_id = active_alloc.id
+        resp.current_desk_id = active_alloc.seat_id
+        resp.current_desk_number = active_alloc.desk.desk_number if active_alloc.desk else None
+        if active_alloc.allocation_shifts:
+            sh_names = [ash.shift.name for ash in active_alloc.allocation_shifts if ash.shift]
+            resp.current_shift_name = " / ".join(sh_names) if sh_names else None
+            resp.current_shift_id = active_alloc.allocation_shifts[0].shift_id
+        resp.current_desk_category = active_alloc.desk.category if active_alloc.desk else None
     return resp
 
 
@@ -113,8 +151,10 @@ async def get_student(
 ):
     query = (
         select(Student)
-        .options(selectinload(Student.allocations).selectinload(SeatAllocation.desk),
-                 selectinload(Student.allocations).selectinload(SeatAllocation.shift))
+        .options(
+            selectinload(Student.allocations).selectinload(Allocation.desk),
+            selectinload(Student.allocations).selectinload(Allocation.allocation_shifts).selectinload(AllocationShift.shift)
+        )
         .where(Student.id == student_id, Student.tenant_id == current_user.tenant_id)
     )
     res = await db.execute(query)
@@ -122,11 +162,18 @@ async def get_student(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found.")
     resp = StudentResponse.model_validate(student)
-    active_alloc = next((a for a in student.allocations if a.status == "active"), None)
+    active_alloc = next((a for a in student.allocations if a.status in ("active", "overdue")), None)
     if active_alloc:
+        resp.current_allocation_id = active_alloc.id
+        resp.current_desk_id = active_alloc.seat_id
         resp.current_desk_number = active_alloc.desk.desk_number if active_alloc.desk else None
-        resp.current_shift_name = active_alloc.shift.name if active_alloc.shift else None
+        if active_alloc.allocation_shifts:
+            sh_names = [ash.shift.name for ash in active_alloc.allocation_shifts if ash.shift]
+            resp.current_shift_name = " / ".join(sh_names) if sh_names else None
+            resp.current_shift_id = active_alloc.allocation_shifts[0].shift_id
+        resp.current_desk_category = active_alloc.desk.category if active_alloc.desk else None
     return resp
+
 
 
 # ─────────────────────────────────────────────
@@ -222,7 +269,82 @@ async def resume_student(
 
 
 # ─────────────────────────────────────────────
-# CSV Import Template
+# Official Excel Import Endpoints
+# ─────────────────────────────────────────────
+@router.get("/import/template")
+async def download_import_template(
+    current_user: User = Depends(get_current_user),
+):
+    """Download official Excel (.xlsx) template for bulk student import."""
+    template_stream = ExcelImportService.generate_template()
+    return StreamingResponse(
+        template_stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=student_import_template.xlsx"
+        }
+    )
+
+
+@router.post("/import/validate", response_model=ImportValidationSummary)
+async def validate_import_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Validate an uploaded Excel (.xlsx) file and return row preview & validation summary."""
+    filename = (file.filename or "").lower()
+    if not (filename.endswith(".xlsx") or filename.endswith(".xls")):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file format. Please upload an Excel (.xlsx) file."
+        )
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=400,
+            detail="File size exceeds the 10MB limit."
+        )
+
+    try:
+        summary = await ExcelImportService.validate_excel(
+            file_bytes=content,
+            tenant_id=current_user.tenant_id,
+            db=db
+        )
+        return summary
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error processing Excel file: {str(e)}")
+
+
+@router.post("/import/confirm", response_model=ImportResultSummary)
+async def confirm_student_import(
+    request: ImportConfirmRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Confirm and execute atomic import of validated student records."""
+    if not request.rows:
+        raise HTTPException(status_code=400, detail="No rows provided for import.")
+
+    try:
+        result = await ExcelImportService.confirm_import(
+            rows=request.rows,
+            tenant_id=current_user.tenant_id,
+            db=db
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database import failed: {str(e)}")
+
+
+# ─────────────────────────────────────────────
+# CSV Import Template (Legacy)
 # ─────────────────────────────────────────────
 @router.get("/import-template")
 async def get_import_template():

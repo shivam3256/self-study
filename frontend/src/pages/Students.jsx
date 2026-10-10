@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Pause, Play, Trash2, CreditCard, UserCheck, ShieldAlert, Sparkles } from 'lucide-react';
+import { Search, Pause, Play, Trash2, CreditCard, UserCheck, ShieldAlert, Sparkles, FileSpreadsheet, Armchair } from 'lucide-react';
 import { api } from '../api';
+import ImportStudentsModal from '../components/ImportStudentsModal';
+import StudentSeatModal from '../components/StudentSeatModal';
+import { formatDateDDMMYYYY } from '../utils/dateUtils';
 
 export default function Students({
   students,
@@ -12,6 +15,8 @@ export default function Students({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState('');
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [seatModalStudent, setSeatModalStudent] = useState(null);
 
   const filteredStudents = students.filter((s) => {
     const matchesSearch =
@@ -93,6 +98,14 @@ export default function Students({
                 {st}
               </button>
             ))}
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              onClick={() => setShowImportModal(true)}
+            >
+              <FileSpreadsheet size={15} color="var(--color-brand)" />
+              <span>Import Students</span>
+            </button>
             <button className="btn btn-primary btn-sm" onClick={onOpenNewStudent}>
               + Register Student
             </button>
@@ -108,7 +121,7 @@ export default function Students({
               <tr>
                 <th>Student</th>
                 <th>Admission #</th>
-                <th>Assigned Desk & Shift</th>
+                <th>Assigned Desk &amp; Shift</th>
                 <th>Status</th>
                 <th>Valid Until</th>
                 <th>Preparation</th>
@@ -136,12 +149,33 @@ export default function Students({
                     </td>
                     <td>
                       {s.current_desk_number ? (
-                        <div>
-                          <span style={{ fontWeight: 600, color: 'var(--color-heading)' }}>Desk {s.current_desk_number}</span>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{s.current_shift_name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div>
+                            <span style={{ fontWeight: 700, color: 'var(--color-brand)', fontFamily: 'var(--font-mono)' }}>
+                              Desk {s.current_desk_number}
+                            </span>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{s.current_shift_name}</div>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 7px', fontSize: '0.75rem' }}
+                            title="Change or Vacate Seat"
+                            onClick={() => setSeatModalStudent(s)}
+                          >
+                            Change
+                          </button>
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>No seat assigned</span>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                          onClick={() => setSeatModalStudent(s)}
+                        >
+                          <Armchair size={13} color="var(--color-brand)" />
+                          <span>+ Assign Seat</span>
+                        </button>
                       )}
                     </td>
                     <td>
@@ -150,8 +184,8 @@ export default function Students({
                       </span>
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.85rem', color: s.status === 'expired' ? 'var(--danger-text)' : 'var(--color-text)' }}>
-                        {s.expiry_date || 'N/A'}
+                      <div style={{ fontSize: '0.85rem', color: s.status === 'expired' ? 'var(--danger-text)' : 'var(--color-text)', fontWeight: 500 }}>
+                        {formatDateDDMMYYYY(s.expiry_date)}
                       </div>
                     </td>
                     <td>
@@ -206,6 +240,30 @@ export default function Students({
           </table>
         </div>
       </div>
+
+      {/* Import Students Modal */}
+      {showImportModal && (
+        <ImportStudentsModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            setShowImportModal(false);
+            onRefresh();
+          }}
+        />
+      )}
+
+      {/* Student Seat Assign/Change Modal */}
+      {seatModalStudent && (
+        <StudentSeatModal
+          student={seatModalStudent}
+          onClose={() => setSeatModalStudent(null)}
+          onSuccess={() => {
+            setSeatModalStudent(null);
+            onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 }
+

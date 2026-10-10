@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, AlertCircle, Receipt, Printer, ArrowUpRight, IndianRupee } from 'lucide-react';
 import { api } from '../api';
+import { formatDateDDMMYYYY, formatDateRange } from '../utils/dateUtils';
 
 export default function Billing({ onOpenNewPayment, onViewReceipt }) {
   const [payments, setPayments] = useState([]);
@@ -80,7 +81,7 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
                     <td style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{d.student_name}</td>
                     <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-brand)' }}>{d.admission_number}</td>
                     <td style={{ color: 'var(--color-text-secondary)' }}>{d.phone}</td>
-                    <td style={{ color: 'var(--danger-text)' }}>{d.expiry_date}</td>
+                    <td style={{ color: 'var(--danger-text)', fontWeight: 500 }}>{formatDateDDMMYYYY(d.expiry_date)}</td>
                     <td>
                       <span className="badge badge-expired">
                         {d.days_overdue} days ago
@@ -120,7 +121,7 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
                 <th>Mode</th>
                 <th>Amount</th>
                 <th>Date Paid</th>
-                <th>Validity</th>
+                <th>Validity (DD/MM/YYYY)</th>
                 <th style={{ textAlign: 'right' }}>Receipt</th>
               </tr>
             </thead>
@@ -154,9 +155,11 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
                         ₹{Number(p.final_amount).toLocaleString('en-IN')}
                       </div>
                     </td>
-                    <td style={{ color: 'var(--color-text-secondary)' }}>{p.payment_date}</td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                      {p.period_start} → {p.period_end}
+                    <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                      {formatDateDDMMYYYY(p.payment_date)}
+                    </td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                      {formatDateRange(p.period_start, p.period_end)}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <button

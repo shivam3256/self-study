@@ -3,6 +3,7 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from datetime import date, timedelta
 from decimal import Decimal
+from sqlalchemy import select
 
 from app.main import app
 from app.core.database import AsyncSessionLocal
@@ -88,7 +89,7 @@ async def test_seat_allocation_conflict_prevention():
 
         desk_a1 = next(d for d in desks_resp.json() if d["desk_number"] == "A-01")
         morn_shift = next(s for s in shifts_resp.json() if s["code"] == "MORN")
-        student_test = students_resp.json()[-1]  # Pick last student
+        student_test = next(s for s in students_resp.json() if s["full_name"] != "Aarav Patel")
 
         # Desk A-01 is ALREADY allocated to Aarav in the morning shift!
         # Attempting to double-allocate desk A-01 for Morning shift MUST return 409 Conflict:
@@ -287,6 +288,112 @@ async def test_expenses_and_budget_summary():
         await ac.delete(f"/api/v1/expenses/{exp1_id}", headers=headers)
         await ac.delete(f"/api/v1/expenses/{exp2_id}", headers=headers)
         await ac.delete(f"/api/v1/expenses/{exp3_id}", headers=headers)
+
+
+@pytest.mark.asyncio
+async def test_consecutive_payments_extend_validity():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        login_resp = await ac.post("/api/v1/auth/login", json={
+            "email": "owner@apexlibrary.com",
+            "password": "admin123"
+        })
+        token = login_resp.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Create a fresh test student
+        student_resp = await ac.post("/api/v1/students", json={
+            "full_name": "Consecutive Payment Test Student",
+            "phone": "+91 9999888877",
+            "email": "consecutive@example.com",
+            "id_proof_type": "Aadhaar",
+            "id_proof_number": "1111-2222-3333"
+        }, headers=headers)
+        assert student_resp.status_code == 201
+        student = student_resp.json()
+        student_id = student["id"]
+
+        # 2. First payment: 1 month starting today (e.g., 30 days)
+        today = date.today()
+        p1_resp = await ac.post("/api/v1/payments", json={
+            "student_id": student_id,
+            "amount": 1200.0,
+            "discount": 0.0,
+            "payment_mode": "upi",
+            "period_start": today.isoformat(),
+            "period_end": (today + timedelta(days=29)).isoformat()
+        }, headers=headers)
+        assert p1_resp.status_code == 201
+        p1 = p1_resp.json()
+        expected_p1_end = (today + timedelta(days=29)).isoformat()
+        assert p1["period_start"] == today.isoformat()
+        assert p1["period_end"] == expected_p1_end
+
+        # Check student expiry date updated to p1 end date
+        st_resp = await ac.get(f"/api/v1/students/{student_id}", headers=headers)
+        assert st_resp.status_code == 200
+        assert st_resp.json()["expiry_date"] == expected_p1_end
+
+        # 3. Second payment (e.g. afternoon shift or monthly renewal):
+        # When period_start is omitted, it should seamlessly start from student.expiry_date + 1 day
+        p2_resp = await ac.post("/api/v1/payments", json={
+            "student_id": student_id,
+            "amount": 1200.0,
+            "discount": 0.0,
+            "payment_mode": "cash"
+            # period_start and period_end omitted -> automatically extends from current expiry!
+        }, headers=headers)
+        assert p2_resp.status_code == 201
+        p2 = p2_resp.json()
+        expected_p2_start = (today + timedelta(days=30)).isoformat()
+        expected_p2_end = (today + timedelta(days=59)).isoformat()
+        assert p2["period_start"] == expected_p2_start
+        assert p2["period_end"] == expected_p2_end
+
+        # Check student expiry date extended to p2 end date
+        st_resp2 = await ac.get(f"/api/v1/students/{student_id}", headers=headers)
+        assert st_resp2.status_code == 200
+        assert st_resp2.json()["expiry_date"] == expected_p2_end
+
+        # 4. Test expired student: student whose expiry was in the past
+        # Create an expired student
+        expired_st_resp = await ac.post("/api/v1/students", json={
+            "full_name": "Past Expired Student",
+            "phone": "+91 9999888866",
+            "email": "past_expired@example.com",
+            "id_proof_type": "Aadhaar",
+            "id_proof_number": "5555-6666-7777"
+        }, headers=headers)
+        assert expired_st_resp.status_code == 201
+        exp_student_id = expired_st_resp.json()["id"]
+
+        past_expiry = (today - timedelta(days=15)).isoformat()
+        async with AsyncSessionLocal() as db:
+            st_obj = (await db.execute(
+                select(Student).where(Student.id == exp_student_id)
+            )).scalar_one()
+            st_obj.expiry_date = date.fromisoformat(past_expiry)
+            st_obj.status = "expired"
+            await db.commit()
+
+        # Renew without passing explicit start date: must start from past_expiry + 1 day
+        renew_resp = await ac.post("/api/v1/payments", json={
+            "student_id": exp_student_id,
+            "amount": 1200.0,
+            "discount": 0.0,
+            "payment_mode": "cash"
+        }, headers=headers)
+        assert renew_resp.status_code == 201
+        renew_data = renew_resp.json()
+        expected_renew_start = (date.fromisoformat(past_expiry) + timedelta(days=1)).isoformat()
+        expected_renew_end = (date.fromisoformat(past_expiry) + timedelta(days=30)).isoformat()
+        assert renew_data["period_start"] == expected_renew_start
+        assert renew_data["period_end"] == expected_renew_end
+
+        # Clean up test students
+        await ac.delete(f"/api/v1/students/{student_id}", headers=headers)
+        await ac.delete(f"/api/v1/students/{exp_student_id}", headers=headers)
+
 
 
 
