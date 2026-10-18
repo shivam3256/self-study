@@ -11,6 +11,7 @@ from app.api.v1.attendance import router as attendance_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.reminders import router as reminders_router
 from app.api.v1.expenses import router as expenses_router
+from app.api.v1.lockers import router as lockers_router
 from app.schemas.desk import DeskResponse
 from typing import List
 
@@ -25,6 +26,7 @@ api_router.include_router(plans_router)
 api_router.include_router(desks_router)
 api_router.include_router(seats_router)
 api_router.include_router(allocations_router)
+api_router.include_router(lockers_router)
 api_router.include_router(payments_router)
 api_router.include_router(attendance_router)
 api_router.include_router(dashboard_router)

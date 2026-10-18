@@ -103,6 +103,24 @@ async def lifespan(app: FastAPI):
             if "desks" in table_names:
                 sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_desk_number ON desks (tenant_id, desk_number)"))
 
+            if "payments" in table_names:
+                payment_cols = [c["name"] for c in inspector.get_columns("payments")]
+                if "payment_type" not in payment_cols:
+                    sync_conn.execute(text("ALTER TABLE payments ADD COLUMN payment_type VARCHAR(50) DEFAULT 'seat'"))
+                    sync_conn.execute(text("UPDATE payments SET payment_type = 'seat' WHERE payment_type IS NULL"))
+                if "locker_assignment_id" not in payment_cols:
+                    sync_conn.execute(text("ALTER TABLE payments ADD COLUMN locker_assignment_id VARCHAR(36)"))
+                if "receipt_id" not in payment_cols:
+                    sync_conn.execute(text("ALTER TABLE payments ADD COLUMN receipt_id VARCHAR(100)"))
+                    sync_conn.execute(text("UPDATE payments SET receipt_id = receipt_number WHERE receipt_id IS NULL"))
+
+            if "lockers" in table_names:
+                sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_locker_label ON lockers (tenant_id, label)"))
+
+            if "locker_assignments" in table_names:
+                sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_active_locker_assignment ON locker_assignments (tenant_id, locker_id) WHERE status = 'active'"))
+                sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_active_student_locker ON locker_assignments (tenant_id, student_id) WHERE status = 'active'"))
+
             # Data migration: populate plan_shifts for existing plans if empty
             if "plan_shifts" in table_names and "plans" in table_names and "shifts" in table_names:
                 ps_count = sync_conn.execute(text("SELECT COUNT(*) FROM plan_shifts")).scalar()

@@ -80,6 +80,25 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
     setLoading(true);
     setError('');
     try {
+      // Check if student has an active locker to prevent orphaned assignment
+      if (desk.student_id) {
+        try {
+          const activeLocker = await api.lockers.getActiveForStudent(desk.student_id);
+          if (activeLocker) {
+            const shouldRelease = window.confirm(
+              `Notice: ${desk.student_name} also holds Locker ${activeLocker.label}.\n\n` +
+              `Do you want to release the locker assignment now to prevent orphaned storage?\n\n` +
+              `Click OK to RELEASE Locker ${activeLocker.label}, or Cancel to KEEP the locker assigned.`
+            );
+            if (shouldRelease) {
+              await api.lockers.release(activeLocker.locker_id, { refund_deposit: true });
+            }
+          }
+        } catch (lErr) {
+          console.log('No locker or error checking locker:', lErr);
+        }
+      }
+
       await api.allocations.vacate(desk.allocation_id, 'Manual vacate from seat map');
       onAllocationSuccess();
       onClose();

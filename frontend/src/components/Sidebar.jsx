@@ -2,6 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard,
   Grid,
+  Lock,
   Users,
   CreditCard,
   QrCode,
@@ -17,6 +18,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'seatmap', label: 'Visual Seat Map', icon: Grid },
+    { id: 'lockers', label: 'Locker Management', icon: Lock },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'billing', label: 'Fee & Billing', icon: CreditCard },
     { id: 'budget', label: 'Budget & Profit', icon: Wallet },

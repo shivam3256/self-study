@@ -869,6 +869,61 @@ textarea.form-input:focus {
   background-color: var(--color-brand-tint);
 }
 
+.seat-status-pill.assigned {
+  color: #1D4ED8;
+  background-color: #DBEAFE;
+}
+
+.seat-status-pill.overdue {
+  color: #B91C1C;
+  background-color: #FEE2E2;
+}
+
+.seat-status-pill.maintenance {
+  color: #4B5563;
+  background-color: #E5E7EB;
+}
+
+.seat-box.assigned {
+  border-color: #BFDBFE;
+  background-color: #EFF6FF;
+}
+
+.seat-box.assigned:hover {
+  border-color: #3B82F6;
+}
+
+.seat-box.overdue {
+  border-color: #FECDD3;
+  background-color: #FFF1F2;
+}
+
+.seat-box.overdue:hover {
+  border-color: #EF4444;
+}
+
+.seat-box.maintenance {
+  border-color: #E5E7EB;
+  background-color: #F9FAFB;
+  opacity: 0.85;
+}
+
+.seat-box.maintenance:hover {
+  border-color: #9CA3AF;
+}
+
+.legend-dot.assigned {
+  background-color: #3B82F6;
+}
+
+.legend-dot.overdue {
+  background-color: #EF4444;
+}
+
+.legend-dot.maintenance {
+  background-color: #9CA3AF;
+}
+
 /* ==========================================================================
    Modals & Dialogs
    ========================================================================== */

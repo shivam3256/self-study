@@ -351,9 +351,12 @@ export const api = {
   },
 
   payments: {
-    list: (studentId) => {
-      const q = studentId ? `?student_id=${studentId}` : '';
-      return request(`/payments${q}`);
+    list: (studentId, paymentType) => {
+      const q = new URLSearchParams();
+      if (studentId) q.set('student_id', studentId);
+      if (paymentType && paymentType !== 'all') q.set('payment_type', paymentType);
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      return request(`/payments${qs}`);
     },
     create: (data) =>
       request('/payments', {
@@ -362,6 +365,70 @@ export const api = {
       }),
     getReceipt: (id) => request(`/payments/${id}/receipt`),
     getOutstandingDues: () => request('/payments/outstanding-dues'),
+  },
+
+  lockers: {
+    list: (params = {}) => {
+      const query = new URLSearchParams();
+      if (params.status) query.set('status', params.status);
+      if (params.search) query.set('search', params.search);
+      const qs = query.toString() ? `?${query.toString()}` : '';
+      return request(`/lockers${qs}`);
+    },
+    getMap: (params = {}) => {
+      const query = new URLSearchParams();
+      if (params.status) query.set('status', params.status);
+      if (params.search) query.set('search', params.search);
+      const qs = query.toString() ? `?${query.toString()}` : '';
+      return request(`/lockers/map${qs}`);
+    },
+    getSummary: () => request('/lockers/summary'),
+    create: (data) =>
+      request('/lockers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    bulkCreate: (data) =>
+      request('/lockers/bulk', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id, data) =>
+      request(`/lockers/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id) =>
+      request(`/lockers/${id}`, {
+        method: 'DELETE',
+      }),
+    assign: (id, data) =>
+      request(`/lockers/${id}/assign`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    renew: (id, data) =>
+      request(`/lockers/${id}/renew`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    release: (id, data) =>
+      request(`/lockers/${id}/release`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    changeStudent: (id, data) =>
+      request(`/lockers/${id}/change-student`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getActiveForStudent: (studentId) =>
+      request(`/lockers/student/${studentId}/active`),
+    combinedPayment: (data) =>
+      request('/lockers/combined-payment', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   attendance: {

@@ -313,10 +313,25 @@ async def test_consecutive_payments_extend_validity():
         student = student_resp.json()
         student_id = student["id"]
 
-        # 2. First payment: 1 month starting today (e.g., 30 days)
+        # Get a saved membership plan (mandatory for fee collection)
+        plans_resp = await ac.get("/api/v1/plans", headers=headers)
+        assert plans_resp.status_code == 200
+        plan_id = plans_resp.json()[0]["id"]
+
+        # 2. Test mandatory membership plan: missing plan_id must return 422
+        missing_plan_resp = await ac.post("/api/v1/payments", json={
+            "student_id": student_id,
+            "amount": 1200.0,
+            "discount": 0.0,
+            "payment_mode": "upi"
+        }, headers=headers)
+        assert missing_plan_resp.status_code in (400, 422)
+
+        # 3. First payment with mandatory plan_id: 1 month starting today (e.g., 30 days)
         today = date.today()
         p1_resp = await ac.post("/api/v1/payments", json={
             "student_id": student_id,
+            "plan_id": plan_id,
             "amount": 1200.0,
             "discount": 0.0,
             "payment_mode": "upi",
@@ -334,10 +349,11 @@ async def test_consecutive_payments_extend_validity():
         assert st_resp.status_code == 200
         assert st_resp.json()["expiry_date"] == expected_p1_end
 
-        # 3. Second payment (e.g. afternoon shift or monthly renewal):
+        # 4. Second payment (renewal with plan_id):
         # When period_start is omitted, it should seamlessly start from student.expiry_date + 1 day
         p2_resp = await ac.post("/api/v1/payments", json={
             "student_id": student_id,
+            "plan_id": plan_id,
             "amount": 1200.0,
             "discount": 0.0,
             "payment_mode": "cash"
@@ -355,7 +371,7 @@ async def test_consecutive_payments_extend_validity():
         assert st_resp2.status_code == 200
         assert st_resp2.json()["expiry_date"] == expected_p2_end
 
-        # 4. Test expired student: student whose expiry was in the past
+        # 5. Test expired student: student whose expiry was in the past
         # Create an expired student
         expired_st_resp = await ac.post("/api/v1/students", json={
             "full_name": "Past Expired Student",
@@ -376,9 +392,10 @@ async def test_consecutive_payments_extend_validity():
             st_obj.status = "expired"
             await db.commit()
 
-        # Renew without passing explicit start date: must start from past_expiry + 1 day
+        # Renew with plan_id: must start from past_expiry + 1 day
         renew_resp = await ac.post("/api/v1/payments", json={
             "student_id": exp_student_id,
+            "plan_id": plan_id,
             "amount": 1200.0,
             "discount": 0.0,
             "payment_mode": "cash"

@@ -95,6 +95,75 @@ class ReminderService:
             sent_count += 1
             logs.append({"student": student.full_name, "type": reminder_type, "phone": student.phone})
 
+        # Process active locker reminders (overdue and expiring)
+        from app.models.locker import LockerAssignment
+        locker_q = (
+            select(LockerAssignment)
+            .options(selectinload(LockerAssignment.student), selectinload(LockerAssignment.locker))
+            .where(
+                LockerAssignment.tenant_id == tenant_id,
+                LockerAssignment.status == "active"
+            )
+        )
+        lockers_res = await db.execute(locker_q)
+        active_locker_allocs = lockers_res.scalars().all()
+
+        for la in active_locker_allocs:
+            if not la.student:
+                continue
+            l_reminder_type = None
+            if la.paid_until == seven_days:
+                l_reminder_type = "locker_7_days_before"
+            elif la.paid_until == three_days:
+                l_reminder_type = "locker_3_days_before"
+            elif la.paid_until == one_day:
+                l_reminder_type = "locker_1_day_before"
+            elif la.paid_until < today:
+                l_reminder_type = "locker_overdue"
+
+            if not l_reminder_type:
+                continue
+
+            # Check if reminder already sent today
+            log_check = await db.execute(
+                select(ReminderLog).where(
+                    ReminderLog.tenant_id == tenant_id,
+                    ReminderLog.student_id == la.student_id,
+                    ReminderLog.reminder_type == l_reminder_type
+                )
+            )
+            if log_check.scalars().first():
+                continue
+
+            l_expiry_fmt = la.paid_until.strftime('%d-%b-%Y')
+            l_lbl = la.locker.label if la.locker else "assigned locker"
+            if l_reminder_type == "locker_overdue":
+                msg = (
+                    f"Hello {la.student.full_name}, your rent for Locker *{l_lbl}* at *{tenant.name}* expired on *{l_expiry_fmt}*. "
+                    f"Please renew your locker subscription to keep your belongings secured. "
+                    f"Contact us at {tenant.phone or 'the front desk'}."
+                )
+            else:
+                msg = (
+                    f"Hello {la.student.full_name}, gentle reminder that your rent for Locker *{l_lbl}* at *{tenant.name}* "
+                    f"is expiring on *{l_expiry_fmt}*. Please renew your locker fee. Contact: {tenant.phone or 'the reception'}."
+                )
+
+            reminder_log = ReminderLog(
+                tenant_id=tenant_id,
+                student_id=la.student_id,
+                reminder_type=l_reminder_type,
+                channel="whatsapp",
+                status="pending",
+                message=msg,
+                provider_response="Queued for WhatsApp delivery"
+            )
+            db.add(reminder_log)
+            await db.flush()
+            tasks_to_dispatch.append((reminder_log.id, la.student.phone, msg))
+            sent_count += 1
+            logs.append({"student": la.student.full_name, "type": l_reminder_type, "phone": la.student.phone})
+
         await db.commit()
 
         # Dispatch to Celery worker only after successful DB commit

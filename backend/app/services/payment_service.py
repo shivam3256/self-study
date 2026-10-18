@@ -28,19 +28,20 @@ class PaymentService:
         if not student:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
 
-        # 2. Plan if provided
-        plan = None
-        duration_days = 30
-        if data.plan_id:
-            plan_query = (
-                select(Plan)
-                .options(selectinload(Plan.plan_shifts))
-                .where(Plan.id == data.plan_id, Plan.tenant_id == tenant_id)
-            )
-            plan_res = await db.execute(plan_query)
-            plan = plan_res.scalar_one_or_none()
-            if plan:
-                duration_days = plan.duration_days
+        # 2. Validate mandatory membership plan
+        if not data.plan_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Membership plan is mandatory.")
+
+        plan_query = (
+            select(Plan)
+            .options(selectinload(Plan.plan_shifts))
+            .where(Plan.id == data.plan_id, Plan.tenant_id == tenant_id)
+        )
+        plan_res = await db.execute(plan_query)
+        plan = plan_res.scalar_one_or_none()
+        if not plan:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Selected membership plan not found.")
+        duration_days = plan.duration_days
 
         payment_date = data.payment_date or date.today()
         
@@ -77,7 +78,10 @@ class PaymentService:
             tenant_id=tenant_id,
             student_id=data.student_id,
             plan_id=data.plan_id,
+            locker_assignment_id=data.locker_assignment_id,
             receipt_number=receipt_number,
+            receipt_id=data.receipt_id or receipt_number,
+            payment_type=data.payment_type or "seat",
             amount=data.amount,
             discount=data.discount,
             final_amount=final_amount,

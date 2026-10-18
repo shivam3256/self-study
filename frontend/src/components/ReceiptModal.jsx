@@ -84,17 +84,48 @@ export default function ReceiptModal({ receipt, onClose }) {
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
-                <td style={{ padding: '12px 0', fontWeight: 600, color: '#1F2933' }}>
-                  {receipt.plan_name || 'Study Desk Subscription'}
-                </td>
-                <td style={{ padding: '12px 0', color: '#5C5C5C', fontSize: '0.8125rem' }}>
-                  {formatDateDDMMYYYY(receipt.period_start)} to {formatDateDDMMYYYY(receipt.period_end)}
-                </td>
-                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600, color: '#1F2933' }}>
-                  ₹{Number(receipt.amount).toLocaleString('en-IN')}
-                </td>
-              </tr>
+              {receipt.line_items && receipt.line_items.length > 0 ? (
+                receipt.line_items.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                    <td style={{ padding: '10px 0', fontWeight: 600, color: '#1F2933' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          textTransform: 'uppercase',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          background: item.item_type === 'locker' ? '#EFF6FF' : item.item_type === 'deposit' ? '#FEF3C7' : '#F3F4F6',
+                          color: item.item_type === 'locker' ? '#1D4ED8' : item.item_type === 'deposit' ? '#B45309' : '#374151'
+                        }}>
+                          {item.item_type}
+                        </span>
+                        <span>{item.description}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 0', color: '#5C5C5C', fontSize: '0.8125rem' }}>
+                      {item.period_start && item.period_end
+                        ? `${formatDateDDMMYYYY(item.period_start)} to ${formatDateDDMMYYYY(item.period_end)}`
+                        : '—'}
+                    </td>
+                    <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: '#1F2933' }}>
+                      ₹{Number(item.amount).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+                  <td style={{ padding: '12px 0', fontWeight: 600, color: '#1F2933' }}>
+                    {receipt.plan_name || 'Study Desk Subscription'}
+                  </td>
+                  <td style={{ padding: '12px 0', color: '#5C5C5C', fontSize: '0.8125rem' }}>
+                    {formatDateDDMMYYYY(receipt.period_start)} to {formatDateDDMMYYYY(receipt.period_end)}
+                  </td>
+                  <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600, color: '#1F2933' }}>
+                    ₹{Number(receipt.amount).toLocaleString('en-IN')}
+                  </td>
+                </tr>
+              )}
               {Number(receipt.discount) > 0 && (
                 <tr style={{ color: '#166534', fontSize: '0.8125rem' }}>
                   <td style={{ padding: '6px 0' }}>Promotional Discount</td>
@@ -111,7 +142,7 @@ export default function ReceiptModal({ receipt, onClose }) {
                   Total Received
                 </td>
                 <td style={{ padding: '14px 0 6px 0', textAlign: 'right', fontWeight: 600, fontSize: '1.2rem', color: '#C2410C' }}>
-                  ₹{Number(receipt.final_amount).toLocaleString('en-IN')}
+                  ₹{Number(receipt.combined_total != null ? receipt.combined_total : receipt.final_amount).toLocaleString('en-IN')}
                 </td>
               </tr>
               <tr>

@@ -10,6 +10,7 @@ from app.models.payment import Payment
 from app.models.attendance import Attendance
 from app.models.reminder import ReminderLog
 from app.models.expense import Expense
+from app.models.locker import Locker, LockerAssignment
 
 __all__ = [
     "Base",
@@ -30,5 +31,7 @@ __all__ = [
     "Attendance",
     "ReminderLog",
     "Expense",
+    "Locker",
+    "LockerAssignment",
 ]
 

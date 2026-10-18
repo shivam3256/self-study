@@ -30,6 +30,7 @@ class Student(TenantScopedModel):
 
     tenant = relationship("Tenant", back_populates="students")
     allocations = relationship("Allocation", back_populates="student", cascade="all, delete-orphan")
+    locker_assignments = relationship("LockerAssignment", back_populates="student", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="student", cascade="all, delete-orphan")
     attendances = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
     reminders = relationship("ReminderLog", back_populates="student", cascade="all, delete-orphan")

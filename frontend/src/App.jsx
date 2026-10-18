@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Dashboard from './pages/Dashboard';
 import SeatMap from './pages/SeatMap';
+import LockerMap from './pages/LockerMap';
 import Students from './pages/Students';
 import Billing from './pages/Billing';
 import Budget from './pages/Budget';
@@ -14,6 +15,46 @@ import Auth from './pages/Auth';
 import NewStudentModal from './components/NewStudentModal';
 import NewPaymentModal from './components/NewPaymentModal';
 import ReceiptModal from './components/ReceiptModal';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('App ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, textAlign: 'center' }}>
+          <div className="card" style={{ maxWidth: 500, margin: '40px auto', padding: 32 }}>
+            <h3 style={{ color: 'var(--danger-text)', marginBottom: 12 }}>Something went wrong</h3>
+            <p style={{ color: 'var(--color-text-secondary)', marginBottom: 20 }}>
+              {this.state.error?.message || 'An unexpected error occurred while loading this view.'}
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }}
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [token, setToken] = useState(getAuthToken());
@@ -31,6 +72,7 @@ export default function App() {
   const [showNewStudentModal, setShowNewStudentModal] = useState(false);
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
   const [preselectedStudentIdForPayment, setPreselectedStudentIdForPayment] = useState(null);
+  const [initialPaymentTypeForModal, setInitialPaymentTypeForModal] = useState('seat');
   const [currentReceipt, setCurrentReceipt] = useState(null);
 
   // Listen for unauthorized events
@@ -83,8 +125,9 @@ export default function App() {
     setTenant(null);
   };
 
-  const handleOpenPayment = (studentId = null) => {
+  const handleOpenPayment = (studentId = null, paymentType = 'seat') => {
     setPreselectedStudentIdForPayment(studentId);
+    setInitialPaymentTypeForModal(paymentType || 'seat');
     setShowNewPaymentModal(true);
   };
 
@@ -103,6 +146,11 @@ export default function App() {
         return {
           title: 'Interactive Visual Seat Map',
           subtitle: 'Real-time floor plan layout. Click any desk to assign or vacate seats across shifts.',
+        };
+      case 'lockers':
+        return {
+          title: 'Locker Management & Allocations',
+          subtitle: 'Visual locker grid, storage assignments, renewals, security deposits and maintenance tracking.',
         };
       case 'students':
         return {
@@ -163,60 +211,70 @@ export default function App() {
         />
 
         <main className="content-body">
-          {activeTab === 'dashboard' && (
-            <Dashboard
-              setActiveTab={setActiveTab}
-              onOpenNewStudent={() => setShowNewStudentModal(true)}
-              onOpenNewPayment={() => handleOpenPayment(null)}
-            />
-          )}
+          <ErrorBoundary key={activeTab}>
+            {activeTab === 'dashboard' && (
+              <Dashboard
+                setActiveTab={setActiveTab}
+                onOpenNewStudent={() => setShowNewStudentModal(true)}
+                onOpenNewPayment={() => handleOpenPayment(null)}
+              />
+            )}
 
-          {activeTab === 'seatmap' && (
-            <SeatMap
-              students={students}
-              onRefreshStudents={loadSharedData}
-            />
-          )}
+            {activeTab === 'seatmap' && (
+              <SeatMap
+                students={students}
+                onRefreshStudents={loadSharedData}
+              />
+            )}
 
-          {activeTab === 'students' && (
-            <Students
-              students={students}
-              loading={loadingData}
-              onRefresh={loadSharedData}
-              onOpenNewStudent={() => setShowNewStudentModal(true)}
-              onOpenNewPayment={handleOpenPayment}
-            />
-          )}
+            {activeTab === 'lockers' && (
+              <LockerMap
+                students={students}
+                onOpenPayment={handleOpenPayment}
+                onViewReceipt={(rcpt) => setCurrentReceipt(rcpt)}
+              />
+            )}
 
-          {activeTab === 'billing' && (
-            <Billing
-              onOpenNewPayment={handleOpenPayment}
-              onViewReceipt={(rcpt) => setCurrentReceipt(rcpt)}
-            />
-          )}
+            {activeTab === 'students' && (
+              <Students
+                students={students}
+                loading={loadingData}
+                onRefresh={loadSharedData}
+                onOpenNewStudent={() => setShowNewStudentModal(true)}
+                onOpenNewPayment={handleOpenPayment}
+              />
+            )}
 
-          {activeTab === 'budget' && (
-            <Budget tenant={tenant} />
-          )}
+            {activeTab === 'billing' && (
+              <Billing
+                onOpenNewPayment={handleOpenPayment}
+                onViewReceipt={(rcpt) => setCurrentReceipt(rcpt)}
+              />
+            )}
 
-          {activeTab === 'attendance' && (
-            <Attendance students={students} />
-          )}
+            {activeTab === 'budget' && (
+              <Budget tenant={tenant} />
+            )}
 
-          {activeTab === 'reminders' && (
-            <Reminders />
-          )}
+            {activeTab === 'attendance' && (
+              <Attendance students={students} />
+            )}
 
-          {activeTab === 'settings' && (
-            <Settings
-              tenant={tenant}
-              shifts={shifts}
-              plans={plans}
-              onTenantUpdated={(newTenant) => setTenant(newTenant)}
-              onRefreshData={loadSharedData}
-              onLogout={handleLogout}
-            />
-          )}
+            {activeTab === 'reminders' && (
+              <Reminders />
+            )}
+
+            {activeTab === 'settings' && (
+              <Settings
+                tenant={tenant}
+                shifts={shifts}
+                plans={plans}
+                onTenantUpdated={(newTenant) => setTenant(newTenant)}
+                onRefreshData={loadSharedData}
+                onLogout={handleLogout}
+              />
+            )}
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -234,6 +292,7 @@ export default function App() {
           students={students}
           plans={plans}
           preselectedStudentId={preselectedStudentIdForPayment}
+          initialPaymentType={initialPaymentTypeForModal}
           onClose={() => setShowNewPaymentModal(false)}
           onSuccess={(issuedReceipt) => {
             loadSharedData();

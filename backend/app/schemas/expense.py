@@ -58,6 +58,8 @@ class BudgetSummaryResponse(BaseModel):
     year: int
     month_name: str
     total_income: float
+    seat_income: float = 0.0
+    locker_income: float = 0.0
     total_expenses: float
     net_profit: float
     profit_margin_pct: float

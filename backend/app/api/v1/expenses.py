@@ -116,16 +116,39 @@ async def get_budget_summary(
     start_date = date(target_year, target_month, 1)
     end_date = date(target_year, target_month, last_day)
 
-    # 1. Total Income (Student payments in that month)
+    # 1. Total Income (Student payments in that month, deposits are excluded from income)
     income_res = await db.scalar(
         select(func.sum(Payment.final_amount)).where(
             Payment.tenant_id == tenant_id,
             Payment.payment_date >= start_date,
             Payment.payment_date <= end_date,
-            Payment.status == "paid"
+            Payment.status == "paid",
+            Payment.payment_type != "deposit"
         )
     )
     total_income = float(income_res or 0.0)
+
+    seat_income_res = await db.scalar(
+        select(func.sum(Payment.final_amount)).where(
+            Payment.tenant_id == tenant_id,
+            Payment.payment_date >= start_date,
+            Payment.payment_date <= end_date,
+            Payment.status == "paid",
+            Payment.payment_type == "seat"
+        )
+    )
+    seat_income = float(seat_income_res or 0.0)
+
+    locker_income_res = await db.scalar(
+        select(func.sum(Payment.final_amount)).where(
+            Payment.tenant_id == tenant_id,
+            Payment.payment_date >= start_date,
+            Payment.payment_date <= end_date,
+            Payment.status == "paid",
+            Payment.payment_type == "locker"
+        )
+    )
+    locker_income = float(locker_income_res or 0.0)
 
     # 2. Total Expenses in that month
     expense_res = await db.scalar(
@@ -208,7 +231,8 @@ async def get_budget_summary(
                 Payment.tenant_id == tenant_id,
                 Payment.payment_date >= m_start,
                 Payment.payment_date <= m_end,
-                Payment.status == "paid"
+                Payment.status == "paid",
+                Payment.payment_type != "deposit"
             )
         ) or 0.0)
 
@@ -250,6 +274,8 @@ async def get_budget_summary(
         year=target_year,
         month_name=month_name,
         total_income=total_income,
+        seat_income=seat_income,
+        locker_income=locker_income,
         total_expenses=total_expenses,
         net_profit=net_profit,
         profit_margin_pct=profit_margin_pct,

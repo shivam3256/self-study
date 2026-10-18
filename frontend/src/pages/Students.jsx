@@ -34,6 +34,23 @@ export default function Students({
     if (!window.confirm('Pause this membership? The student can resume later with expiry date extended.')) return;
     try {
       setActionLoading(studentId);
+      // Check if student has active locker
+      try {
+        const activeLocker = await api.lockers.getActiveForStudent(studentId);
+        if (activeLocker) {
+          const shouldRelease = window.confirm(
+            `Notice: This student also holds Locker ${activeLocker.label}.\n\n` +
+            `Do you want to release the locker assignment as well?\n\n` +
+            `Click OK to RELEASE Locker ${activeLocker.label}, or Cancel to KEEP the locker assigned.`
+          );
+          if (shouldRelease) {
+            await api.lockers.release(activeLocker.locker_id, { refund_deposit: true });
+          }
+        }
+      } catch (lErr) {
+        // ignore
+      }
+
       await api.students.pause(studentId);
       onRefresh();
     } catch (err) {
@@ -59,6 +76,23 @@ export default function Students({
     if (!window.confirm(`Delete student record for ${name}? This action cannot be undone.`)) return;
     try {
       setActionLoading(studentId);
+      // Check if student has active locker
+      try {
+        const activeLocker = await api.lockers.getActiveForStudent(studentId);
+        if (activeLocker) {
+          const shouldRelease = window.confirm(
+            `Notice: ${name} holds Locker ${activeLocker.label}.\n\n` +
+            `Do you want to release the locker and refund any deposit?\n\n` +
+            `Click OK to RELEASE Locker ${activeLocker.label}, or Cancel to keep it.`
+          );
+          if (shouldRelease) {
+            await api.lockers.release(activeLocker.locker_id, { refund_deposit: true });
+          }
+        }
+      } catch (lErr) {
+        // ignore
+      }
+
       await api.students.delete(studentId);
       onRefresh();
     } catch (err) {
