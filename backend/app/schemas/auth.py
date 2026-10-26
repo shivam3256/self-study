@@ -100,6 +100,7 @@ class TenantResponse(BaseModel):
     subscription_status: str
     currency: str
     operating_hours: str
+    grace_period_days: int = 30
     is_active: bool
     created_at: datetime
 
@@ -131,6 +132,7 @@ class TenantUpdateRequest(BaseModel):
     logo_url: Optional[str] = None
     currency: Optional[str] = None
     operating_hours: Optional[str] = None
+    grace_period_days: Optional[int] = None
 
 TokenResponse.model_rebuild()
 GoogleAuthResponse.model_rebuild()

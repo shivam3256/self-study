@@ -88,7 +88,8 @@ async def lifespan(app: FastAPI):
                 if "additional_email" not in tenant_cols:
                     sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN additional_email VARCHAR(255)"))
                 if "grace_period_days" not in tenant_cols:
-                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN grace_period_days INTEGER DEFAULT 5"))
+                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN grace_period_days INTEGER DEFAULT 30"))
+                sync_conn.execute(text("UPDATE tenants SET grace_period_days = 30 WHERE grace_period_days IS NULL OR grace_period_days = 5"))
 
             if "plans" in table_names:
                 plan_cols = [c["name"] for c in inspector.get_columns("plans")]

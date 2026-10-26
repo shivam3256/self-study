@@ -32,7 +32,7 @@ class AllocationService:
     ) -> List[Desk]:
         """
         Finds desks that are free across EVERY shift in `shift_ids` for the ENTIRE date range.
-        Filtered by zone and gender restrictions.
+        Filtered by zone, gender restrictions, and a 30-day grace period after end_date.
         """
         if not shift_ids:
             return []
@@ -43,12 +43,14 @@ class AllocationService:
         has_full_req = any((s.code or "").upper() == "FULL" for s in req_shifts)
 
         tenant_res = await db.execute(select(Tenant.grace_period_days).where(Tenant.id == tenant_id))
-        grace_days = tenant_res.scalar_one_or_none() or 5
+        grace_days = tenant_res.scalar_one_or_none() or 30
 
         # 1. Query occupied seat IDs in ANY of the requested shifts during the date range
+        # Note: Every active/overdue allocation reserves the seat until end_date + grace_days
         conflict_query = (
             select(AllocationShift)
             .join(Shift, AllocationShift.shift_id == Shift.id)
+            .join(Allocation, AllocationShift.allocation_id == Allocation.id)
             .where(
                 AllocationShift.tenant_id == tenant_id,
                 AllocationShift.status.in_(["active", "overdue"]),
@@ -63,13 +65,15 @@ class AllocationService:
                 )
             )
 
+        if exclude_student_id:
+            conflict_query = conflict_query.where(Allocation.student_id != exclude_student_id)
         if exclude_allocation_id:
             conflict_query = conflict_query.where(AllocationShift.allocation_id != exclude_allocation_id)
         
         conflict_res = await db.execute(conflict_query)
         occupied_seat_ids = set()
         for ashift in conflict_res.scalars().all():
-            eff_end = ashift.end_date + timedelta(days=grace_days) if ashift.status == "overdue" else ashift.end_date
+            eff_end = ashift.end_date + timedelta(days=grace_days)
             if eff_end >= start_date:
                 occupied_seat_ids.add(ashift.seat_id)
 
@@ -104,11 +108,12 @@ class AllocationService:
         start_date: date,
         end_date: date,
         exclude_allocation_id: Optional[str] = None,
+        exclude_student_id: Optional[str] = None,
         raise_on_conflict: bool = True
     ) -> bool:
         """
         Re-checks availability inside transaction at save time.
-        Raises 409 Conflict if occupied in any shift for the date range.
+        Raises 409 Conflict if occupied in any shift for the date range (including grace period).
         """
         desk_query = select(Desk).where(Desk.id == seat_id, Desk.tenant_id == tenant_id, Desk.is_active == True)
         if db.bind and db.bind.dialect.name != "sqlite":
@@ -123,11 +128,12 @@ class AllocationService:
         has_full_req = any((s.code or "").upper() == "FULL" for s in req_shifts)
 
         tenant_res = await db.execute(select(Tenant.grace_period_days).where(Tenant.id == tenant_id))
-        grace_days = tenant_res.scalar_one_or_none() or 5
+        grace_days = tenant_res.scalar_one_or_none() or 30
 
         conflict_query = (
             select(AllocationShift)
             .join(Shift, AllocationShift.shift_id == Shift.id)
+            .join(Allocation, AllocationShift.allocation_id == Allocation.id)
             .options(selectinload(AllocationShift.shift), selectinload(AllocationShift.allocation).selectinload(Allocation.student))
             .where(
                 AllocationShift.tenant_id == tenant_id,
@@ -144,6 +150,8 @@ class AllocationService:
                 )
             )
 
+        if exclude_student_id:
+            conflict_query = conflict_query.where(Allocation.student_id != exclude_student_id)
         if exclude_allocation_id:
             conflict_query = conflict_query.where(AllocationShift.allocation_id != exclude_allocation_id)
         if db.bind and db.bind.dialect.name != "sqlite":
@@ -153,7 +161,7 @@ class AllocationService:
         candidates = conflict_res.scalars().all()
         conflicts = []
         for ashift in candidates:
-            eff_end = ashift.end_date + timedelta(days=grace_days) if ashift.status == "overdue" else ashift.end_date
+            eff_end = ashift.end_date + timedelta(days=grace_days)
             if eff_end >= start_date:
                 conflicts.append(ashift)
 
@@ -163,9 +171,10 @@ class AllocationService:
             conf = conflicts[0]
             student_name = conf.allocation.student.full_name if conf.allocation and conf.allocation.student else "Another student"
             shift_name = conf.shift.name if conf.shift else "Shift"
+            grace_end = conf.end_date + timedelta(days=grace_days)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Seat {desk.desk_number} is already occupied by {student_name} for {shift_name} until {conf.end_date}."
+                detail=f"Seat {desk.desk_number} is already occupied / held by {student_name} ({shift_name}) under subscription/grace period until {grace_end}."
             )
         return True
 
@@ -280,10 +289,11 @@ class AllocationService:
             seat_id=seat_id,
             shift_ids=shift_ids,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            exclude_student_id=student.id
         )
 
-        # 6. Vacate/close prior active allocations for this student on overlapping shifts to prevent double holdings
+        # 6. Vacate/close prior active allocations for this student if overlapping with requested period
         prior_res = await db.execute(
             select(Allocation)
             .options(selectinload(Allocation.allocation_shifts))
@@ -294,9 +304,10 @@ class AllocationService:
             )
         )
         for prev_alloc in prior_res.scalars().all():
-            prev_alloc.status = "cancelled"
-            for prev_ash in prev_alloc.allocation_shifts:
-                prev_ash.status = "cancelled"
+            if start_date <= prev_alloc.end_date:
+                prev_alloc.status = "cancelled"
+                for prev_ash in prev_alloc.allocation_shifts:
+                    prev_ash.status = "cancelled"
 
         # 7. Create Allocation
         allocation = Allocation(
@@ -528,11 +539,56 @@ class AllocationService:
         )
 
     @staticmethod
+    async def replace_occupant(
+        db: AsyncSession,
+        tenant_id: str,
+        current_allocation_id: str,
+        new_student_id: str,
+        shift_ids: Optional[List[str]] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        plan_id: Optional[str] = None,
+        auto_commit: bool = True
+    ) -> Allocation:
+        """
+        Owner force-reassigns a desk to a new student from Visual Seat Map,
+        clearing the prior occupant's allocation (active or in grace period).
+        """
+        curr_res = await db.execute(
+            select(Allocation)
+            .options(selectinload(Allocation.allocation_shifts))
+            .where(Allocation.id == current_allocation_id, Allocation.tenant_id == tenant_id)
+        )
+        curr_alloc = curr_res.scalar_one_or_none()
+        if not curr_alloc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Current seat allocation not found.")
+
+        seat_id = curr_alloc.seat_id
+        if not shift_ids:
+            shift_ids = [ash.shift_id for ash in curr_alloc.allocation_shifts]
+
+        # Vacate the current occupant's allocation
+        curr_alloc.status = "cancelled"
+        for ash in curr_alloc.allocation_shifts:
+            ash.status = "cancelled"
+        await db.flush()
+
+        alloc_create = AllocationCreate(
+            student_id=new_student_id,
+            plan_id=plan_id,
+            seat_id=seat_id,
+            shift_ids=shift_ids,
+            start_date=start_date or date.today(),
+            end_date=end_date or (date.today() + timedelta(days=29))
+        )
+        return await AllocationService.allocate_seat(db, tenant_id, alloc_create, auto_commit=auto_commit)
+
+    @staticmethod
     async def process_overdue_and_expirations(db: AsyncSession, tenant_id: Optional[str] = None) -> dict:
         """
         Scheduled lifecycle job:
         - active -> overdue when end_date passes without payment
-        - overdue -> expired after grace period (stored per tenant, default 5 days), freeing seat.
+        - overdue -> expired after grace period (stored per tenant, default 30 days), freeing seat.
         """
         today = date.today()
 
@@ -547,7 +603,7 @@ class AllocationService:
         expired_count = 0
 
         for t in tenants:
-            grace_days = t.grace_period_days or 5
+            grace_days = t.grace_period_days or 30
 
             # 1. Active allocations that have passed end_date -> OVERDUE
             active_q = (

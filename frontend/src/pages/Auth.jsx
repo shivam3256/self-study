@@ -622,7 +622,7 @@ export default function Auth({ onLoginSuccess }) {
                 <Building2 size={28} />
               </div>
               <div>
-                <div className="auth-logo-title">StudyHub</div>
+                <div className="auth-logo-title">LibMa</div>
                 <div className="auth-logo-sub">Self-Study Center OS</div>
               </div>
             </div>

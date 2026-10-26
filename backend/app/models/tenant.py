@@ -24,7 +24,7 @@ class Tenant(BaseModel):
     
     currency = Column(String(10), default="INR", nullable=False)
     operating_hours = Column(String(100), default="06:00 AM - 11:00 PM", nullable=False)
-    grace_period_days = Column(Integer, default=5, nullable=False)
+    grace_period_days = Column(Integer, default=30, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")

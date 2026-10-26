@@ -9,8 +9,15 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.tenant import User
 from app.models.allocation import Allocation, AllocationShift
+from app.schemas.allocation import (
+    AllocationCreate,
+    AllocationResponse,
+    VacateRequest,
+    ReassignRequest,
+    RenewalRequest,
+    ReplaceOccupantRequest
+)
 from app.models.plan import Plan, PlanShift
-from app.schemas.allocation import AllocationCreate, AllocationResponse, VacateRequest, ReassignRequest, RenewalRequest
 from app.schemas.desk import DeskResponse
 from app.services.allocation_service import AllocationService
 
@@ -68,6 +75,7 @@ async def get_available_desks(
     start_date: Optional[date] = Query(None, description="Start date (default today)"),
     end_date: Optional[date] = Query(None, description="End date"),
     gender: Optional[str] = Query(None, description="Student gender for ladies_only filtering"),
+    current_student_id: Optional[str] = Query(None, description="Current student ID (exempt from their own grace period)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -105,7 +113,8 @@ async def get_available_desks(
         start_date=target_start,
         end_date=target_end,
         zone_id=zone_id,
-        gender=gender
+        gender=gender,
+        exclude_student_id=current_student_id
     )
     return [DeskResponse.model_validate(d) for d in desks]
 
@@ -141,6 +150,39 @@ async def reassign_allocation(
 ):
     allocation = await AllocationService.reassign_seat(db, current_user.tenant_id, allocation_id, data)
     
+    query = (
+        select(Allocation)
+        .options(
+            selectinload(Allocation.student),
+            selectinload(Allocation.desk),
+            selectinload(Allocation.allocation_shifts).selectinload(AllocationShift.shift),
+            selectinload(Allocation.plan)
+        )
+        .where(Allocation.id == allocation.id)
+    )
+    res = await db.execute(query)
+    loaded = res.scalar_one()
+    return format_allocation_response(loaded)
+
+@router.post("/{allocation_id}/replace-occupant", response_model=AllocationResponse)
+async def replace_occupant_endpoint(
+    allocation_id: str,
+    data: ReplaceOccupantRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    shift_ids = data.shift_ids or ([data.shift_id] if data.shift_id else None)
+    allocation = await AllocationService.replace_occupant(
+        db=db,
+        tenant_id=current_user.tenant_id,
+        current_allocation_id=allocation_id,
+        new_student_id=data.new_student_id,
+        shift_ids=shift_ids,
+        start_date=data.start_date,
+        end_date=data.end_date,
+        plan_id=data.plan_id
+    )
+
     query = (
         select(Allocation)
         .options(

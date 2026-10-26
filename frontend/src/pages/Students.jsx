@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Pause, Play, Trash2, CreditCard, UserCheck, ShieldAlert, Sparkles, FileSpreadsheet, Armchair } from 'lucide-react';
+import { Search, Pause, Play, Trash2, CreditCard, UserCheck, ShieldAlert, Sparkles, FileSpreadsheet, Armchair, UserX } from 'lucide-react';
 import { api } from '../api';
 import ImportStudentsModal from '../components/ImportStudentsModal';
 import StudentSeatModal from '../components/StudentSeatModal';
@@ -72,6 +72,26 @@ export default function Students({
     }
   };
 
+  const handleMarkLeft = async (studentId, name) => {
+    if (!window.confirm(
+      `Mark ${name} as Left?\n\n` +
+      `This will immediately:\n` +
+      `1. Set student status to "Left"\n` +
+      `2. Vacate their assigned study seat\n` +
+      `3. Release any assigned locker.`
+    )) return;
+
+    try {
+      setActionLoading(studentId);
+      await api.students.markLeft(studentId);
+      onRefresh();
+    } catch (err) {
+      alert(err.message || 'Failed to mark student as left.');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
   const handleDelete = async (studentId, name) => {
     if (!window.confirm(`Delete student record for ${name}? This action cannot be undone.`)) return;
     try {
@@ -122,7 +142,7 @@ export default function Students({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {['all', 'active', 'paused', 'expired'].map((st) => (
+            {['all', 'active', 'paused', 'expired', 'left'].map((st) => (
               <button
                 key={st}
                 className={`btn btn-sm ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
@@ -256,6 +276,18 @@ export default function Students({
                         >
                           <CreditCard size={14} />
                         </button>
+
+                        {s.status !== 'left' && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            title="Mark Student as Left (Vacates Seat & Locker)"
+                            disabled={actionLoading === s.id}
+                            style={{ color: '#DC2626' }}
+                            onClick={() => handleMarkLeft(s.id, s.full_name)}
+                          >
+                            <UserX size={14} />
+                          </button>
+                        )}
 
                         <button
                           className="btn btn-danger btn-sm"

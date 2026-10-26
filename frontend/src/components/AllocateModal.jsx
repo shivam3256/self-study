@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserCheck, ShieldAlert, Calendar, Clock, CheckCircle, ArrowRightLeft } from 'lucide-react';
+import { X, UserCheck, ShieldAlert, Calendar, Clock, CheckCircle, ArrowRightLeft, UserX, UserPlus, AlertTriangle } from 'lucide-react';
 import { api } from '../api';
+import { formatDateDDMMYYYY } from '../utils/dateUtils';
 
 export default function AllocateModal({ desk, activeShift, shifts, students, onClose, onAllocationSuccess }) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -12,11 +13,20 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Reassign flow state
+  // Reassign flow state (move current occupant to another desk)
   const [isReassigning, setIsReassigning] = useState(false);
   const [newDeskId, setNewDeskId] = useState('');
   const [availableDesks, setAvailableDesks] = useState([]);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
+
+  // Replace occupant flow state (owner assigns another student to this desk)
+  const [isReplacingOccupant, setIsReplacingOccupant] = useState(false);
+  const [replaceStudentId, setReplaceStudentId] = useState('');
+  const [replaceShiftId, setReplaceShiftId] = useState(activeShift?.id || desk?.shift_id || (shifts[0]?.id || ''));
+  const [replaceStartDate, setReplaceStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [replaceEndDate, setReplaceEndDate] = useState(
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  );
 
   useEffect(() => {
     if (isReassigning && desk) {
@@ -44,6 +54,8 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
   if (!desk) return null;
 
   const isOccupied = desk.is_occupied;
+  const isGrace = desk.is_grace_period || desk.occupancy_status === 'grace_period';
+  const remainingGraceDays = Math.max(0, 30 - (desk.days_overdue || 0));
 
   const handleAllocate = async (e) => {
     e.preventDefault();
@@ -109,6 +121,29 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
     }
   };
 
+  const handleMarkStudentLeft = async () => {
+    if (!desk.student_id) return;
+    if (!window.confirm(
+      `Mark ${desk.student_name} as Left?\n\n` +
+      `This will immediately:\n` +
+      `1. Mark student status as "Left"\n` +
+      `2. Vacate Desk ${desk.desk_number}\n` +
+      `3. Release any assigned locker automatically.`
+    )) return;
+
+    setLoading(true);
+    setError('');
+    try {
+      await api.students.markLeft(desk.student_id);
+      onAllocationSuccess();
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to mark student as left.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReassignSubmit = async (e) => {
     e.preventDefault();
     if (!desk.allocation_id || !newDeskId) {
@@ -130,9 +165,33 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
     }
   };
 
+  const handleReplaceOccupantSubmit = async (e) => {
+    e.preventDefault();
+    if (!desk.allocation_id || !replaceStudentId) {
+      setError('Please select a replacement student.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await api.allocations.replaceOccupant(desk.allocation_id, {
+        new_student_id: replaceStudentId,
+        shift_id: replaceShiftId,
+        start_date: replaceStartDate,
+        end_date: replaceEndDate,
+      });
+      onAllocationSuccess();
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to replace occupant.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
           <div>
             <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)' }}>
@@ -156,10 +215,27 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
 
         {isOccupied ? (
           <div>
-            <div style={{ background: 'var(--color-brand-tint)', border: '1px solid #FED7AA', borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-brand)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>
-                <UserCheck size={16} />
-                <span>Currently Occupied</span>
+            {/* Grace Period Banner */}
+            {isGrace && (
+              <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <AlertTriangle size={18} color="#D97706" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div style={{ fontSize: '0.85rem', color: '#92400E' }}>
+                  <strong>30-Day Grace Period Active ({remainingGraceDays} days left):</strong> Subscription expired on {formatDateDDMMYYYY(desk.end_date)}. This seat is protected from public booking until {formatDateDDMMYYYY(desk.grace_end_date)}. As owner, you may renew, reassign to a new student, or mark the student as left.
+                </div>
+              </div>
+            )}
+
+            <div style={{ background: isGrace ? '#FFFDF5' : 'var(--color-brand-tint)', border: isGrace ? '1px solid #FDE68A' : '1px solid #FED7AA', borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: isGrace ? '#D97706' : 'var(--color-brand)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                  <UserCheck size={16} />
+                  <span>{isGrace ? 'Held Under Grace Period' : 'Currently Occupied'}</span>
+                </div>
+                {isGrace && (
+                  <span className="badge" style={{ background: '#FEF3C7', color: '#92400E', fontWeight: 600 }}>
+                    {remainingGraceDays}d Grace Left
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--color-heading)' }}>
                 {desk.student_name}
@@ -176,18 +252,18 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
                 </div>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>Validity Period</div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-heading)' }}>
-                    {desk.start_date} to {desk.end_date}
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: isGrace ? '#DC2626' : 'var(--color-heading)' }}>
+                    {formatDateDDMMYYYY(desk.start_date)} to {formatDateDDMMYYYY(desk.end_date)}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Reassign Panel */}
-            {isReassigning ? (
+            {/* Panel 1: Move Current Occupant to Another Desk */}
+            {isReassigning && (
               <form onSubmit={handleReassignSubmit} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: 16, marginBottom: 20 }}>
                 <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-heading)', marginBottom: 10 }}>
-                  Reassign {desk.student_name} to Another Desk
+                  Move {desk.student_name} to Another Desk
                 </h4>
 
                 <div className="form-group">
@@ -221,33 +297,142 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary btn-sm" disabled={loading || !newDeskId}>
-                    {loading ? 'Reassigning...' : 'Confirm Reassign'}
+                    {loading ? 'Moving...' : 'Confirm Move'}
                   </button>
                 </div>
               </form>
-            ) : null}
+            )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-              <div>
-                {!isReassigning && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    onClick={() => setIsReassigning(true)}
+            {/* Panel 2: Replace Occupant / Assign This Desk to Another Student */}
+            {isReplacingOccupant && (
+              <form onSubmit={handleReplaceOccupantSubmit} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-heading)', marginBottom: 4 }}>
+                  Reassign Desk {desk.desk_number} to a New Student
+                </h4>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: 12 }}>
+                  This will vacate {desk.student_name} from Desk {desk.desk_number} and assign it to the selected student.
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Select New Student *</label>
+                  <select
+                    className="form-select"
+                    value={replaceStudentId}
+                    onChange={(e) => setReplaceStudentId(e.target.value)}
+                    required
                   >
-                    <ArrowRightLeft size={15} />
-                    <span>Change Seat</span>
+                    <option value="">-- Choose replacement student --</option>
+                    {students
+                      .filter((s) => s.id !== desk.student_id && s.status !== 'left')
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.full_name} ({s.admission_number} - {s.phone})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Shift *</label>
+                  <select
+                    className="form-select"
+                    value={replaceShiftId}
+                    onChange={(e) => setReplaceShiftId(e.target.value)}
+                    required
+                  >
+                    {shifts.map((sh) => (
+                      <option key={sh.id} value={sh.id}>
+                        {sh.name} ({sh.start_time} - {sh.end_time})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="form-group">
+                    <label className="form-label">Start Date *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={replaceStartDate}
+                      onChange={(e) => setReplaceStartDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">End Date *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={replaceEndDate}
+                      onChange={(e) => setReplaceEndDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsReplacingOccupant(false)}>
+                    Cancel
                   </button>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={loading || !replaceStudentId}>
+                    {loading ? 'Reassigning...' : 'Confirm New Student Assignment'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Actions Bar */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 16 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {!isReassigning && !isReplacingOccupant && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      onClick={() => {
+                        setIsReassigning(true);
+                        setIsReplacingOccupant(false);
+                      }}
+                      title="Move current student to a different desk"
+                    >
+                      <ArrowRightLeft size={14} />
+                      <span>Move Student</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      onClick={() => {
+                        setIsReplacingOccupant(true);
+                        setIsReassigning(false);
+                      }}
+                      title="Assign this desk to another student (overrides grace period)"
+                    >
+                      <UserPlus size={14} />
+                      <span>Assign to Other Student</span>
+                    </button>
+                  </>
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="btn btn-secondary" onClick={onClose}>
-                  Close
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}
+                  onClick={handleMarkStudentLeft}
+                  disabled={loading}
+                  title="Mark student as Left (frees desk and locker)"
+                >
+                  <UserX size={14} />
+                  <span>Mark as Left</span>
                 </button>
-                <button className="btn btn-danger" onClick={handleVacate} disabled={loading}>
-                  {loading ? 'Vacating...' : 'Vacate This Desk'}
+
+                <button className="btn btn-danger btn-sm" onClick={handleVacate} disabled={loading}>
+                  {loading ? 'Vacating...' : 'Vacate Desk'}
                 </button>
               </div>
             </div>

@@ -111,6 +111,10 @@ export default function SeatMap({ students, onRefreshStudents }) {
                 <span>Occupied</span>
               </div>
               <div className="legend-item">
+                <span className="legend-dot" style={{ background: '#F59E0B', width: 10, height: 10, borderRadius: '50%', display: 'inline-block' }} />
+                <span>Grace Period</span>
+              </div>
+              <div className="legend-item">
                 <span className="legend-dot premium" />
                 <span>Premium / AC</span>
               </div>
@@ -185,22 +189,31 @@ export default function SeatMap({ students, onRefreshStudents }) {
 
             <div className="seat-grid-container">
               {zoneDesks.map((d) => {
+                const isGrace = d.is_occupied && (d.is_grace_period || d.occupancy_status === 'grace_period');
+                const graceLeft = Math.max(0, 30 - (d.days_overdue || 0));
                 return (
                   <div
                     key={d.id}
-                    className={`seat-box ${d.is_occupied ? 'occupied' : 'available'}`}
+                    className={`seat-box ${d.is_occupied ? (isGrace ? 'grace-period' : 'occupied') : 'available'}`}
+                    style={isGrace ? { borderColor: '#F59E0B', background: '#FFFDF5' } : {}}
                     onClick={() => setSelectedDesk(d)}
-                    title={`Click to ${d.is_occupied ? 'view occupant / vacate / reassign' : 'allocate seat'}`}
+                    title={`Click to ${d.is_occupied ? (isGrace ? `view grace period (${graceLeft}d left) / reassign` : 'view occupant / vacate / reassign') : 'allocate seat'}`}
                   >
-                    <div className="seat-number">{d.desk_number}</div>
+                    <div className="seat-number" style={isGrace ? { color: '#B45309' } : {}}>{d.desk_number}</div>
                     <div className="seat-category-tag">{d.category}</div>
 
                     {d.is_occupied ? (
                       <>
-                        <div className="seat-occupant" title={d.student_name}>
+                        <div className="seat-occupant" title={d.student_name} style={isGrace ? { color: '#92400E' } : {}}>
                           {d.student_name}
                         </div>
-                        <span className="seat-status-pill busy">Occupied</span>
+                        {isGrace ? (
+                          <span className="seat-status-pill warning" style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
+                            Grace ({graceLeft}d)
+                          </span>
+                        ) : (
+                          <span className="seat-status-pill busy">Occupied</span>
+                        )}
                       </>
                     ) : (
                       <>

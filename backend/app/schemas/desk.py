@@ -60,6 +60,10 @@ class DeskSeatMapItem(BaseModel):
     shift_name: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    occupancy_status: Optional[str] = "vacant"  # vacant, active, grace_period
+    is_grace_period: bool = False
+    days_overdue: int = 0
+    grace_end_date: Optional[str] = None
 
 
 # ─── Onboarding Floor Setup Schemas ───

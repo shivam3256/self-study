@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.models.tenant import User
+from app.models.tenant import User, Tenant
 from app.models.desk import Desk
 from app.models.shift import Shift
 from app.models.allocation import Allocation, AllocationShift, SeatAllocation
@@ -98,6 +98,7 @@ async def get_available_seats(
     start_date: Optional[date] = Query(None, description="Start date (defaults to today)"),
     end_date: Optional[date] = Query(None, description="End date"),
     gender: Optional[str] = Query(None, description="Student gender"),
+    current_student_id: Optional[str] = Query(None, description="Current student ID (exempt from their own grace period)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -134,7 +135,8 @@ async def get_available_seats(
         start_date=target_start,
         end_date=target_end,
         zone_id=zone_id,
-        gender=gender
+        gender=gender,
+        exclude_student_id=current_student_id
     )
     return [DeskResponse.model_validate(d) for d in desks]
 
@@ -152,6 +154,10 @@ async def get_seat_map(
 ):
     target_date = query_date or date.today()
 
+    # Get tenant grace period days (default 30)
+    tenant_res = await db.execute(select(Tenant.grace_period_days).where(Tenant.id == current_user.tenant_id))
+    grace_days = tenant_res.scalar_one_or_none() or 30
+
     # 1. Fetch all active desks
     desk_query = select(Desk).where(
         Desk.tenant_id == current_user.tenant_id,
@@ -168,7 +174,7 @@ async def get_seat_map(
         )
         target_shift = sh_res.scalar_one_or_none()
 
-    # 3. Fetch active allocations for this date
+    # 3. Fetch active and overdue allocations (occupied during validity + 30 days grace period)
     alloc_query = (
         select(Allocation)
         .options(
@@ -178,12 +184,18 @@ async def get_seat_map(
         .where(
             Allocation.tenant_id == current_user.tenant_id,
             Allocation.status.in_(["active", "overdue"]),
-            Allocation.start_date <= target_date,
-            Allocation.end_date >= target_date
+            Allocation.start_date <= target_date
         )
     )
     alloc_res = await db.execute(alloc_query)
-    active_allocations = alloc_res.scalars().all()
+    all_allocs = alloc_res.scalars().all()
+
+    # Filter to allocations whose effective end date (end_date + grace_days) covers target_date
+    active_allocations = []
+    for a in all_allocs:
+        eff_end = a.end_date + timedelta(days=grace_days)
+        if target_date <= eff_end:
+            active_allocations.append(a)
 
     # Map desk_id -> list of matching allocations
     allocs_by_desk: Dict[str, List[Allocation]] = {}
@@ -218,6 +230,10 @@ async def get_seat_map(
                 combined_names = primary_alloc.student.full_name if primary_alloc.student else "Student"
                 combined_shifts = " / ".join(ash.shift.name for ash in primary_alloc.allocation_shifts if ash.shift) or None
 
+            is_grace = target_date > primary_alloc.end_date
+            days_overdue = (target_date - primary_alloc.end_date).days if is_grace else 0
+            grace_end = primary_alloc.end_date + timedelta(days=grace_days)
+
             result.append(
                 DeskSeatMapItem(
                     id=d.id,
@@ -234,7 +250,11 @@ async def get_seat_map(
                     student_phone=primary_alloc.student.phone if primary_alloc.student else None,
                     shift_name=combined_shifts,
                     start_date=primary_alloc.start_date.isoformat(),
-                    end_date=primary_alloc.end_date.isoformat()
+                    end_date=primary_alloc.end_date.isoformat(),
+                    occupancy_status="grace_period" if is_grace else "active",
+                    is_grace_period=is_grace,
+                    days_overdue=days_overdue,
+                    grace_end_date=grace_end.isoformat()
                 )
             )
         else:

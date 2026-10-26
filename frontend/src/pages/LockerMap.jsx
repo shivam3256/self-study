@@ -18,6 +18,7 @@ import {
   Wrench,
   RotateCcw,
   Receipt,
+  UserX,
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -960,6 +961,29 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
     }
   };
 
+  // Handle Mark Student Left
+  const handleMarkLeft = async () => {
+    if (!locker.student_id) return;
+    if (!window.confirm(
+      `Mark ${locker.student_name} as Left?\n\n` +
+      `This will immediately:\n` +
+      `1. Mark student status as "Left"\n` +
+      `2. Release Locker ${locker.label}\n` +
+      `3. Vacate any assigned study seat.`
+    )) return;
+
+    setLoading(true);
+    setError('');
+    try {
+      await api.students.markLeft(locker.student_id);
+      onSuccess();
+    } catch (err) {
+      setError(err.message || 'Failed to mark student as left.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle Maintenance Toggle
   const handleToggleMaintenance = async () => {
     setLoading(true);
@@ -1143,13 +1167,27 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
                 </div>
 
                 {locker.computed_status === 'overdue' && (
-                  <div style={{ background: '#FEF2F2', border: '1px solid #FECDD3', padding: '12px 14px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <AlertTriangle size={18} color="#DC2626" />
-                    <div style={{ fontSize: '0.85rem', color: '#991B1B' }}>
-                      Locker fee is overdue! The paid-until date has passed. Click <strong>Renew Fee</strong> to record the next payment.
+                  <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', padding: '12px 14px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <AlertTriangle size={18} color="#D97706" />
+                    <div style={{ fontSize: '0.85rem', color: '#92400E' }}>
+                      <strong>30-Day Grace Period Active ({Math.max(0, 30 - (locker.overdue_days || 0))} days left):</strong> Locker fee is overdue (expired on {locker.paid_until}). This locker is held exclusively for this student until Day 30. Click <strong>Renew Fee</strong> or <strong>Change Student</strong> to reassign.
                     </div>
                   </div>
                 )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#DC2626', borderColor: '#FECDD3' }}
+                    onClick={handleMarkLeft}
+                    disabled={loading}
+                    title="Mark student as Left (releases locker and study seat)"
+                  >
+                    <UserX size={14} />
+                    <span>Mark Student as Left</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>

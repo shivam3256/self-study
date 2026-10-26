@@ -50,3 +50,11 @@ class ReassignRequest(BaseModel):
 class RenewalRequest(BaseModel):
     plan_id: Optional[str] = None
     duration_days: Optional[int] = None
+
+class ReplaceOccupantRequest(BaseModel):
+    new_student_id: str
+    shift_id: Optional[str] = None
+    shift_ids: Optional[List[str]] = None
+    plan_id: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None

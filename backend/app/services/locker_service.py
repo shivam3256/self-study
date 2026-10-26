@@ -50,13 +50,16 @@ def add_months_to_date(start: date, months: int) -> date:
 class LockerService:
     @staticmethod
     def _compute_status(locker: Locker, active_assignment: Optional[LockerAssignment]) -> tuple[str, int]:
-        """Calculates computed status and overdue days."""
+        """Calculates computed status and overdue days with 30-day grace period."""
         if locker.status == "maintenance":
             return "maintenance", 0
         if active_assignment and active_assignment.status == "active":
             today = date.today()
             if active_assignment.paid_until < today:
                 overdue_days = (today - active_assignment.paid_until).days
+                if overdue_days > 30:
+                    # Past 30 days grace period: automatically available for new allocations
+                    return "available", overdue_days
                 return "overdue", overdue_days
             return "assigned", 0
         return "available", 0
@@ -311,9 +314,20 @@ class LockerService:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Locker '{locker.label}' is under maintenance and cannot be assigned.")
 
         # Check existing active assignment on this locker
-        has_active = any(a.status == "active" for a in locker.assignments)
-        if has_active:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Locker '{locker.label}' already has an active student assignment.")
+        active_assign = next((a for a in locker.assignments if a.status == "active"), None)
+        if active_assign:
+            today = date.today()
+            if active_assign.paid_until + timedelta(days=30) < today:
+                # Past 30 days grace period: auto-expire old assignment to free locker
+                active_assign.status = "ended"
+                active_assign.ended_at = get_utc_now()
+                active_assign.notes = f"{active_assign.notes or ''}\nAuto-expired after 30-day grace period".strip()
+            else:
+                grace_end = active_assign.paid_until + timedelta(days=30)
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Locker '{locker.label}' has an active student assignment and is currently held under subscription/grace period until {grace_end}. Only the owner can reassign or mark student left."
+                )
 
         # 2. Fetch and validate student
         stu_q = select(Student).where(Student.id == data.student_id, Student.tenant_id == tenant_id)
@@ -881,3 +895,31 @@ class LockerService:
             line_items=line_items,
             combined_total=total_final
         )
+
+    @classmethod
+    async def process_overdue_and_expirations(cls, db: AsyncSession, tenant_id: Optional[str] = None) -> dict:
+        """Scheduled lifecycle job: auto-ends assignments past the 30-day grace period, freeing lockers."""
+        today = date.today()
+        cutoff_date = today - timedelta(days=30)
+        query = (
+            select(LockerAssignment)
+            .options(selectinload(LockerAssignment.locker))
+            .where(
+                LockerAssignment.status == "active",
+                LockerAssignment.paid_until < cutoff_date
+            )
+        )
+        if tenant_id:
+            query = query.where(LockerAssignment.tenant_id == tenant_id)
+        res = await db.execute(query)
+        expired_assignments = res.scalars().all()
+        count = 0
+        for assign in expired_assignments:
+            assign.status = "ended"
+            assign.ended_at = get_utc_now()
+            assign.notes = f"{assign.notes or ''}\nAuto-expired after 30-day grace period".strip()
+            if assign.locker:
+                assign.locker.status = "available"
+            count += 1
+        await db.commit()
+        return {"lockers_expired": count}

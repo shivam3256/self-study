@@ -196,6 +196,62 @@ async def update_student(
     for field, value in update_data.items():
         setattr(student, field, value)
 
+    if student.status == "left":
+        await _execute_student_left_cleanup(db, current_user.tenant_id, student_id)
+
+    await db.commit()
+    await db.refresh(student)
+    return StudentResponse.model_validate(student)
+
+
+async def _execute_student_left_cleanup(db: AsyncSession, tenant_id: str, student_id: str):
+    """Frees assigned seat and locker when a student is marked as Left."""
+    # 1. Vacate all active/overdue seat allocations
+    alloc_q = select(Allocation).options(selectinload(Allocation.allocation_shifts)).where(
+        Allocation.student_id == student_id,
+        Allocation.tenant_id == tenant_id,
+        Allocation.status.in_(["active", "overdue"])
+    )
+    alloc_res = await db.execute(alloc_q)
+    for alloc in alloc_res.scalars().all():
+        alloc.status = "cancelled"
+        for ash in alloc.allocation_shifts:
+            ash.status = "cancelled"
+
+    # 2. Release all active locker assignments
+    from app.models.locker import LockerAssignment
+    from app.core.database import get_utc_now
+    locker_q = select(LockerAssignment).options(selectinload(LockerAssignment.locker)).where(
+        LockerAssignment.student_id == student_id,
+        LockerAssignment.tenant_id == tenant_id,
+        LockerAssignment.status == "active"
+    )
+    locker_res = await db.execute(locker_q)
+    for assign in locker_res.scalars().all():
+        assign.status = "ended"
+        assign.ended_at = get_utc_now()
+        assign.notes = f"{assign.notes or ''}\nStudent marked as left".strip()
+        if assign.locker:
+            assign.locker.status = "available"
+
+
+# ─────────────────────────────────────────────
+# Mark student as left (releases seat & locker)
+# ─────────────────────────────────────────────
+@router.post("/{student_id}/left", response_model=StudentResponse)
+async def mark_student_left(
+    student_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Student).where(Student.id == student_id, Student.tenant_id == current_user.tenant_id)
+    res = await db.execute(query)
+    student = res.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found.")
+
+    student.status = "left"
+    await _execute_student_left_cleanup(db, current_user.tenant_id, student_id)
     await db.commit()
     await db.refresh(student)
     return StudentResponse.model_validate(student)

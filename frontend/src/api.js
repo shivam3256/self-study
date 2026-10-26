@@ -281,6 +281,10 @@ export const api = {
       request(`/students/${id}/resume`, {
         method: 'POST',
       }),
+    markLeft: (id) =>
+      request(`/students/${id}/left`, {
+        method: 'POST',
+      }),
     delete: (id) =>
       request(`/students/${id}`, {
         method: 'DELETE',
@@ -345,6 +349,11 @@ export const api = {
       }),
     reassign: (id, data) =>
       request(`/allocations/${id}/reassign`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    replaceOccupant: (id, data) =>
+      request(`/allocations/${id}/replace-occupant`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
