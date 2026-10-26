@@ -6,7 +6,6 @@ import {
   User,
   Phone,
   MapPin,
-  Sparkles,
   Eye,
   EyeOff,
   ArrowRight,
@@ -376,14 +375,6 @@ export default function Auth({ onLoginSuccess }) {
     setOtpDigits(['', '', '', '', '', '']);
   };
 
-  const fillDemo = () => {
-    setEmail('owner@apexlibrary.com');
-    setPassword('admin123');
-    setMode('login');
-    setError('');
-    setSuccess('');
-  };
-
   const switchMode = (newMode) => {
     setMode(newMode);
     setError('');
@@ -742,33 +733,6 @@ export default function Auth({ onLoginSuccess }) {
             {/* ── Login Form ── */}
             {mode === 'login' && (
               <form onSubmit={handleLogin} id="auth-login-form">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-                  <button
-                    type="button"
-                    className="auth-demo-banner"
-                    onClick={fillDemo}
-                    id="auth-demo-fill"
-                    style={{ margin: 0, justifyContent: 'center' }}
-                  >
-                    <Sparkles size={14} color="var(--primary)" />
-                    <span>Apex Demo</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="auth-demo-banner"
-                    onClick={() => {
-                      setEmail('kumarsinghshivam325@gmail.com');
-                      setPassword('admin123');
-                      setMode('login');
-                      setError('');
-                    }}
-                    id="auth-shivam-fill"
-                    style={{ margin: 0, justifyContent: 'center' }}
-                  >
-                    <Sparkles size={14} color="var(--primary)" />
-                    <span>Shivam Library</span>
-                  </button>
-                </div>
 
                 <div className="auth-field">
                   <label htmlFor="login-email">Email Address</label>
