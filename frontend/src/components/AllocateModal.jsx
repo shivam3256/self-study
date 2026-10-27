@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, UserCheck, ShieldAlert, Calendar, Clock, CheckCircle, ArrowRightLeft, UserX, UserPlus, AlertTriangle } from 'lucide-react';
 import { api } from '../api';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 export default function AllocateModal({ desk, activeShift, shifts, students, onClose, onAllocationSuccess }) {
+  useEscapeDismiss(onClose);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedShiftId, setSelectedShiftId] = useState(activeShift?.id || (shifts[0]?.id || ''));
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);

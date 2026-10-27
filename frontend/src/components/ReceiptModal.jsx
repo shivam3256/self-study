@@ -1,8 +1,10 @@
 import React from 'react';
 import { Printer, X, CheckCircle2 } from 'lucide-react';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 export default function ReceiptModal({ receipt, onClose }) {
+  useEscapeDismiss(onClose);
   if (!receipt) return null;
 
   const handlePrint = () => {

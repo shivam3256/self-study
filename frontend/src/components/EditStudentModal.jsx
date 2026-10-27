@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { X, Edit3, UserCheck, AlertCircle } from 'lucide-react';
 import { api } from '../api';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 export default function EditStudentModal({ student, onClose, onSuccess }) {
+  useEscapeDismiss(onClose);
   const [fullName, setFullName] = useState(student?.full_name || '');
   const [phone, setPhone] = useState(student?.phone || '');
   const [email, setEmail] = useState(student?.email || '');

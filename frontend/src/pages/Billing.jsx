@@ -1,14 +1,50 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CreditCard, AlertCircle, Receipt, Printer, ArrowUpRight, IndianRupee, Lock, Filter } from 'lucide-react';
+import { CreditCard, AlertCircle, Receipt, Printer, ArrowUpRight, IndianRupee, Lock, Filter, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { api } from '../api';
+import TablePagination from '../components/TablePagination';
+import { useToast } from '../context/ToastContext';
 import { formatDateDDMMYYYY, formatDateRange } from '../utils/dateUtils';
 
+function SortHeader({ field, currentField, direction, onSort, children }) {
+  const isActive = currentField === field;
+  return (
+    <th
+      onClick={() => onSort(field)}
+      style={{
+        cursor: 'pointer',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span>{children}</span>
+        {isActive ? (
+          direction === 'asc' ? (
+            <ArrowUp size={13} style={{ color: 'var(--color-brand)' }} />
+          ) : (
+            <ArrowDown size={13} style={{ color: 'var(--color-brand)' }} />
+          )
+        ) : (
+          <ArrowUpDown size={12} style={{ opacity: 0.35 }} />
+        )}
+      </div>
+    </th>
+  );
+}
+
 export default function Billing({ onOpenNewPayment, onViewReceipt }) {
+  const toast = useToast();
   const [payments, setPayments] = useState([]);
   const [dues, setDues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'seat' | 'locker' | 'deposit'
+
+  // Pagination & Sorting State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sortField, setSortField] = useState('payment_date');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   const fetchBillingData = async () => {
     try {
@@ -27,15 +63,25 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
   };
 
   useEffect(() => {
+    setCurrentPage(1);
     fetchBillingData();
   }, [typeFilter]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   const handleViewReceipt = async (paymentId) => {
     try {
       const receipt = await api.payments.getReceipt(paymentId);
       onViewReceipt(receipt);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -65,6 +111,38 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
     };
   }, [payments]);
 
+  const sortedPayments = useMemo(() => {
+    return [...payments].sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+
+      if (sortField === 'receipt_number') {
+        aVal = a.receipt_number || '';
+        bVal = b.receipt_number || '';
+      } else if (sortField === 'student_name') {
+        aVal = (a.student_name || '').toLowerCase();
+        bVal = (b.student_name || '').toLowerCase();
+      } else if (sortField === 'final_amount') {
+        aVal = Number(a.final_amount) || 0;
+        bVal = Number(b.final_amount) || 0;
+      } else if (sortField === 'payment_date') {
+        aVal = new Date(a.payment_date || 0).getTime();
+        bVal = new Date(b.payment_date || 0).getTime();
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [payments, sortField, sortDirection]);
+
+  const paginatedPayments = useMemo(() => {
+    return sortedPayments.slice(
+      (currentPage - 1) * pageSize,
+      currentPage * pageSize
+    );
+  }, [sortedPayments, currentPage, pageSize]);
+
   return (
     <div>
       {/* Top Banner Actions */}
@@ -77,7 +155,7 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
         </div>
         <button className="btn btn-primary" onClick={() => onOpenNewPayment()}>
           <CreditCard size={16} />
-          <span>+ Record New Payment</span>
+          <span>Record New Payment</span>
         </button>
       </div>
 
@@ -247,13 +325,21 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Receipt #</th>
+                <SortHeader field="receipt_number" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Receipt #
+                </SortHeader>
                 <th>Type</th>
-                <th>Student</th>
+                <SortHeader field="student_name" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Student
+                </SortHeader>
                 <th>Description</th>
                 <th>Mode</th>
-                <th>Amount</th>
-                <th>Date Paid</th>
+                <SortHeader field="final_amount" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Amount
+                </SortHeader>
+                <SortHeader field="payment_date" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Date Paid
+                </SortHeader>
                 <th>Validity (DD/MM/YYYY)</th>
                 <th style={{ textAlign: 'right' }}>Receipt</th>
               </tr>
@@ -266,7 +352,7 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
                   </td>
                 </tr>
               ) : (
-                payments.map((p) => {
+                paginatedPayments.map((p) => {
                   const type = p.payment_type || 'seat';
                   return (
                     <tr key={p.id}>
@@ -327,6 +413,13 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={payments.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
     </div>
   );

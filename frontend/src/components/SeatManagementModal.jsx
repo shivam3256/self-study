@@ -18,6 +18,7 @@ import {
   Power
 } from 'lucide-react';
 import { api } from '../api';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 const CATEGORIES = [
   { value: 'general', label: 'General' },
@@ -75,6 +76,18 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
 
   // Delete Conflict Warning Modal (when backend returns 409 because seat is occupied)
   const [deleteConflictInfo, setDeleteConflictInfo] = useState(null); // { desk, message }
+
+  useEscapeDismiss(() => {
+    if (deleteConflictInfo) setDeleteConflictInfo(null);
+    else if (deskToDelete) setDeskToDelete(null);
+    else if (zoneToDelete) setZoneToDelete(null);
+    else if (showAddDeskModal) setShowAddDeskModal(false);
+    else if (showBulkAddModal) setShowBulkAddModal(false);
+    else if (editingDesk) setEditingDesk(null);
+    else if (showBulkEditModal) setShowBulkEditModal(false);
+    else if (showZoneModal) setShowZoneModal(false);
+    else if (typeof onClose === 'function') onClose();
+  });
 
   const fetchDesks = async () => {
     try {

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BellRing, Send, CheckCircle2, MessageSquare, ShieldCheck, RotateCcw } from 'lucide-react';
 import { api } from '../api';
+import { useToast } from '../context/ToastContext';
 
 export default function Reminders() {
+  const toast = useToast();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
@@ -31,13 +33,16 @@ export default function Reminders() {
     setResultMessage(null);
     try {
       const res = await api.reminders.trigger();
+      const msg = `Reminder scan completed: Sent ${res.sent_count} automated WhatsApp alerts.`;
       setResultMessage({
         type: 'success',
-        text: `Reminder scan completed: Sent ${res.sent_count} automated WhatsApp alerts.`,
+        text: msg,
       });
+      toast.success(msg);
       fetchLogs();
     } catch (err) {
       setResultMessage({ type: 'error', text: err.message });
+      toast.error(err.message);
     } finally {
       setTriggering(false);
     }
@@ -47,13 +52,17 @@ export default function Reminders() {
     setRetryingId(logId);
     try {
       await api.reminders.retry(logId);
+      const msg = 'WhatsApp retry request dispatched successfully.';
       setResultMessage({
         type: 'success',
-        text: 'WhatsApp retry request dispatched successfully.',
+        text: msg,
       });
+      toast.success(msg);
       fetchLogs();
     } catch (err) {
-      setResultMessage({ type: 'error', text: `Retry failed: ${err.message}` });
+      const msg = `Retry failed: ${err.message}`;
+      setResultMessage({ type: 'error', text: msg });
+      toast.error(msg);
     } finally {
       setRetryingId(null);
     }

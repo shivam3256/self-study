@@ -18,12 +18,17 @@ import {
   Eye,
   Edit,
   LogOut,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { api } from '../api';
 import ImportStudentsModal from '../components/ImportStudentsModal';
 import StudentSeatModal from '../components/StudentSeatModal';
 import EditStudentModal from '../components/EditStudentModal';
 import StudentDetailsModal from '../components/StudentDetailsModal';
+import TablePagination from '../components/TablePagination';
+import { useToast } from '../context/ToastContext';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
 
 function WhatsAppIcon({ size = 16, color = '#22C55E' }) {
@@ -34,6 +39,33 @@ function WhatsAppIcon({ size = 16, color = '#22C55E' }) {
   );
 }
 
+function SortHeader({ field, currentField, direction, onSort, children }) {
+  const isActive = currentField === field;
+  return (
+    <th
+      onClick={() => onSort(field)}
+      style={{
+        cursor: 'pointer',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span>{children}</span>
+        {isActive ? (
+          direction === 'asc' ? (
+            <ArrowUp size={13} style={{ color: 'var(--color-brand)' }} />
+          ) : (
+            <ArrowDown size={13} style={{ color: 'var(--color-brand)' }} />
+          )
+        ) : (
+          <ArrowUpDown size={12} style={{ opacity: 0.35 }} />
+        )}
+      </div>
+    </th>
+  );
+}
+
 export default function Students({
   students,
   loading,
@@ -41,11 +73,31 @@ export default function Students({
   onOpenNewStudent,
   onOpenNewPayment,
 }) {
+  const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState('');
   const [showImportModal, setShowImportModal] = useState(false);
   const [seatModalStudent, setSeatModalStudent] = useState(null);
+
+  // Pagination & Sorting State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sortField, setSortField] = useState('full_name');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   // Dropdown Action Menu State
   const [activeMenuStudent, setActiveMenuStudent] = useState(null);
@@ -140,7 +192,7 @@ export default function Students({
     closeMenu();
     const clean = getCleanPhone(student.phone);
     if (!clean) {
-      alert(`No phone number available for ${student.full_name}.`);
+      toast.warning(`No phone number available for ${student.full_name}.`);
       return;
     }
     window.location.href = `tel:${clean}`;
@@ -150,7 +202,7 @@ export default function Students({
     closeMenu();
     const clean = getCleanPhone(student.phone);
     if (!clean) {
-      alert(`No phone number available for ${student.full_name}.`);
+      toast.warning(`No phone number available for ${student.full_name}.`);
       return;
     }
     const text = encodeURIComponent(`Hello ${student.full_name}, `);
@@ -161,7 +213,7 @@ export default function Students({
     closeMenu();
     const digits = getWhatsAppDigits(student.phone);
     if (!digits) {
-      alert(`No phone number available for ${student.full_name}.`);
+      toast.warning(`No phone number available for ${student.full_name}.`);
       return;
     }
     const text = encodeURIComponent(`Hello ${student.full_name}, `);
@@ -179,6 +231,34 @@ export default function Students({
 
     return matchesSearch && matchesStatus;
   });
+
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+
+    if (sortField === 'full_name') {
+      aVal = (a.full_name || '').toLowerCase();
+      bVal = (b.full_name || '').toLowerCase();
+    } else if (sortField === 'admission_number') {
+      aVal = a.admission_number || '';
+      bVal = b.admission_number || '';
+    } else if (sortField === 'expiry_date') {
+      aVal = a.expiry_date || '';
+      bVal = b.expiry_date || '';
+    } else if (sortField === 'status') {
+      aVal = a.status || '';
+      bVal = b.status || '';
+    }
+
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const paginatedStudents = sortedStudents.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const handlePause = async (studentId) => {
     closeMenu();
@@ -202,9 +282,10 @@ export default function Students({
       }
 
       await api.students.pause(studentId);
+      toast.success('Membership paused.');
       onRefresh();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setActionLoading('');
     }
@@ -215,9 +296,10 @@ export default function Students({
     try {
       setActionLoading(studentId);
       await api.students.resume(studentId);
+      toast.success('Membership resumed.');
       onRefresh();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setActionLoading('');
     }
@@ -236,9 +318,10 @@ export default function Students({
     try {
       setActionLoading(studentId);
       await api.students.markLeft(studentId);
+      toast.success(`${name} marked as Left.`);
       onRefresh();
     } catch (err) {
-      alert(err.message || 'Failed to mark student as left.');
+      toast.error(err.message || 'Failed to mark student as left.');
     } finally {
       setActionLoading('');
     }
@@ -266,9 +349,10 @@ export default function Students({
       }
 
       await api.students.delete(studentId);
+      toast.success(`Student record for ${name} deleted.`);
       onRefresh();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setActionLoading('');
     }
@@ -313,7 +397,7 @@ export default function Students({
               <span>Import Students</span>
             </button>
             <button className="btn btn-primary btn-sm" onClick={onOpenNewStudent}>
-              + Register Student
+              Register Student
             </button>
           </div>
         </div>
@@ -325,11 +409,19 @@ export default function Students({
           <table className="data-table">
             <thead>
               <tr>
-                <th>Student</th>
-                <th>Admission #</th>
+                <SortHeader field="full_name" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Student
+                </SortHeader>
+                <SortHeader field="admission_number" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Admission #
+                </SortHeader>
                 <th>Assigned Desk &amp; Shift</th>
-                <th>Status</th>
-                <th>Valid Until</th>
+                <SortHeader field="status" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Status
+                </SortHeader>
+                <SortHeader field="expiry_date" currentField={sortField} direction={sortDirection} onSort={handleSort}>
+                  Valid Until
+                </SortHeader>
                 <th>Preparation</th>
                 <th style={{ textAlign: 'right', paddingRight: 20 }}>Actions</th>
               </tr>
@@ -342,7 +434,7 @@ export default function Students({
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map((s) => (
+                paginatedStudents.map((s) => (
                   <tr key={s.id}>
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{s.full_name}</div>
@@ -417,6 +509,13 @@ export default function Students({
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={filteredStudents.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* Floating Action Dropdown Menu (Rendered in Portal) */}

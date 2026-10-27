@@ -16,9 +16,13 @@ import {
   Info
 } from 'lucide-react';
 import { api } from '../api';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 export default function ImportStudentsModal({ onClose, onSuccess }) {
   const [step, setStep] = useState('upload'); // 'upload' | 'preview' | 'importing' | 'success'
+  useEscapeDismiss(() => {
+    if (step !== 'importing') onClose();
+  });
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);

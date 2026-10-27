@@ -9,6 +9,7 @@ import {
   calculateDurationDays,
   formatDateRange
 } from '../utils/dateUtils';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 export default function NewPaymentModal({
   students = [],
@@ -18,6 +19,7 @@ export default function NewPaymentModal({
   onClose,
   onSuccess
 }) {
+  useEscapeDismiss(onClose);
   const [paymentType, setPaymentType] = useState(initialPaymentType || 'seat'); // 'seat' | 'locker' | 'combined'
   const [studentId, setStudentId] = useState(preselectedStudentId || '');
   const [activeLocker, setActiveLocker] = useState(null);

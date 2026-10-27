@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, HelpCircle, Mail, Phone, MessageCircle, ExternalLink, ShieldCheck, HeartHandshake } from 'lucide-react';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 function WhatsAppIcon({ size = 16, color = '#22C55E' }) {
   return (
@@ -10,6 +11,7 @@ function WhatsAppIcon({ size = 16, color = '#22C55E' }) {
 }
 
 export default function SupportModal({ onClose }) {
+  useEscapeDismiss(onClose);
   const handleOpenWhatsAppSupport = () => {
     const text = encodeURIComponent('Hi Support Team, I need assistance with LibMa management system.');
     window.open(`https://wa.me/916299674511?text=${text}`, '_blank', 'noopener,noreferrer');

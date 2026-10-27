@@ -1,7 +1,9 @@
 import React from 'react';
 import { X, Crown, CheckCircle2, Zap, Shield, Sparkles, CreditCard, Calendar } from 'lucide-react';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 export default function PlanDetailsModal({ tenant, onClose }) {
+  useEscapeDismiss(onClose);
   const planFeatures = [
     'Unlimited Students & Desk Allocations',
     'Interactive 2D Visual Seat Map & Shift Management',

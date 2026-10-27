@@ -1,6 +1,8 @@
 import React from 'react';
 import { X, Phone, MessageSquare, CreditCard, Edit3, Armchair, Calendar, ShieldCheck, Mail, MapPin, User, Clock, CheckCircle2 } from 'lucide-react';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
+import { useToast } from '../context/ToastContext';
 
 function WhatsAppIcon({ size = 16, color = '#22C55E' }) {
   return (
@@ -17,6 +19,8 @@ export default function StudentDetailsModal({
   onRecordFee,
   onAssignSeat,
 }) {
+  useEscapeDismiss(onClose);
+  const toast = useToast();
   if (!student) return null;
 
   const cleanPhone = student.phone && student.phone !== 'N/A' ? student.phone.replace(/[^0-9+]/g, '') : null;
@@ -25,7 +29,7 @@ export default function StudentDetailsModal({
 
   const handleCall = () => {
     if (!cleanPhone) {
-      alert(`No phone number recorded for ${student.full_name}`);
+      toast.warning(`No phone number recorded for ${student.full_name}`);
       return;
     }
     window.location.href = `tel:${cleanPhone}`;
@@ -33,7 +37,7 @@ export default function StudentDetailsModal({
 
   const handleSms = () => {
     if (!cleanPhone) {
-      alert(`No phone number recorded for ${student.full_name}`);
+      toast.warning(`No phone number recorded for ${student.full_name}`);
       return;
     }
     const text = encodeURIComponent(`Hello ${student.full_name}, `);
@@ -42,7 +46,7 @@ export default function StudentDetailsModal({
 
   const handleWhatsApp = () => {
     if (!waDigits) {
-      alert(`No phone number recorded for ${student.full_name}`);
+      toast.warning(`No phone number recorded for ${student.full_name}`);
       return;
     }
     const text = encodeURIComponent(`Hello ${student.full_name}, `);

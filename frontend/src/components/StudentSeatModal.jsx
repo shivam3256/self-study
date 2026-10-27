@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Layers, UserCheck, ArrowRightLeft, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { api } from '../api';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
+import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
 export default function StudentSeatModal({ student, onClose, onSuccess }) {
+  useEscapeDismiss(onClose);
   const [shifts, setShifts] = useState([]);
   const [selectedShiftId, setSelectedShiftId] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
