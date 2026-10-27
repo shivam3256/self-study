@@ -47,6 +47,10 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
   const [feedbackMessage, setFeedbackMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState('');
 
+  // Delete Shift / Plan Confirmation Modal State (replaces browser window.confirm for cross-browser support)
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState(null); // { type: 'shift' | 'plan', id: string, name: string, code?: string }
+  const [deletingItem, setDeletingItem] = useState(false);
+
   // Delete Account State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
@@ -109,19 +113,9 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     }
   };
 
-  // Handle Delete Shift
-  const handleDeleteShift = async (shiftId, shiftName) => {
-    if (!window.confirm(`Are you sure you want to delete shift "${shiftName}"?`)) return;
-    setActionLoading(shiftId);
-    try {
-      await api.shifts.delete(shiftId);
-      setFeedbackMessage({ type: 'success', text: `Shift "${shiftName}" removed.` });
-      onRefreshData();
-    } catch (err) {
-      setFeedbackMessage({ type: 'error', text: err.message });
-    } finally {
-      setActionLoading('');
-    }
+  // Request Shift Deletion (Cross-browser safe React modal)
+  const requestDeleteShift = (shift) => {
+    setDeleteConfirmItem({ type: 'shift', id: shift.id, name: shift.name, code: shift.code });
   };
 
   // Handle New Plan Creation
@@ -153,18 +147,31 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     }
   };
 
-  // Handle Delete Plan
-  const handleDeletePlan = async (planId, planName) => {
-    if (!window.confirm(`Are you sure you want to delete plan "${planName}"?`)) return;
-    setActionLoading(planId);
+  // Request Plan Deletion (Cross-browser safe React modal)
+  const requestDeletePlan = (plan) => {
+    setDeleteConfirmItem({ type: 'plan', id: plan.id, name: plan.name, code: plan.code });
+  };
+
+  // Handle Confirmed Deletion for Shift or Plan
+  const handleConfirmDeleteItem = async () => {
+    if (!deleteConfirmItem) return;
+    const { type, id, name } = deleteConfirmItem;
+    setDeletingItem(true);
     try {
-      await api.plans.delete(planId);
-      setFeedbackMessage({ type: 'success', text: `Plan "${planName}" removed.` });
+      if (type === 'shift') {
+        await api.shifts.delete(id);
+        setFeedbackMessage({ type: 'success', text: `Shift "${name}" deleted successfully.` });
+      } else if (type === 'plan') {
+        await api.plans.delete(id);
+        setFeedbackMessage({ type: 'success', text: `Membership plan "${name}" deleted successfully.` });
+      }
+      setDeleteConfirmItem(null);
       onRefreshData();
     } catch (err) {
-      setFeedbackMessage({ type: 'error', text: err.message });
+      setFeedbackMessage({ type: 'error', text: err.message || `Failed to delete ${type}.` });
+      setDeleteConfirmItem(null);
     } finally {
-      setActionLoading('');
+      setDeletingItem(false);
     }
   };
 
@@ -363,9 +370,10 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                     <td style={{ textAlign: 'right' }}>
                       <button
                         className="btn btn-secondary btn-sm"
-                        disabled={actionLoading === s.id}
-                        onClick={() => handleDeleteShift(s.id, s.name)}
+                        disabled={actionLoading === s.id || deletingItem}
+                        onClick={() => requestDeleteShift(s)}
                         style={{ color: 'var(--danger-text)' }}
+                        title="Delete Shift"
                       >
                         <Trash2 size={13} />
                         <span>Delete</span>
@@ -462,9 +470,10 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                     <td style={{ textAlign: 'right' }}>
                       <button
                         className="btn btn-secondary btn-sm"
-                        disabled={actionLoading === p.id}
-                        onClick={() => handleDeletePlan(p.id, p.name)}
+                        disabled={actionLoading === p.id || deletingItem}
+                        onClick={() => requestDeletePlan(p)}
                         style={{ color: 'var(--danger-text)' }}
+                        title="Delete Plan"
                       >
                         <Trash2 size={13} />
                         <span>Delete</span>
@@ -1129,6 +1138,74 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Custom React Confirmation Modal for Shift / Plan Deletion (Cross-browser safe) ── */}
+      {deleteConfirmItem && (
+        <div className="modal-overlay" style={{ zIndex: 1200 }} onClick={() => !deletingItem && setDeleteConfirmItem(null)}>
+          <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: '#FEE2E2',
+                  color: '#DC2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--color-heading)' }}>
+                  Delete {deleteConfirmItem.type === 'shift' ? 'Operating Shift' : 'Membership Plan'}?
+                </h3>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                  This action cannot be undone.
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: 1.5, marginBottom: 20 }}>
+              Are you sure you want to permanently delete{' '}
+              <strong>"{deleteConfirmItem.name}"</strong>
+              {deleteConfirmItem.code ? ` (${deleteConfirmItem.code})` : ''}?
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setDeleteConfirmItem(null)}
+                disabled={deletingItem}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleConfirmDeleteItem}
+                disabled={deletingItem}
+                style={{
+                  backgroundColor: '#DC2626',
+                  borderColor: '#DC2626',
+                  color: '#FFFFFF',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Trash2 size={15} />
+                <span>{deletingItem ? 'Deleting...' : `Delete ${deleteConfirmItem.type === 'shift' ? 'Shift' : 'Plan'}`}</span>
+              </button>
             </div>
           </div>
         </div>

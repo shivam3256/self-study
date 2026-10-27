@@ -69,6 +69,10 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
   const [newZoneName, setNewZoneName] = useState('');
   const [renamingZone, setRenamingZone] = useState({ old_name: '', new_name: '' });
 
+  // Delete Confirmation States (Chrome safe - replaces window.confirm)
+  const [deskToDelete, setDeskToDelete] = useState(null);
+  const [zoneToDelete, setZoneToDelete] = useState(null);
+
   // Delete Conflict Warning Modal (when backend returns 409 because seat is occupied)
   const [deleteConflictInfo, setDeleteConflictInfo] = useState(null); // { desk, message }
 
@@ -235,8 +239,14 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
   };
 
   // ─── Delete Single Desk ─────────────────────────────────────────────────────
-  const handleDeleteDesk = async (desk) => {
-    if (!window.confirm(`Are you sure you want to delete desk ${desk.desk_number}?`)) return;
+  const handleDeleteDesk = (desk) => {
+    setDeskToDelete(desk);
+  };
+
+  const confirmDeleteDesk = async () => {
+    if (!deskToDelete) return;
+    const desk = deskToDelete;
+    setDeskToDelete(null);
     setError('');
     setSuccess('');
 
@@ -282,8 +292,14 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
     }
   };
 
-  const handleDeleteZone = async (zoneName) => {
-    if (!window.confirm(`Delete all desks in zone "${zoneName}"? Desks with active student allocations cannot be deleted.`)) return;
+  const handleDeleteZone = (zoneName) => {
+    setZoneToDelete(zoneName);
+  };
+
+  const confirmDeleteZone = async () => {
+    if (!zoneToDelete) return;
+    const zoneName = zoneToDelete;
+    setZoneToDelete(null);
     try {
       await api.desks.deleteZone(zoneName);
       setSuccess(`Deleted zone "${zoneName}".`);
@@ -885,6 +901,43 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
                 >
                   Deactivate Seat Instead
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* ── Modal: Confirm Delete Single Desk ─────────────────────────── */}
+        {deskToDelete && (
+          <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setDeskToDelete(null)}>
+            <div className="modal-card" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#DC2626', marginBottom: 12 }}>
+                <Trash2 size={22} />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#DC2626' }}>Delete Desk {deskToDelete.desk_number}?</h3>
+              </div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-heading)', lineHeight: 1.5, marginBottom: 20 }}>
+                Are you sure you want to delete desk <strong>{deskToDelete.desk_number}</strong> ({deskToDelete.zone || 'Floor A'})? If this desk is currently occupied, you will be prompted to deactivate it instead.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button className="btn btn-secondary" onClick={() => setDeskToDelete(null)}>Cancel</button>
+                <button className="btn btn-danger" onClick={confirmDeleteDesk}>Delete Desk</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal: Confirm Delete Zone ─────────────────────────────────── */}
+        {zoneToDelete && (
+          <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setZoneToDelete(null)}>
+            <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#DC2626', marginBottom: 12 }}>
+                <Trash2 size={22} />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#DC2626' }}>Delete Zone "{zoneToDelete}"?</h3>
+              </div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-heading)', lineHeight: 1.5, marginBottom: 20 }}>
+                Delete all desks in zone <strong>"{zoneToDelete}"</strong>? Desks with active student allocations cannot be deleted.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button className="btn btn-secondary" onClick={() => setZoneToDelete(null)}>Cancel</button>
+                <button className="btn btn-danger" onClick={confirmDeleteZone}>Delete Zone</button>
               </div>
             </div>
           </div>
