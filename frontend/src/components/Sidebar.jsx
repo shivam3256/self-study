@@ -72,8 +72,13 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
           <div className="brand-badge">
             <Building2 size={22} />
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="brand-name" title={tenant?.name || 'StudyHub Pro'}>
+          <div style={{ minWidth: 0, flex: 1 }} title={tenant?.name || 'StudyHub Pro'}>
+            <div
+              className="brand-name"
+              title={tenant?.name || 'StudyHub Pro'}
+              aria-label={tenant?.name || 'StudyHub Pro'}
+              style={{ cursor: 'default' }}
+            >
               {tenant?.name || 'StudyHub Pro'}
             </div>
             <div className="brand-sub">Multi-Tenant SaaS</div>

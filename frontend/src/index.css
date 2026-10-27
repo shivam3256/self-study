@@ -82,7 +82,7 @@
   --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Layout Widths */
-  --container-max-width: 1160px;
+  --container-max-width: 1600px;
   --sidebar-width: 250px;
   --topbar-height: 64px;
 
@@ -200,10 +200,10 @@ button, input, select, textarea {
 }
 
 .content-body {
-  padding: var(--space-4) var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-5) var(--space-6);
   max-width: var(--container-max-width);
   width: 100%;
-  margin: 0;
+  margin: 0 auto;
   flex: 1;
 }
 
@@ -344,13 +344,21 @@ button, input, select, textarea {
   height: var(--topbar-height);
   background-color: var(--bg-header);
   border-bottom: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-4);
   position: sticky;
   top: 0;
   z-index: 30;
+  width: 100%;
+}
+
+.topbar-inner {
+  max-width: var(--container-max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .topbar-title {
@@ -1106,7 +1114,7 @@ textarea.form-input:focus {
     flex-shrink: 0;
   }
 
-  .topbar {
+  .topbar-inner {
     padding: 0 var(--space-3);
   }
 
@@ -1119,6 +1127,9 @@ textarea.form-input:focus {
 @media (max-width: 640px) {
   .topbar {
     height: auto;
+  }
+
+  .topbar-inner {
     padding: 10px 14px;
     flex-wrap: wrap;
     gap: 10px;

@@ -151,6 +151,10 @@ export const api = {
 
   dashboard: {
     getSummary: () => request('/dashboard/summary'),
+    getKpiTrends: () => request('/dashboard/kpi-trends'),
+    getRevenueTrend: () => request('/dashboard/revenue-trend'),
+    getDuesSoon: () => request('/dashboard/dues-soon'),
+    getAttendanceTrend: () => request('/dashboard/attendance-trend'),
   },
 
   desks: {
