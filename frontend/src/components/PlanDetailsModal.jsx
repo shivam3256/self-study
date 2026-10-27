@@ -51,7 +51,7 @@ export default function PlanDetailsModal({ tenant, onClose }) {
               </div>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button">
+          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button" aria-label="Close modal">
             <X size={16} />
           </button>
         </div>

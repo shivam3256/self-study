@@ -112,6 +112,13 @@ export default function App() {
     }
   }, [token]);
 
+  // Synchronize document title with active tab
+  useEffect(() => {
+    const info = getPageInfo();
+    const libName = tenant?.name ? ` | ${tenant.name}` : '';
+    document.title = `${info.title}${libName} — LibMa`;
+  }, [activeTab, tenant?.name]);
+
   const handleLoginSuccess = (userData, tenantData) => {
     setToken(getAuthToken());
     setUser(userData);
@@ -288,6 +295,23 @@ export default function App() {
                 onTenantUpdated={(newTenant) => setTenant(newTenant)}
                 onLogout={handleLogout}
               />
+            )}
+
+            {!['dashboard', 'seatmap', 'lockers', 'students', 'billing', 'budget', 'attendance', 'reminders', 'settings', 'account-settings'].includes(activeTab) && (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <div className="card" style={{ maxWidth: 480, margin: '0 auto', padding: '36px 24px' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>404</span>
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', marginBottom: 8 }}>Page Not Found</h3>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 20 }}>
+                    The view or section you requested doesn't exist or may have moved.
+                  </p>
+                  <button className="btn btn-primary" onClick={() => setActiveTab('dashboard')}>
+                    Return to Dashboard
+                  </button>
+                </div>
+              </div>
             )}
           </ErrorBoundary>
         </main>

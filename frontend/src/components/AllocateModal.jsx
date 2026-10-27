@@ -107,7 +107,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
             }
           }
         } catch (lErr) {
-          console.log('No locker or error checking locker:', lErr);
+          // No active locker assignment or benign lookup miss
         }
       }
 
@@ -201,7 +201,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
               Zone: {desk.zone} | Category: <span style={{ textTransform: 'uppercase', color: 'var(--color-brand)', fontWeight: 600 }}>{desk.category}</span>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button" aria-label="Close modal">
             <X size={16} />
           </button>
         </div>

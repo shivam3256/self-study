@@ -52,7 +52,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
             <UserPlus size={20} color="var(--color-brand)" />
             <span>Register New Student</span>
           </h3>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} aria-label="Close modal">
             <X size={16} />
           </button>
         </div>
@@ -72,6 +72,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
               placeholder="e.g. Aarav Sharma"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              autoFocus
               required
             />
           </div>

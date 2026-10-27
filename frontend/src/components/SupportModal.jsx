@@ -47,7 +47,7 @@ export default function SupportModal({ onClose }) {
               </div>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button">
+          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button" aria-label="Close modal">
             <X size={16} />
           </button>
         </div>
@@ -56,7 +56,15 @@ export default function SupportModal({ onClose }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
           {/* WhatsApp Direct */}
           <div
+            role="button"
+            tabIndex={0}
             onClick={handleOpenWhatsAppSupport}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpenWhatsAppSupport();
+              }
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',

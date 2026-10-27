@@ -193,10 +193,12 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
             </div>
           </div>
           <button
+            type="button"
             className="btn btn-secondary btn-sm"
             onClick={onClose}
             disabled={step === 'importing'}
             style={{ padding: '6px 8px' }}
+            aria-label="Close modal"
           >
             <X size={16} />
           </button>

@@ -124,7 +124,7 @@ export default function StudentSeatModal({ student, onClose, onSuccess }) {
               Admission: {student?.admission_number} | Phone: {student?.phone}
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button" aria-label="Close modal">
             <X size={16} />
           </button>
         </div>

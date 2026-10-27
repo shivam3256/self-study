@@ -160,10 +160,25 @@ export default function Attendance({ students }) {
               </tr>
             </thead>
             <tbody>
-              {attendanceList.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-secondary)' }}>
-                    No check-ins recorded yet today.
+                  <td colSpan="6" style={{ textAlign: 'center', padding: 48, color: 'var(--color-text-secondary)' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.9rem' }}>
+                      <Clock size={16} className="spin" />
+                      <span>Loading today's attendance log...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : attendanceList.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: 48, color: 'var(--color-text-secondary)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <UserCheck size={32} style={{ opacity: 0.35 }} />
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>No check-ins recorded yet today</div>
+                      <div style={{ fontSize: '0.82rem', maxWidth: 380 }}>
+                        Use the manual check-in form above or the student QR scan feature to record attendance.
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (

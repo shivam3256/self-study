@@ -91,7 +91,7 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
               </div>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button">
+          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button" aria-label="Close modal">
             <X size={16} />
           </button>
         </div>
@@ -125,6 +125,7 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
               placeholder="e.g. Aarav Sharma"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              autoFocus
               required
             />
           </div>

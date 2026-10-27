@@ -124,10 +124,25 @@ export default function Reminders() {
               </tr>
             </thead>
             <tbody>
-              {logs.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-secondary)' }}>
-                    No automated reminders dispatched yet. Click "Trigger Due-Date Reminders Now" above to evaluate student dues.
+                  <td colSpan="7" style={{ textAlign: 'center', padding: 48, color: 'var(--color-text-secondary)' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.9rem' }}>
+                      <RotateCcw size={16} className="spin" />
+                      <span>Loading notification logs...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: 48, color: 'var(--color-text-secondary)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <MessageSquare size={32} style={{ opacity: 0.35 }} />
+                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>No automated reminders dispatched yet</div>
+                      <div style={{ fontSize: '0.82rem', maxWidth: 440 }}>
+                        Click "Trigger Due-Date Reminders Now" above to evaluate student membership due dates and dispatch reminders.
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (

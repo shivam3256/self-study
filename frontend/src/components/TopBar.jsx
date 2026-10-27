@@ -23,14 +23,14 @@ export default function TopBar({ title, subtitle, tenant, onOpenNewStudent, onOp
           </div>
         )}
 
-        <button className="btn btn-secondary btn-sm" onClick={onOpenNewPayment}>
+        <button className="btn btn-secondary btn-sm" onClick={onOpenNewPayment} aria-label="Collect Fee">
           <Receipt size={15} />
           <span>Collect Fee</span>
         </button>
 
-        <button className="btn btn-primary btn-sm" onClick={onOpenNewStudent}>
+        <button className="btn btn-primary btn-sm" onClick={onOpenNewStudent} aria-label="Register New Student">
           <UserPlus size={15} />
-          <span>+ New Student</span>
+          <span>New Student</span>
         </button>
       </div>
     </header>

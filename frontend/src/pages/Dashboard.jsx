@@ -176,7 +176,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <button className="btn btn-primary" onClick={onOpenNewStudent} style={{ width: '100%' }}>
-              <span>+ Register Student</span>
+              <span>Register Student</span>
             </button>
             <button className="btn btn-secondary" onClick={onOpenNewPayment} style={{ width: '100%' }}>
               <span>Collect Fee</span>

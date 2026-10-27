@@ -17,7 +17,7 @@ export default function ReceiptModal({ receipt, onClose }) {
             <Printer size={16} />
             <span>Print Receipt</span>
           </button>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} aria-label="Close modal">
             <X size={16} />
           </button>
         </div>

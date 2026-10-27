@@ -263,7 +263,7 @@ export default function NewPaymentModal({
             <CreditCard size={20} color="var(--color-brand)" />
             <span>Record Fee Collection</span>
           </h3>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} type="button" aria-label="Close modal">
             <X size={16} />
           </button>
         </div>
