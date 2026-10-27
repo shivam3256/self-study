@@ -11,6 +11,7 @@ import Budget from './pages/Budget';
 import Attendance from './pages/Attendance';
 import Reminders from './pages/Reminders';
 import Settings from './pages/Settings';
+import AccountSettings from './pages/AccountSettings';
 import Auth from './pages/Auth';
 import NewStudentModal from './components/NewStudentModal';
 import NewPaymentModal from './components/NewPaymentModal';
@@ -179,8 +180,13 @@ export default function App() {
         };
       case 'settings':
         return {
-          title: 'Library Settings & Workspace Configuration',
-          subtitle: 'Customize library branding, operating shifts, and student membership plans.',
+          title: 'Library Settings & Floor Configuration',
+          subtitle: 'Configure library seat layout, floor zones, shift hours, and membership pricing plans.',
+        };
+      case 'account-settings':
+        return {
+          title: 'Account Settings & Library Profile',
+          subtitle: 'Manage your library profile, branding, contact details, and account credentials.',
         };
       default:
         return { title: 'Self-Study Management', subtitle: '' };
@@ -271,6 +277,15 @@ export default function App() {
                 plans={plans}
                 onTenantUpdated={(newTenant) => setTenant(newTenant)}
                 onRefreshData={loadSharedData}
+                onLogout={handleLogout}
+              />
+            )}
+
+            {activeTab === 'account-settings' && (
+              <AccountSettings
+                tenant={tenant}
+                user={user}
+                onTenantUpdated={(newTenant) => setTenant(newTenant)}
                 onLogout={handleLogout}
               />
             )}

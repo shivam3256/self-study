@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Building2,
   Clock,
   CreditCard,
   Save,
@@ -17,27 +16,12 @@ import {
   Layers,
   X,
 } from 'lucide-react';
-import { api, setStoredUser } from '../api';
+import { api } from '../api';
 import SeatManagementModal from '../components/SeatManagementModal';
 import OnboardingSeatsModal from '../components/OnboardingSeatsModal';
 
 export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRefreshData, onLogout }) {
-  const [activeSection, setActiveSection] = useState('library'); // 'library', 'shifts', 'plans', 'danger'
-
-  // Library Profile Form State
-  const [profileForm, setProfileForm] = useState({
-    name: tenant?.name || '',
-    owner_name: tenant?.owner_name || '',
-    phone: tenant?.phone || '',
-    address: tenant?.address || '',
-    city: tenant?.city || '',
-    state: tenant?.state || '',
-    pincode: tenant?.pincode || '',
-    additional_email: tenant?.additional_email || '',
-    operating_hours: tenant?.operating_hours || '',
-    currency: tenant?.currency || 'INR',
-    logo_url: tenant?.logo_url || '',
-  });
+  const [activeSection, setActiveSection] = useState('seats'); // 'seats', 'shifts', 'plans', 'danger'
 
   // Shifts Form State
   const [showNewShiftModal, setShowNewShiftModal] = useState(false);
@@ -60,7 +44,6 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     description: '',
   });
 
-  const [savingProfile, setSavingProfile] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState('');
 
@@ -102,22 +85,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     }
   };
 
-  // Handle Profile Update
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    setSavingProfile(true);
-    setFeedbackMessage({ type: '', text: '' });
-    try {
-      const updatedTenant = await api.auth.updateTenant(profileForm);
-      setStoredUser(null, updatedTenant); // update cached tenant
-      onTenantUpdated(updatedTenant);
-      setFeedbackMessage({ type: 'success', text: 'Library profile and settings saved successfully!' });
-    } catch (err) {
-      setFeedbackMessage({ type: 'error', text: err.message });
-    } finally {
-      setSavingProfile(false);
-    }
-  };
+
 
   // Handle New Shift Creation
   const handleCreateShift = async (e) => {
@@ -205,14 +173,6 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
       {/* Settings Navigation Tabs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: 12, flexWrap: 'wrap' }}>
         <button
-          className={`btn ${activeSection === 'library' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => { setActiveSection('library'); setFeedbackMessage({ type: '', text: '' }); }}
-        >
-          <Building2 size={16} />
-          <span>Library Profile &amp; Branding</span>
-        </button>
-
-        <button
           className={`btn ${activeSection === 'seats' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => { setActiveSection('seats'); setFeedbackMessage({ type: '', text: '' }); }}
         >
@@ -248,7 +208,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           }}
         >
           <AlertTriangle size={16} />
-          <span>Account &amp; Danger Zone</span>
+          <span>Danger Zone</span>
         </button>
       </div>
 
@@ -274,159 +234,14 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          1. LIBRARY PROFILE & BRANDING SECTION
+          DANGER ZONE CARD (Visible in Danger tab)
          ───────────────────────────────────────────────────────────── */}
-      {activeSection === 'library' && (
-        <div className="card" style={{ maxWidth: 840 }}>
-          <div className="card-header">
-            <div className="card-title">
-              <Building2 size={20} color="var(--color-brand)" />
-              <span>Library Profile & Workspace Details</span>
-            </div>
-            <span className="badge badge-active" style={{ textTransform: 'uppercase' }}>
-              Tier: {tenant?.subscription_tier || 'Pro'}
-            </span>
-          </div>
-
-          <form onSubmit={handleProfileSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-              <div className="form-group">
-                <label className="form-label">Library Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  required
-                  value={profileForm.name}
-                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Owner / Managing Director</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={profileForm.owner_name}
-                  onChange={(e) => setProfileForm({ ...profileForm, owner_name: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Official Phone / Support Contact</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={profileForm.phone}
-                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Operating Hours</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. 06:00 AM - 11:30 PM"
-                  value={profileForm.operating_hours}
-                  onChange={(e) => setProfileForm({ ...profileForm, operating_hours: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Currency Symbol / Code</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={profileForm.currency}
-                  onChange={(e) => setProfileForm({ ...profileForm, currency: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Logo Image URL</label>
-                <input
-                  type="url"
-                  className="form-input"
-                  placeholder="https://example.com/logo.png"
-                  value={profileForm.logo_url}
-                  onChange={(e) => setProfileForm({ ...profileForm, logo_url: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginTop: 12 }}>
-              <label className="form-label">Address</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Plot, Street, Landmark"
-                value={profileForm.address}
-                onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-              <div className="form-group">
-                <label className="form-label">City</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={profileForm.city}
-                  onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">State</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={profileForm.state}
-                  onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">PIN Code</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={profileForm.pincode}
-                  onChange={(e) => setProfileForm({ ...profileForm, pincode: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginTop: 12 }}>
-              <label className="form-label">Additional Contact Email</label>
-              <input
-                type="email"
-                className="form-input"
-                placeholder="billing@mylibrary.com (optional secondary email)"
-                value={profileForm.additional_email}
-                onChange={(e) => setProfileForm({ ...profileForm, additional_email: e.target.value })}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-              <button type="submit" className="btn btn-primary" disabled={savingProfile}>
-                <Save size={16} />
-                <span>{savingProfile ? 'Saving Changes...' : 'Save Library Profile'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* ─────────────────────────────────────────────────────────────
-          DANGER ZONE CARD (Visible in Library Profile tab and Danger tab)
-         ───────────────────────────────────────────────────────────── */}
-      {(activeSection === 'library' || activeSection === 'danger') && (
+      {activeSection === 'danger' && (
         <div
           className="card"
           style={{
             maxWidth: 840,
-            marginTop: activeSection === 'library' ? 32 : 0,
+            marginTop: 0,
             borderColor: '#FCA5A5',
             backgroundColor: '#FFFDFD',
           }}
@@ -487,7 +302,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
          ───────────────────────────────────────────────────────────── */}
       {activeSection === 'seats' && (
         <SeatManagementModal
-          onClose={() => setActiveSection('library')}
+          onClose={() => setActiveSection('seats')}
           onSeatsChanged={() => {
             onRefreshData();
           }}

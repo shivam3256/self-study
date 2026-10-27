@@ -48,11 +48,13 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
   const displayEmail = user?.email || 'kumarsinghshivam325@gmail.com';
 
   const handleEditProfile = () => {
-    setActiveTab('settings');
+    setActiveTab('account-settings');
+    setIsExpanded(false);
   };
 
   const handleAccountSettings = () => {
-    setActiveTab('settings');
+    setActiveTab('account-settings');
+    setIsExpanded(false);
   };
 
   const handleOpenSupport = () => {
