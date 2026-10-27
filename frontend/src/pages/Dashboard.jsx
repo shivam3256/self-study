@@ -8,7 +8,8 @@ import {
   Calendar,
   CheckCircle2,
   TrendingUp,
-  ArrowRight
+  ArrowRight,
+  UserCheck
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -166,20 +167,38 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
           </div>
 
           <div style={{ textAlign: 'center', padding: '24px 16px', backgroundColor: 'var(--bg-alt)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: 600, color: 'var(--success-solid)', fontFamily: 'var(--font-heading)' }}>
-              {summary.today_checkins_count}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
-              Students checked in at the library today
-            </div>
+            {summary.today_checkins_count > 0 ? (
+              <>
+                <div style={{ fontSize: '2.5rem', fontWeight: 600, color: 'var(--success-solid)', fontFamily: 'var(--font-heading)' }}>
+                  {summary.today_checkins_count}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                  {summary.today_checkins_count === 1 ? 'Student checked in at the library today' : 'Students checked in at the library today'}
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
+                  <Clock size={22} />
+                </div>
+                <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-heading)', marginTop: 2 }}>
+                  No check-ins yet today
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                  Student check-in activity will appear here as they arrive.
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <button className="btn btn-primary" onClick={onOpenNewStudent} style={{ width: '100%' }}>
-              <span>Register Student</span>
+            <button className="btn btn-primary" onClick={() => setActiveTab('attendance')} style={{ width: '100%' }}>
+              <UserCheck size={16} />
+              <span>Record Attendance</span>
             </button>
-            <button className="btn btn-secondary" onClick={onOpenNewPayment} style={{ width: '100%' }}>
-              <span>Collect Fee</span>
+            <button className="btn btn-secondary" onClick={() => setActiveTab('seatmap')} style={{ width: '100%' }}>
+              <Grid size={16} />
+              <span>Live Seat Map</span>
             </button>
           </div>
         </div>
