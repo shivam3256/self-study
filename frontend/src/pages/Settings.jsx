@@ -21,7 +21,7 @@ import SeatManagementModal from '../components/SeatManagementModal';
 import OnboardingSeatsModal from '../components/OnboardingSeatsModal';
 
 export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRefreshData, onLogout }) {
-  const [activeSection, setActiveSection] = useState('seats'); // 'seats', 'shifts', 'plans', 'danger'
+  const [activeSection, setActiveSection] = useState('shifts'); // 'shifts', 'plans', 'seats', 'danger'
 
   // Shifts Form State
   const [showNewShiftModal, setShowNewShiftModal] = useState(false);
@@ -173,14 +173,6 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
       {/* Settings Navigation Tabs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: 12, flexWrap: 'wrap' }}>
         <button
-          className={`btn ${activeSection === 'seats' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => { setActiveSection('seats'); setFeedbackMessage({ type: '', text: '' }); }}
-        >
-          <Grid size={16} />
-          <span>Seats &amp; Floor Zones</span>
-        </button>
-
-        <button
           className={`btn ${activeSection === 'shifts' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => { setActiveSection('shifts'); setFeedbackMessage({ type: '', text: '' }); }}
         >
@@ -194,6 +186,14 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
         >
           <CreditCard size={16} />
           <span>Membership Plans ({plans.length})</span>
+        </button>
+
+        <button
+          className={`btn ${activeSection === 'seats' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => { setActiveSection('seats'); setFeedbackMessage({ type: '', text: '' }); }}
+        >
+          <Grid size={16} />
+          <span>Seats &amp; Floor Zones</span>
         </button>
 
         <button
@@ -302,7 +302,8 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
          ───────────────────────────────────────────────────────────── */}
       {activeSection === 'seats' && (
         <SeatManagementModal
-          onClose={() => setActiveSection('seats')}
+          embedded={true}
+          onClose={() => setActiveSection('shifts')}
           onSeatsChanged={() => {
             onRefreshData();
           }}

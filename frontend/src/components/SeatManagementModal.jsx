@@ -26,7 +26,7 @@ const CATEGORIES = [
   { value: 'ladies_only', label: 'Ladies Only' },
 ];
 
-export default function SeatManagementModal({ onClose, onSeatsChanged }) {
+export default function SeatManagementModal({ onClose, onSeatsChanged, embedded = false }) {
   const [desks, setDesks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -295,8 +295,14 @@ export default function SeatManagementModal({ onClose, onSeatsChanged }) {
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 900 }}>
-      <div className="modal-card" style={{ maxWidth: 1040, maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 28, borderRadius: 16 }}>
+    <div
+      className={embedded ? "card" : "modal-overlay"}
+      style={embedded ? { width: '100%', maxWidth: 1040, margin: '0 auto', padding: 24, borderRadius: 16 } : { zIndex: 900 }}
+    >
+      <div
+        className={embedded ? "" : "modal-card"}
+        style={embedded ? { display: 'flex', flexDirection: 'column' } : { maxWidth: 1040, maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 28, borderRadius: 16 }}
+      >
         {/* Modal Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--color-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -312,9 +318,11 @@ export default function SeatManagementModal({ onClose, onSeatsChanged }) {
               </div>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
-            <X size={16} />
-          </button>
+          {onClose && (
+            <button className="btn btn-secondary btn-sm" onClick={onClose} title={embedded ? "Back to Shifts" : "Close"}>
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* Global Alerts */}
@@ -497,9 +505,11 @@ export default function SeatManagementModal({ onClose, onSeatsChanged }) {
           <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
             Showing <strong>{filteredDesks.length}</strong> of <strong>{desks.length}</strong> total desks across <strong>{existingZones.length}</strong> zones.
           </div>
-          <button className="btn btn-secondary" onClick={onClose}>
-            Close
-          </button>
+          {onClose && (
+            <button className="btn btn-secondary" onClick={onClose}>
+              {embedded ? "Back to Shifts" : "Close"}
+            </button>
+          )}
         </div>
 
         {/* ── Modal: Add Single Desk ────────────────────────────────────────── */}
