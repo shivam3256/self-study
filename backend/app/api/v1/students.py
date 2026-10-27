@@ -21,6 +21,10 @@ from app.schemas.import_student import (
     ImportResultSummary,
 )
 from app.services.excel_import_service import ExcelImportService
+from app.services.student_service import (
+    generate_next_admission_number,
+    get_next_admission_sequence_start,
+)
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -91,7 +95,11 @@ async def create_student(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    adm_no = data.admission_number or f"ADM-{secrets.token_hex(4).upper()}"
+    if data.admission_number and data.admission_number.strip():
+        adm_no = data.admission_number.strip()
+    else:
+        adm_no = await generate_next_admission_number(db, current_user.tenant_id)
+
     student = Student(
         tenant_id=current_user.tenant_id,
         admission_number=adm_no,
@@ -464,6 +472,7 @@ async def bulk_import_students(
 
     imported_count = 0
     skipped_count = 0
+    seq_num = await get_next_admission_sequence_start(db, current_user.tenant_id)
 
     for row in rows:
         full_name = row.get("full_name")
@@ -473,7 +482,12 @@ async def bulk_import_students(
             skipped_count += 1
             continue
 
-        adm_no = row.get("admission_number") or f"ADM-{secrets.token_hex(4).upper()}"
+        raw_adm = row.get("admission_number")
+        if raw_adm and str(raw_adm).strip():
+            adm_no = str(raw_adm).strip()
+        else:
+            adm_no = f"ADM-{seq_num:04d}"
+            seq_num += 1
 
         student = Student(
             tenant_id=current_user.tenant_id,

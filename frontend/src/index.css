@@ -183,7 +183,9 @@ button, input, select, textarea {
 
 .app-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
   background-color: var(--bg-alt);
 }
 
@@ -192,6 +194,8 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
   background-color: var(--bg-alt);
 }
 
@@ -209,6 +213,7 @@ button, input, select, textarea {
 
 .sidebar {
   width: var(--sidebar-width);
+  height: 100vh;
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--color-border);
   display: flex;
@@ -1008,6 +1013,14 @@ textarea.form-input:focus {
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .main-wrapper {
+    height: auto;
+    overflow-y: visible;
   }
 
   .sidebar {
@@ -1055,3 +1068,182 @@ textarea.form-input:focus {
     padding-bottom: 76px;
   }
 }
+
+/* ==========================================================================
+   Table Action Dropdown Menu
+   ========================================================================== */
+
+.actions-dropdown-menu {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  padding: 6px;
+  min-width: 195px;
+  z-index: 9999;
+  animation: dropdownFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.actions-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.actions-dropdown-item:hover {
+  background-color: #f1f5f9;
+}
+
+.actions-dropdown-item.danger {
+  color: #dc2626;
+}
+
+.actions-dropdown-item.danger:hover {
+  background-color: #fef2f2;
+}
+
+.actions-dropdown-item.warning {
+  color: #ea580c;
+}
+
+.actions-dropdown-item.warning:hover {
+  background-color: #fff7ed;
+}
+
+.actions-dropdown-divider {
+  height: 1px;
+  background-color: #f1f5f9;
+  margin: 4px 6px;
+}
+
+.btn-icon-more {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-more:hover,
+.btn-icon-more.active {
+  background: var(--bg-alt);
+  color: var(--color-heading);
+  border-color: var(--color-border);
+}
+
+/* ==========================================================================
+   Expandable Sidebar Account Menu
+   ========================================================================== */
+
+.sidebar-account-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 10px;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.sidebar-account-toggle:hover {
+  background-color: var(--bg-alt);
+}
+
+.sidebar-account-menu {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: expandFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes expandFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sidebar-account-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.sidebar-account-item:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+}
+
+.sidebar-account-item svg {
+  color: #64748B;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.sidebar-account-item:hover svg {
+  color: var(--color-brand);
+}
+
+.sidebar-account-item.danger {
+  color: #DC2626;
+}
+
+.sidebar-account-item.danger svg {
+  color: #DC2626;
+}
+
+.sidebar-account-item.danger:hover {
+  background-color: #FEF2F2;
+}
+
+

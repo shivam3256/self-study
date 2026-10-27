@@ -16,6 +16,7 @@ from app.schemas.import_student import (
     ImportValidationSummary,
     ImportResultSummary,
 )
+from app.services.student_service import get_next_admission_sequence_start
 
 EXPECTED_HEADERS = [
     "Name",
@@ -379,6 +380,7 @@ class ExcelImportService:
         critical_errors: List[str] = []
 
         today = date.today()
+        curr_seq = await get_next_admission_sequence_start(db, tenant_id)
 
         for row in rows:
             if not row.is_valid:
@@ -386,8 +388,9 @@ class ExcelImportService:
                 continue
 
             try:
-                # 1. Auto-generate unique admission number and QR code token
-                adm_no = f"ADM-{secrets.token_hex(4).upper()}"
+                # 1. Auto-generate sequential admission number and QR code token
+                adm_no = f"ADM-{curr_seq:04d}"
+                curr_seq += 1
                 qr_token = secrets.token_urlsafe(16)
 
                 # 2. Create Student with details matching registration
