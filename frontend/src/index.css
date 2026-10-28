@@ -341,7 +341,7 @@ button, input, select, textarea {
    ========================================================================== */
 
 .topbar {
-  height: var(--topbar-height);
+  min-height: var(--topbar-height);
   background-color: var(--bg-header);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
@@ -354,8 +354,8 @@ button, input, select, textarea {
   max-width: var(--container-max-width);
   width: 100%;
   margin: 0 auto;
-  padding: 0 var(--space-5);
-  height: 100%;
+  padding: 4px var(--space-5);
+  min-height: var(--topbar-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -479,6 +479,20 @@ button, input, select, textarea {
 .kpi-subtitle {
   font-size: 0.8125rem;
   color: var(--color-text-secondary);
+}
+
+/* Two-column grid shared between Row 2 and Row 3 (60% / 40%) */
+.dashboard-two-col-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .dashboard-two-col-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* ==========================================================================

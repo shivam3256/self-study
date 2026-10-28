@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 
-// --- Helper: Format payment time ---
+// --- Display helper: Format payment time ---
 function formatPaymentTime(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -27,6 +27,24 @@ function formatPaymentTime(dateStr) {
   const timeStr = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   if (isToday) return `Today, ${timeStr}`;
   return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${timeStr}`;
+}
+
+// --- Display helper: Title case for student names (e.g. "priya" -> "Priya", "SHIVAM" -> "Shivam") ---
+function toTitleCase(str) {
+  if (!str) return 'Member';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// --- Display helper: Sentence case for plan names (e.g. "MONTHLY SINGLE MORNING SHIFT" -> "Monthly single morning shift") ---
+function toSentenceCase(str) {
+  if (!str) return 'Seat';
+  const clean = str.trim();
+  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }
 
 // --- Helper: WhatsApp phone cleaner & reminder opener ---
@@ -78,7 +96,7 @@ function TrendBadge({ trend, overrideText }) {
           minHeight: 18,
         }}
       >
-        <span>—</span>
+        <span>No data yet</span>
       </div>
     );
   }
@@ -121,7 +139,7 @@ function RevenueBarChart({ data = [], totalRevenue = 0 }) {
   }
 
   const width = 600;
-  const height = 125; // 30% reduction from original 180px
+  const height = 125;
   const padTop = 14;
   const padBottom = 24;
   const padLeft = 10;
@@ -135,14 +153,16 @@ function RevenueBarChart({ data = [], totalRevenue = 0 }) {
   const slotW = chartW / n;
   const barW = Math.min(Math.max(slotW * 0.58, 6), 12);
 
-  // Pick 5 evenly spaced labels for X axis
   const labelIndices = [0, Math.floor(n * 0.25), Math.floor(n * 0.5), Math.floor(n * 0.75), n - 1];
 
   const activePoint = hoverIdx !== null && hoverIdx >= 0 && hoverIdx < data.length ? data[hoverIdx] : null;
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      {/* Tooltip / Hover Inspector Bar */}
+    <div
+      style={{ position: 'relative', width: '100%' }}
+      onMouseLeave={() => setHoverIdx(null)}
+    >
+      {/* Tooltip / Hover Inspector Bar: Renders ONLY when hovered */}
       <div
         style={{
           minHeight: 18,
@@ -150,18 +170,13 @@ function RevenueBarChart({ data = [], totalRevenue = 0 }) {
           fontSize: '0.75rem',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
         }}
       >
         {activePoint ? (
           <span style={{ color: 'var(--color-text-secondary)' }}>
             <strong style={{ color: 'var(--color-heading)' }}>{activePoint.label}:</strong> ₹{activePoint.amount.toLocaleString('en-IN')}
           </span>
-        ) : (
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.72rem' }}>
-            Hover bar to inspect daily collection
-          </span>
-        )}
+        ) : null}
       </div>
 
       <svg
@@ -192,7 +207,7 @@ function RevenueBarChart({ data = [], totalRevenue = 0 }) {
           opacity="0.9"
         />
 
-        {/* 30 Daily Bars (Zero days render as empty space) */}
+        {/* 30 Daily Bars (Zero days render as empty space; column highlight renders ONLY on hover) */}
         {data.map((d, i) => {
           const centerX = padLeft + (i + 0.5) * slotW;
           const barX = centerX - barW / 2;
@@ -203,8 +218,8 @@ function RevenueBarChart({ data = [], totalRevenue = 0 }) {
 
           return (
             <g key={d.date || i}>
-              {/* Hover highlight background */}
-              {isHovered && (
+              {/* Hover highlight background: rendered ONLY when actively hovered */}
+              {isHovered && hoverIdx !== null && (
                 <rect
                   x={centerX - slotW / 2}
                   y={padTop}
@@ -270,19 +285,15 @@ function RevenueBarChart({ data = [], totalRevenue = 0 }) {
 }
 
 // --- Component: 7-Day Weekly Attendance Bar Chart ---
-function WeeklyAttendanceBarChart({ data = [], todayCount = 0 }) {
+function WeeklyAttendanceBarChart({ data = [] }) {
   const [hoverIdx, setHoverIdx] = useState(null);
 
   if (!data || data.length === 0) {
-    return (
-      <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
-        No attendance records for the past 7 days.
-      </div>
-    );
+    return null;
   }
 
   const width = 400;
-  const height = 125; // Matching reduced height for balance
+  const height = 125;
   const padTop = 14;
   const padBottom = 24;
   const padLeft = 14;
@@ -299,8 +310,11 @@ function WeeklyAttendanceBarChart({ data = [], todayCount = 0 }) {
   const activeItem = hoverIdx !== null && hoverIdx >= 0 && hoverIdx < data.length ? data[hoverIdx] : null;
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      {/* Tooltip / Hover Inspector Bar */}
+    <div
+      style={{ position: 'relative', width: '100%' }}
+      onMouseLeave={() => setHoverIdx(null)}
+    >
+      {/* Tooltip Bar: Renders ONLY when hovered */}
       <div
         style={{
           minHeight: 18,
@@ -308,18 +322,13 @@ function WeeklyAttendanceBarChart({ data = [], todayCount = 0 }) {
           fontSize: '0.75rem',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
         }}
       >
         {activeItem ? (
           <span style={{ color: 'var(--color-text-secondary)' }}>
             <strong style={{ color: 'var(--color-heading)' }}>{activeItem.full_label}:</strong> {activeItem.count} check-in{activeItem.count !== 1 ? 's' : ''}
           </span>
-        ) : (
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.72rem' }}>
-            Hover bar to inspect daily attendance
-          </span>
-        )}
+        ) : null}
       </div>
 
       <svg
@@ -362,7 +371,7 @@ function WeeklyAttendanceBarChart({ data = [], todayCount = 0 }) {
           return (
             <g key={d.date || i}>
               {/* Bar background highlight on hover */}
-              {isHovered && (
+              {isHovered && hoverIdx !== null && (
                 <rect
                   x={centerX - slotW / 2}
                   y={padTop}
@@ -448,33 +457,19 @@ function DashboardSkeleton() {
       </div>
 
       {/* Row 2: Charts / Dues Skeleton */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: 24,
-          marginBottom: 24,
-        }}
-      >
-        <div className="card" style={{ padding: 24, minHeight: 200 }}>
+      <div className="dashboard-two-col-grid" style={{ marginBottom: 24 }}>
+        <div className="card" style={{ padding: 24, minHeight: 180 }}>
           <div className="skeleton-block" style={{ width: '35%', height: 18, marginBottom: 20 }} />
-          <div className="skeleton-block" style={{ width: '100%', height: 120 }} />
+          <div className="skeleton-block" style={{ width: '100%', height: 100 }} />
         </div>
-        <div className="card" style={{ padding: 24, minHeight: 200 }}>
+        <div className="card" style={{ padding: 24, minHeight: 180 }}>
           <div className="skeleton-block" style={{ width: '30%', height: 18, marginBottom: 20 }} />
-          <div className="skeleton-block" style={{ width: '100%', height: 120 }} />
+          <div className="skeleton-block" style={{ width: '100%', height: 100 }} />
         </div>
       </div>
 
       {/* Row 3: Occupancy & Attendance Skeleton */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: 24,
-          marginBottom: 24,
-        }}
-      >
+      <div className="dashboard-two-col-grid" style={{ marginBottom: 24 }}>
         <div className="card" style={{ padding: 24, minHeight: 200 }}>
           <div className="skeleton-block" style={{ width: '40%', height: 18, marginBottom: 20 }} />
           <div className="skeleton-block" style={{ width: '100%', height: 120 }} />
@@ -582,11 +577,8 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
     ? Math.max(...revenueTrend.data.map((d) => d.amount))
     : 0;
 
-  // Peak calculation for attendance
-  const peakAttendance = attendanceTrend?.data && attendanceTrend.data.length > 0
-    ? Math.max(...attendanceTrend.data.map((d) => d.count))
-    : 0;
-
+  // Check if weekly attendance has any check-ins
+  const hasAttendanceThisWeek = attendanceTrend?.data && attendanceTrend.data.some((d) => d.count > 0);
   const todayAttendanceCount = attendanceTrend?.today_count ?? summary.today_checkins_count ?? 0;
   const hasAttendanceToday = todayAttendanceCount > 0;
   const hasDues = duesSoon && duesSoon.length > 0;
@@ -652,34 +644,25 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
       </div>
 
       {/* =========================================================================
-          ROW 2: Layout 2/3 (Revenue Bar Chart) + 1/3 (Fees Due Soon)
+          ROW 2: Shared Grid (3fr / 2fr) - Revenue Bar Chart + Fees Due Soon
           ========================================================================= */}
-      <div
-        className="dashboard-row-2"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: 24,
-          marginBottom: 24,
-          alignItems: hasDues ? 'stretch' : 'start',
-        }}
-      >
-        {/* Left (2/3): Revenue (last 30 days) Bar Chart */}
+      <div className="dashboard-two-col-grid" style={{ marginBottom: 24 }}>
+        {/* Left (3fr): Revenue (last 30 days) Bar Chart */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div
             className="card-header"
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 12 }}
           >
-            <div>
-              <div className="card-title">
-                <IndianRupee size={20} color="var(--color-brand)" />
+            <div style={{ minWidth: 0, flexShrink: 1 }}>
+              <div className="card-title" style={{ whiteSpace: 'nowrap' }}>
+                <IndianRupee size={20} color="var(--color-brand)" style={{ flexShrink: 0 }} />
                 <span>Revenue (last 30 days)</span>
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2, whiteSpace: 'nowrap' }}>
                 Daily fee collection trend
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div
                 style={{
                   fontFamily: 'var(--font-heading)',
@@ -687,11 +670,12 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                   fontWeight: 600,
                   color: 'var(--color-heading)',
                   lineHeight: 1.15,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 ₹{Number(revenueTrend?.total_revenue || 0).toLocaleString('en-IN')}
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: 2, whiteSpace: 'nowrap' }}>
                 Total 30-day collection {peakRevenue > 0 && `• Peak: ₹${peakRevenue.toLocaleString('en-IN')}`}
               </div>
             </div>
@@ -705,7 +689,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
           </div>
         </div>
 
-        {/* Right (1/3): Fees Due Soon (Compact when empty, does not stretch) */}
+        {/* Right (2fr): Fees Due Soon (Same height as Revenue card; vertically centered when empty) */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="card-header">
             <div className="card-title">
@@ -725,7 +709,14 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: hasDues ? 'flex-start' : 'center',
+            }}
+          >
             {hasDues ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {duesSoon.slice(0, 5).map((student) => (
@@ -754,7 +745,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                         }}
                         title={student.student_name}
                       >
-                        {student.student_name}
+                        {toTitleCase(student.student_name)}
                       </div>
                       <div
                         style={{
@@ -766,7 +757,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                           marginTop: 1,
                         }}
                       >
-                        {student.plan_name}
+                        {toSentenceCase(student.plan_name)}
                       </div>
                     </div>
 
@@ -797,7 +788,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                           color: '#128C7E',
                         }}
                         onClick={() => handleWhatsAppRemind(student)}
-                        title={`Send WhatsApp fee reminder to ${student.student_name}`}
+                        title={`Send WhatsApp fee reminder to ${toTitleCase(student.student_name)}`}
                       >
                         <MessageSquare size={13} color="#25D366" />
                         <span>Remind</span>
@@ -813,7 +804,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '16px 12px',
+                  padding: '24px 16px',
                   textAlign: 'center',
                 }}
               >
@@ -846,31 +837,32 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
       </div>
 
       {/* =========================================================================
-          ROW 3: Shift Occupancy & Capacity + Weekly Attendance Bar Chart
+          ROW 3: Shared Grid (3fr / 2fr) - Shift Occupancy + Weekly Attendance
           ========================================================================= */}
-      <div
-        className="dashboard-row-3"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-          gap: 24,
-          marginBottom: 24,
-        }}
-      >
-        {/* Left: Shift Occupancy & Capacity */}
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">
-              <Clock size={20} color="var(--color-brand)" />
-              <span>Shift Occupancy & Capacity</span>
+      <div className="dashboard-two-col-grid" style={{ marginBottom: 24 }}>
+        {/* Left (3fr): Shift Occupancy & Capacity */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="card-header" style={{ flexWrap: 'nowrap', gap: 12, alignItems: 'center' }}>
+            <div style={{ minWidth: 0, flexShrink: 1 }}>
+              <div className="card-title" style={{ whiteSpace: 'nowrap' }}>
+                <Clock size={20} color="var(--color-brand)" style={{ flexShrink: 0 }} />
+                <span>Shift Occupancy & Capacity</span>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2, whiteSpace: 'nowrap' }}>
+                Current seat utilization across shift slots
+              </div>
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('seatmap')}>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setActiveTab('seatmap')}
+              style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
               <span>View Map</span>
               <ArrowRight size={14} />
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {summary.shifts_breakdown && summary.shifts_breakdown.length > 0 ? (
               summary.shifts_breakdown.map((s) => (
                 <div
@@ -887,10 +879,12 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      gap: 8,
                       marginBottom: 8,
+                      flexWrap: 'nowrap',
                     }}
                   >
-                    <div>
+                    <div style={{ whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>
                       <span
                         style={{
                           fontWeight: 600,
@@ -915,6 +909,8 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                         fontWeight: 600,
                         color: s.occupancy_rate > 80 ? 'var(--warning-solid)' : 'var(--color-brand)',
                         fontSize: '0.875rem',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}
                     >
                       {s.occupied_count} / {s.capacity} seats ({s.occupancy_rate}%)
@@ -959,20 +955,20 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
           </div>
         </div>
 
-        {/* Right: Weekly Attendance Bar Chart (Replaces check-in panel & removes duplicate buttons) */}
+        {/* Right (2fr): Weekly Attendance (Chart if data > 0, otherwise compact empty state) */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="card-header">
-            <div>
-              <div className="card-title">
-                <UserCheck size={20} color="var(--color-brand)" />
+          <div className="card-header" style={{ flexWrap: 'nowrap', gap: 8, alignItems: 'center' }}>
+            <div style={{ minWidth: 0, flexShrink: 1 }}>
+              <div className="card-title" style={{ whiteSpace: 'nowrap' }}>
+                <UserCheck size={20} color="var(--color-brand)" style={{ flexShrink: 0 }} />
                 <span>Weekly Attendance</span>
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                Physical study presence (last 7 days)
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2, whiteSpace: 'nowrap' }}>
+                Last 7 days
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
               <span
                 style={{
                   fontSize: '0.8125rem',
@@ -982,28 +978,76 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                   border: `1px solid ${hasAttendanceToday ? 'var(--success-border)' : 'var(--color-border)'}`,
                   padding: '3px 8px',
                   borderRadius: 'var(--radius-sm)',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Today: {todayAttendanceCount} {peakAttendance > 0 && `(Peak: ${peakAttendance})`}
+                Today: {todayAttendanceCount}
               </span>
-              <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('attendance')}>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setActiveTab('attendance')}
+                style={{ whiteSpace: 'nowrap' }}
+              >
                 <span>Check-in Log</span>
                 <ArrowRight size={14} />
               </button>
             </div>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', width: '100%', marginTop: 4 }}>
-            <WeeklyAttendanceBarChart
-              data={attendanceTrend?.data || []}
-              todayCount={todayAttendanceCount}
-            />
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: hasAttendanceThisWeek ? 'flex-start' : 'center',
+              width: '100%',
+            }}
+          >
+            {hasAttendanceThisWeek ? (
+              <div style={{ width: '100%', marginTop: 4 }}>
+                <WeeklyAttendanceBarChart data={attendanceTrend?.data || []} />
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '24px 16px',
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--bg-alt)',
+                    color: 'var(--color-text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 8,
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <UserCheck size={18} />
+                </div>
+                <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-heading)' }}>
+                  No check-ins this week
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                  Check-in activity will appear here as students arrive.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* =========================================================================
-          ROW 4: Recent Payments Table (Max 5 Rows)
+          ROW 4: Recent Payments Table (Max 5 Rows, Proportional Widths & Formatting)
           ========================================================================= */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">
@@ -1042,11 +1086,11 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                     letterSpacing: '0.04em',
                   }}
                 >
-                  <th style={{ padding: '10px 14px', fontWeight: 600 }}>Student</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600 }}>Plan / Type</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600 }}>Amount</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600 }}>Mode</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600, textAlign: 'right' }}>Time</th>
+                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '28%' }}>Student</th>
+                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '30%' }}>Plan / Type</th>
+                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '16%' }}>Amount</th>
+                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '12%' }}>Mode</th>
+                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '14%', textAlign: 'right' }}>Time</th>
                 </tr>
               </thead>
               <tbody>
@@ -1060,10 +1104,10 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                     }}
                   >
                     <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--color-heading)' }}>
-                      {p.student_name || 'Member'}
+                      {toTitleCase(p.student_name)}
                     </td>
                     <td style={{ padding: '12px 14px', color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
-                      {p.plan_name || (p.payment_type ? p.payment_type.toUpperCase() : 'Seat')}
+                      {toSentenceCase(p.plan_name || p.payment_type || 'Seat')}
                     </td>
                     <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--color-heading)' }}>
                       ₹{Number(p.final_amount).toLocaleString('en-IN')}
@@ -1139,14 +1183,6 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
       <style>{`
         .table-row-hover:hover {
           background-color: var(--bg-alt);
-        }
-        @media (max-width: 900px) {
-          .dashboard-row-2 {
-            grid-template-columns: 1fr !important;
-          }
-          .dashboard-row-3 {
-            grid-template-columns: 1fr !important;
-          }
         }
       `}</style>
     </div>

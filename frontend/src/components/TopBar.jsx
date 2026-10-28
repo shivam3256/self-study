@@ -5,7 +5,7 @@ export default function TopBar({ title, subtitle, tenant, onOpenNewStudent, onOp
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <div>
+        <div style={{ paddingBottom: 8 }}>
           <div className="topbar-title">
             <span>{title}</span>
           </div>

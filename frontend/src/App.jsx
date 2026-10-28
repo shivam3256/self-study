@@ -57,6 +57,63 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function getPageInfo(activeTab, tenantName) {
+  switch (activeTab) {
+    case 'dashboard':
+      return {
+        title: 'Library Executive Dashboard',
+        subtitle: `Real-time occupancy, student metrics & revenue overview for ${tenantName || 'your library'}.`,
+      };
+    case 'seatmap':
+      return {
+        title: 'Interactive Visual Seat Map',
+        subtitle: 'Real-time floor plan layout. Click any desk to assign or vacate seats across shifts.',
+      };
+    case 'lockers':
+      return {
+        title: 'Locker Management & Allocations',
+        subtitle: 'Visual locker grid, storage assignments, renewals, security deposits and maintenance tracking.',
+      };
+    case 'students':
+      return {
+        title: 'Student Directory & Memberships',
+        subtitle: 'Search, filter, manage enrollments, and pause/resume student memberships.',
+      };
+    case 'billing':
+      return {
+        title: 'Fee Billing & Receipt Generation',
+        subtitle: 'Collect fees, monitor outstanding dues, and generate printable GST/standard receipts.',
+      };
+    case 'budget':
+      return {
+        title: 'Budget, Expenses & Profit Analytics',
+        subtitle: 'Monitor monthly revenue, log center operating expenses (electricity, rent, salaries, misc), and track net profit margins.',
+      };
+    case 'attendance':
+      return {
+        title: 'Daily Attendance & QR Check-In',
+        subtitle: 'Verify student entry/exit and monitor active physical study presence in real-time.',
+      };
+    case 'reminders':
+      return {
+        title: 'Automated WhatsApp Fee Reminders',
+        subtitle: 'Scheduled notifications sent 7/3/1 days before due dates and on overdue status via WhatsApp.',
+      };
+    case 'settings':
+      return {
+        title: 'Library Settings & Floor Configuration',
+        subtitle: 'Configure library seat layout, floor zones, shift hours, and membership pricing plans.',
+      };
+    case 'account-settings':
+      return {
+        title: 'Account Settings & Library Profile',
+        subtitle: 'Manage your library profile, branding, contact details, and account credentials.',
+      };
+    default:
+      return { title: 'Self-Study Management', subtitle: '' };
+  }
+}
+
 export default function App() {
   const [token, setToken] = useState(getAuthToken());
   const [user, setUser] = useState(getStoredUser());
@@ -114,10 +171,14 @@ export default function App() {
 
   // Synchronize document title with active tab
   useEffect(() => {
-    const info = getPageInfo();
+    if (!token) {
+      document.title = 'LibMa — Login';
+      return;
+    }
+    const info = getPageInfo(activeTab, tenant?.name);
     const libName = tenant?.name ? ` | ${tenant.name}` : '';
     document.title = `${info.title}${libName} — LibMa`;
-  }, [activeTab, tenant?.name]);
+  }, [token, activeTab, tenant?.name]);
 
   const handleLoginSuccess = (userData, tenantData) => {
     setToken(getAuthToken());
@@ -140,67 +201,14 @@ export default function App() {
   };
 
   if (!token) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <ErrorBoundary>
+        <Auth onLoginSuccess={handleLoginSuccess} />
+      </ErrorBoundary>
+    );
   }
 
-  const getPageInfo = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return {
-          title: 'Library Executive Dashboard',
-          subtitle: `Real-time occupancy, student metrics & revenue overview for ${tenant?.name || 'your library'}.`,
-        };
-      case 'seatmap':
-        return {
-          title: 'Interactive Visual Seat Map',
-          subtitle: 'Real-time floor plan layout. Click any desk to assign or vacate seats across shifts.',
-        };
-      case 'lockers':
-        return {
-          title: 'Locker Management & Allocations',
-          subtitle: 'Visual locker grid, storage assignments, renewals, security deposits and maintenance tracking.',
-        };
-      case 'students':
-        return {
-          title: 'Student Directory & Memberships',
-          subtitle: 'Search, filter, manage enrollments, and pause/resume student memberships.',
-        };
-      case 'billing':
-        return {
-          title: 'Fee Billing & Receipt Generation',
-          subtitle: 'Collect fees, monitor outstanding dues, and generate printable GST/standard receipts.',
-        };
-      case 'budget':
-        return {
-          title: 'Budget, Expenses & Profit Analytics',
-          subtitle: 'Monitor monthly revenue, log center operating expenses (electricity, rent, salaries, misc), and track net profit margins.',
-        };
-      case 'attendance':
-        return {
-          title: 'Daily Attendance & QR Check-In',
-          subtitle: 'Verify student entry/exit and monitor active physical study presence in real-time.',
-        };
-      case 'reminders':
-        return {
-          title: 'Automated WhatsApp Fee Reminders',
-          subtitle: 'Scheduled notifications sent 7/3/1 days before due dates and on overdue status via WhatsApp.',
-        };
-      case 'settings':
-        return {
-          title: 'Library Settings & Floor Configuration',
-          subtitle: 'Configure library seat layout, floor zones, shift hours, and membership pricing plans.',
-        };
-      case 'account-settings':
-        return {
-          title: 'Account Settings & Library Profile',
-          subtitle: 'Manage your library profile, branding, contact details, and account credentials.',
-        };
-      default:
-        return { title: 'Self-Study Management', subtitle: '' };
-    }
-  };
-
-  const pageInfo = getPageInfo();
+  const pageInfo = getPageInfo(activeTab, tenant?.name);
 
   return (
     <div className="app-container">
