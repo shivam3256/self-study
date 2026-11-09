@@ -170,18 +170,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--color-brand-tint)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--color-brand)',
-              }}
-            >
+            <div className="import-icon-box">
               <FileSpreadsheet size={20} />
             </div>
             <div>
@@ -210,20 +199,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
 
         {/* Global Error Banner */}
         {error && (
-          <div
-            style={{
-              background: 'var(--danger-bg)',
-              border: '1px solid var(--danger-border)',
-              color: 'var(--danger-text)',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.85rem',
-              marginBottom: 16,
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 8,
-            }}
-          >
+          <div className="alert-banner danger" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 16 }}>
             <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>{error}</div>
           </div>
@@ -234,10 +210,8 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
           <div>
             {/* Step 1.1 Download Action Banner */}
             <div
+              className="modal-info-panel"
               style={{
-                backgroundColor: 'var(--bg-alt)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
                 padding: '14px 18px',
                 marginBottom: 20,
                 display: 'flex',
@@ -275,15 +249,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                style={{
-                  border: `2px dashed ${isDragging ? 'var(--color-brand)' : selectedFile ? 'var(--success-solid)' : 'var(--color-input-border)'}`,
-                  backgroundColor: isDragging ? 'var(--color-brand-tint)' : selectedFile ? 'var(--success-bg)' : '#FFFFFF',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '30px 20px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
+                className={`import-dropzone ${isDragging ? 'active' : selectedFile ? 'file-selected' : ''}`}
               >
                 <input
                   type="file"
@@ -319,9 +285,8 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
 
             {/* Step 1.3 Key Rules & Guidelines */}
             <div
+              className="modal-info-panel"
               style={{
-                backgroundColor: 'var(--bg-alt)',
-                borderRadius: 'var(--radius-md)',
                 padding: '12px 16px',
                 fontSize: '0.82rem',
                 color: 'var(--color-text-secondary)',
@@ -373,15 +338,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                 marginBottom: 16,
               }}
             >
-              <div
-                className="card"
-                style={{
-                  padding: '12px 14px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                }}
-              >
+              <div className="info-tile">
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>
                   Total Rows
                 </div>
@@ -390,15 +347,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div
-                className="card"
-                style={{
-                  padding: '12px 14px',
-                  backgroundColor: '#F0FDF4',
-                  border: '1px solid #BBF7D0',
-                  borderRadius: 'var(--radius-md)',
-                }}
-              >
+              <div className="info-tile" style={{ backgroundColor: 'var(--success-bg)', borderColor: 'var(--success-border)' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--success-text)', textTransform: 'uppercase', fontWeight: 600 }}>
                   Valid Records
                 </div>
@@ -407,15 +356,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div
-                className="card"
-                style={{
-                  padding: '12px 14px',
-                  backgroundColor: '#FFFBEB',
-                  border: '1px solid #FDE68A',
-                  borderRadius: 'var(--radius-md)',
-                }}
-              >
+              <div className="info-tile" style={{ backgroundColor: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--warning-text)', textTransform: 'uppercase', fontWeight: 600 }}>
                   Warnings
                 </div>
@@ -424,15 +365,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div
-                className="card"
-                style={{
-                  padding: '12px 14px',
-                  backgroundColor: summaryData.error_rows > 0 ? '#FEF2F2' : '#F9FAFB',
-                  border: `1px solid ${summaryData.error_rows > 0 ? '#FECACA' : 'var(--color-border)'}`,
-                  borderRadius: 'var(--radius-md)',
-                }}
-              >
+              <div className="info-tile" style={{ backgroundColor: summaryData.error_rows > 0 ? 'var(--danger-bg)' : 'var(--bg-alt)', borderColor: summaryData.error_rows > 0 ? 'var(--danger-border)' : 'var(--color-border)' }}>
                 <div style={{ fontSize: '0.75rem', color: summaryData.error_rows > 0 ? 'var(--danger-text)' : 'var(--color-text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>
                   Errors
                 </div>
@@ -486,15 +419,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
             </div>
 
             {/* Preview Table */}
-            <div
-              style={{
-                maxHeight: '320px',
-                overflowY: 'auto',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: 16,
-              }}
-            >
+            <div className="table-scroll-container">
               <table className="data-table" style={{ fontSize: '0.82rem', margin: 0 }}>
                 <thead>
                   <tr>
@@ -520,10 +445,10 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                       <tr
                         key={row.row_number}
                         style={{
-                          backgroundColor: !row.is_valid ? '#FEF2F2' : row.warnings.length > 0 ? '#FFFBEB' : 'inherit',
+                          backgroundColor: !row.is_valid ? 'var(--danger-bg)' : row.warnings.length > 0 ? 'var(--warning-bg)' : 'inherit',
                         }}
                       >
-                        <td style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)' }}>
+                        <td className="mono-value" style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                           {row.row_number}
                         </td>
                         <td>
@@ -611,13 +536,9 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
             {/* Error Blocking Alert */}
             {summaryData.error_rows > 0 && (
               <div
+                className="alert-banner danger"
                 style={{
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #FECACA',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '10px 14px',
                   fontSize: '0.82rem',
-                  color: '#991B1B',
                   marginBottom: 16,
                   display: 'flex',
                   alignItems: 'center',
@@ -667,17 +588,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
         {/* STEP 3: Importing Spinner */}
         {step === 'importing' && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                border: '4px solid var(--color-border)',
-                borderTopColor: 'var(--color-brand)',
-                borderRadius: '50%',
-                margin: '0 auto 16px',
-                animation: 'spin 1s linear infinite',
-              }}
-            />
+            <div className="spinner-circle" />
             <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--color-heading)' }}>
               Importing Student Directory...
             </div>
@@ -690,19 +601,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
         {/* STEP 4: Success Result */}
         {step === 'success' && importResult && (
           <div style={{ textAlign: 'center', padding: '20px 10px' }}>
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                backgroundColor: '#DCFCE7',
-                color: 'var(--success-solid)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px',
-              }}
-            >
+            <div className="success-circle-icon">
               <CheckCircle2 size={32} />
             </div>
 
@@ -724,14 +623,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                 textAlign: 'left',
               }}
             >
-              <div
-                style={{
-                  backgroundColor: 'var(--bg-alt)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px 16px',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
+              <div className="info-tile">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
                   <Users size={14} color="var(--color-brand)" />
                   <span>Students Imported</span>
@@ -741,14 +633,7 @@ export default function ImportStudentsModal({ onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div
-                style={{
-                  backgroundColor: 'var(--bg-alt)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px 16px',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
+              <div className="info-tile">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
                   <XCircle size={14} color="var(--color-text-muted)" />
                   <span>Skipped Records</span>

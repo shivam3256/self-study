@@ -25,52 +25,52 @@ export default function ReceiptModal({ receipt, onClose }) {
         </div>
 
         <div className="receipt-paper">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #E5E7EB', paddingBottom: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--color-border)', paddingBottom: '16px', marginBottom: '20px' }}>
             <div>
-              <h2 style={{ fontSize: '1.35rem', color: '#1F2933', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
+              <h2 style={{ fontSize: '1.35rem', color: 'var(--color-heading)', fontWeight: 600 }}>
                 {receipt.library_name}
               </h2>
-              <div style={{ fontSize: '0.8125rem', color: '#5C5C5C', marginTop: 4 }}>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
                 {receipt.library_address || 'Self-Study & Reading Center'}
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#5C5C5C' }}>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
                 Contact: {receipt.library_phone} | {receipt.library_email}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <span style={{ display: 'inline-block', background: '#DCFCE7', color: '#166534', fontSize: '0.75rem', fontWeight: 600, padding: '3px 8px', borderRadius: 4, marginBottom: 4 }}>
+              <span className="badge badge-active" style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 8px', marginBottom: 4 }}>
                 PAID INVOICE
               </span>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1F2933', fontFamily: 'var(--font-mono)' }}>
+              <div className="mono-value" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-heading)' }}>
                 {receipt.receipt_number}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#5C5C5C' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
                 Date: {formatDateDDMMYYYY(receipt.payment_date)}
               </div>
             </div>
           </div>
 
-          <div style={{ background: '#F7F5F2', border: '1px solid #E5E7EB', padding: '12px 16px', borderRadius: '6px', marginBottom: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="modal-info-panel" style={{ padding: '12px 16px', marginBottom: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#5C5C5C', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
                 Billed To
               </div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1F2933' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-heading)' }}>
                 {receipt.student_name}
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#5C5C5C' }}>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
                 Phone: {receipt.student_phone}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#5C5C5C', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
                 Payment Method
               </div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1F2933', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-heading)', textTransform: 'uppercase' }}>
                 {receipt.payment_mode}
               </div>
               {receipt.transaction_reference && (
-                <div style={{ fontSize: '0.75rem', color: '#5C5C5C' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
                   Ref: {receipt.transaction_reference}
                 </div>
               )}
@@ -79,7 +79,7 @@ export default function ReceiptModal({ receipt, onClose }) {
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '0.88rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #E5E7EB', textAlign: 'left', color: '#5C5C5C' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-secondary)' }}>
                 <th style={{ padding: '8px 0', fontSize: '0.75rem', textTransform: 'uppercase' }}>Plan / Description</th>
                 <th style={{ padding: '8px 0', fontSize: '0.75rem', textTransform: 'uppercase' }}>Validity Period</th>
                 <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '0.75rem', textTransform: 'uppercase' }}>Amount</th>
@@ -88,48 +88,45 @@ export default function ReceiptModal({ receipt, onClose }) {
             <tbody>
               {receipt.line_items && receipt.line_items.length > 0 ? (
                 receipt.line_items.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                    <td style={{ padding: '10px 0', fontWeight: 600, color: '#1F2933' }}>
+                  <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <td style={{ padding: '10px 0', fontWeight: 600, color: 'var(--color-heading)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{
+                        <span className={`badge ${item.item_type === 'locker' ? 'badge-info' : item.item_type === 'deposit' ? 'badge-warning' : 'badge-secondary'}`} style={{
                           fontSize: '0.68rem',
                           textTransform: 'uppercase',
                           fontWeight: 700,
                           padding: '2px 6px',
-                          borderRadius: 4,
-                          background: item.item_type === 'locker' ? '#EFF6FF' : item.item_type === 'deposit' ? '#FEF3C7' : '#F3F4F6',
-                          color: item.item_type === 'locker' ? '#1D4ED8' : item.item_type === 'deposit' ? '#B45309' : '#374151'
                         }}>
                           {item.item_type}
                         </span>
                         <span>{item.description}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '10px 0', color: '#5C5C5C', fontSize: '0.8125rem' }}>
+                    <td style={{ padding: '10px 0', color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
                       {item.period_start && item.period_end
                         ? `${formatDateDDMMYYYY(item.period_start)} to ${formatDateDDMMYYYY(item.period_end)}`
                         : '—'}
                     </td>
-                    <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: '#1F2933' }}>
+                    <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: 'var(--color-heading)' }}>
                       ₹{Number(item.amount).toLocaleString('en-IN')}
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
-                  <td style={{ padding: '12px 0', fontWeight: 600, color: '#1F2933' }}>
+                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <td style={{ padding: '12px 0', fontWeight: 600, color: 'var(--color-heading)' }}>
                     {receipt.plan_name || 'Study Desk Subscription'}
                   </td>
-                  <td style={{ padding: '12px 0', color: '#5C5C5C', fontSize: '0.8125rem' }}>
+                  <td style={{ padding: '12px 0', color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
                     {formatDateDDMMYYYY(receipt.period_start)} to {formatDateDDMMYYYY(receipt.period_end)}
                   </td>
-                  <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600, color: '#1F2933' }}>
+                  <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600, color: 'var(--color-heading)' }}>
                     ₹{Number(receipt.amount).toLocaleString('en-IN')}
                   </td>
                 </tr>
               )}
               {Number(receipt.discount) > 0 && (
-                <tr style={{ color: '#166534', fontSize: '0.8125rem' }}>
+                <tr style={{ color: 'var(--success-solid)', fontSize: '0.8125rem' }}>
                   <td style={{ padding: '6px 0' }}>Promotional Discount</td>
                   <td></td>
                   <td style={{ padding: '6px 0', textAlign: 'right' }}>
@@ -140,25 +137,25 @@ export default function ReceiptModal({ receipt, onClose }) {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan="2" style={{ padding: '14px 0 6px 0', fontWeight: 600, fontSize: '1rem', color: '#1F2933' }}>
+                <td colSpan="2" style={{ padding: '14px 0 6px 0', fontWeight: 600, fontSize: '1rem', color: 'var(--color-heading)' }}>
                   Total Received
                 </td>
-                <td style={{ padding: '14px 0 6px 0', textAlign: 'right', fontWeight: 600, fontSize: '1.2rem', color: '#C2410C' }}>
+                <td style={{ padding: '14px 0 6px 0', textAlign: 'right', fontWeight: 600, fontSize: '1.2rem', color: 'var(--color-primary)' }}>
                   ₹{Number(receipt.combined_total != null ? receipt.combined_total : receipt.final_amount).toLocaleString('en-IN')}
                 </td>
               </tr>
               <tr>
-                <td colSpan="2" style={{ fontSize: '0.78rem', color: '#5C5C5C' }}>
+                <td colSpan="2" style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
                   Next Renewal Due Date:
                 </td>
-                <td style={{ textAlign: 'right', fontSize: '0.8125rem', fontWeight: 600, color: '#991B1B' }}>
+                <td style={{ textAlign: 'right', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--danger-text)' }}>
                   {formatDateDDMMYYYY(receipt.next_due_date)}
                 </td>
               </tr>
             </tfoot>
           </table>
 
-          <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#767676', borderTop: '1px dashed #E5E7EB', paddingTop: '14px' }}>
+          <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderTop: '1px dashed var(--color-border)', paddingTop: '14px' }}>
             Thank you for being part of {receipt.library_name}. Please keep your desk clean and quiet!
           </div>
         </div>

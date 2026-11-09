@@ -326,16 +326,16 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
   return (
     <div
       className={embedded ? "card" : "modal-overlay"}
-      style={embedded ? { width: '100%', maxWidth: 1040, margin: '0 auto', padding: 24, borderRadius: 16 } : { zIndex: 900 }}
+      style={embedded ? { width: '100%', maxWidth: 1040, margin: '0 auto', padding: 24 } : { zIndex: 900 }}
     >
       <div
         className={embedded ? "" : "modal-card"}
-        style={embedded ? { display: 'flex', flexDirection: 'column' } : { maxWidth: 1040, maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 28, borderRadius: 16 }}
+        style={embedded ? { display: 'flex', flexDirection: 'column' } : { maxWidth: 1040, maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 28 }}
       >
         {/* Modal Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--color-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--color-brand)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="step-icon-box" style={{ width: 42, height: 42 }}>
               <Grid size={22} />
             </div>
             <div>
@@ -356,20 +356,20 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
 
         {/* Global Alerts */}
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.875rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="alert-banner danger" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <ShieldAlert size={16} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
         {success && (
-          <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)', color: 'var(--success-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.875rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="alert-banner success" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
             <span>{success}</span>
           </div>
         )}
 
         {/* Action Toolbar */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, background: '#F9FAFB', padding: '12px 16px', borderRadius: 12, border: '1px solid #E5E7EB' }}>
+        <div className="modal-info-panel" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 16px' }}>
           {/* Zone Filter Buttons */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', marginRight: 4 }}>
@@ -400,7 +400,6 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
             {selectedDeskIds.size > 0 && (
               <button
                 className="btn btn-sm btn-primary"
-                style={{ background: '#7C3AED', borderColor: '#6D28D9' }}
                 onClick={() => setShowBulkEditModal(true)}
               >
                 Bulk Edit ({selectedDeskIds.size})
@@ -442,9 +441,9 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
         </div>
 
         {/* Seats Table / List */}
-        <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: 10, background: '#FFFFFF' }}>
+        <div className="table-scroll-container" style={{ flex: 1, backgroundColor: 'var(--color-surface)' }}>
           <table className="data-table" style={{ margin: 0 }}>
-            <thead style={{ position: 'sticky', top: 0, background: '#F9FAFB', zIndex: 10 }}>
+            <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-alt)', zIndex: 10 }}>
               <tr>
                 <th style={{ width: 44, textAlign: 'center' }}>
                   <input
@@ -477,7 +476,7 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
                 filteredDesks.map((d) => {
                   const isSelected = selectedDeskIds.has(d.id);
                   return (
-                    <tr key={d.id} style={{ background: isSelected ? '#F5F3FF' : undefined }}>
+                    <tr key={d.id} style={{ background: isSelected ? 'var(--color-brand-tint)' : undefined }}>
                       <td style={{ textAlign: 'center' }}>
                         <input
                           type="checkbox"
@@ -486,7 +485,7 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
                         />
                       </td>
                       <td>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--color-brand)', fontSize: '0.95rem' }}>
+                        <span className="mono-value" style={{ fontWeight: 700, color: 'var(--color-brand)', fontSize: '0.95rem' }}>
                           {d.desk_number}
                         </span>
                       </td>
@@ -494,7 +493,7 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
                         <span style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{d.zone || 'Floor A'}</span>
                       </td>
                       <td>
-                        <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: d.category === 'premium' ? '#FEF3C7' : d.category === 'ac' ? '#DBEAFE' : d.category === 'ladies_only' ? '#FCE7F3' : '#F3F4F6', color: d.category === 'premium' ? '#B45309' : d.category === 'ac' ? '#1D4ED8' : d.category === 'ladies_only' ? '#BE185D' : '#374151' }}>
+                        <span className={`badge ${d.category === 'premium' ? 'badge-warning' : d.category === 'ac' ? 'badge-info' : d.category === 'ladies_only' ? 'badge-due' : 'badge-secondary'}`} style={{ textTransform: 'uppercase', fontSize: '0.75rem' }}>
                           {d.category || 'general'}
                         </span>
                       </td>
@@ -828,7 +827,7 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
                   const isRenaming = renamingZone.old_name === zone;
 
                   return (
-                    <div key={zone} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8 }}>
+                    <div key={zone} className="modal-info-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', marginBottom: 0 }}>
                       {isRenaming ? (
                         <form onSubmit={handleRenameZone} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
                           <input
@@ -886,10 +885,10 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
         {/* ── Modal: Delete Conflict (Occupied Seat Safety Check) ─────────── */}
         {deleteConflictInfo && (
           <div className="modal-overlay" style={{ zIndex: 1100 }}>
-            <div className="modal-card" style={{ maxWidth: 480, borderLeft: '4px solid #DC2626' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#DC2626', marginBottom: 12 }}>
+            <div className="modal-card" style={{ maxWidth: 480, borderLeft: '4px solid var(--danger-solid)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--danger-solid)', marginBottom: 12 }}>
                 <AlertTriangle size={22} />
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#DC2626' }}>Cannot Delete Occupied Seat</h3>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--danger-solid)' }}>Cannot Delete Occupied Seat</h3>
               </div>
 
               <p style={{ fontSize: '0.9rem', color: 'var(--color-heading)', lineHeight: 1.5, marginBottom: 14 }}>
@@ -908,8 +907,7 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
                   Cancel
                 </button>
                 <button
-                  className="btn btn-primary"
-                  style={{ background: '#D97706', borderColor: '#B45309' }}
+                  className="btn btn-secondary danger-outline"
                   onClick={() => handleDeactivateDesk(deleteConflictInfo.desk)}
                 >
                   Deactivate Seat Instead
@@ -922,9 +920,9 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
         {deskToDelete && (
           <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setDeskToDelete(null)}>
             <div className="modal-card" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#DC2626', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--danger-solid)', marginBottom: 12 }}>
                 <Trash2 size={22} />
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#DC2626' }}>Delete Desk {deskToDelete.desk_number}?</h3>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--danger-solid)' }}>Delete Desk {deskToDelete.desk_number}?</h3>
               </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--color-heading)', lineHeight: 1.5, marginBottom: 20 }}>
                 Are you sure you want to delete desk <strong>{deskToDelete.desk_number}</strong> ({deskToDelete.zone || 'Floor A'})? If this desk is currently occupied, you will be prompted to deactivate it instead.
@@ -941,9 +939,9 @@ export default function SeatManagementModal({ onClose, onSeatsChanged, embedded 
         {zoneToDelete && (
           <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setZoneToDelete(null)}>
             <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#DC2626', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--danger-solid)', marginBottom: 12 }}>
                 <Trash2 size={22} />
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#DC2626' }}>Delete Zone "{zoneToDelete}"?</h3>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--danger-solid)' }}>Delete Zone "{zoneToDelete}"?</h3>
               </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--color-heading)', lineHeight: 1.5, marginBottom: 20 }}>
                 Delete all desks in zone <strong>"{zoneToDelete}"</strong>? Desks with active student allocations cannot be deleted.

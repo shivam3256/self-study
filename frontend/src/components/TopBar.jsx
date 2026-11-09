@@ -5,12 +5,12 @@ export default function TopBar({ title, subtitle, tenant, onOpenNewStudent, onOp
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <div style={{ paddingBottom: 8 }}>
-          <div className="topbar-title">
+        <div>
+          <h2 className="topbar-title">
             <span>{title}</span>
-          </div>
+          </h2>
           {subtitle && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+            <div className="topbar-subtitle">
               {subtitle}
             </div>
           )}
@@ -18,19 +18,29 @@ export default function TopBar({ title, subtitle, tenant, onOpenNewStudent, onOp
 
         <div className="topbar-actions">
           {tenant?.city && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-              <MapPin size={14} color="var(--color-brand)" />
+            <div className="location-pill">
+              <MapPin size={13} color="var(--color-brand)" />
               <span>{tenant.city}</span>
             </div>
           )}
 
-          <button className="btn btn-secondary btn-sm" onClick={onOpenNewPayment} aria-label="Collect Fee">
-            <Receipt size={15} />
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onOpenNewPayment}
+            aria-label="Collect Fee"
+          >
+            <Receipt size={14} />
             <span>Collect Fee</span>
           </button>
 
-          <button className="btn btn-primary btn-sm" onClick={onOpenNewStudent} aria-label="Register New Student">
-            <UserPlus size={15} />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={onOpenNewStudent}
+            aria-label="Register New Student"
+          >
+            <UserPlus size={14} />
             <span>New Student</span>
           </button>
         </div>

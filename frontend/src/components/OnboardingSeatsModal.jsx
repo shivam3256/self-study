@@ -127,12 +127,12 @@ export default function OnboardingSeatsModal({ onClose, onSuccess, initialFloors
 
   return (
     <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div className="modal-card" style={{ maxWidth: 620, padding: 32, borderRadius: 16 }}>
+      <div className="modal-card" style={{ maxWidth: 620, padding: 32 }}>
         {/* Header with Progress */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--color-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <div className="step-icon-box">
                 <Layers size={20} />
               </div>
               <div>
@@ -152,33 +152,30 @@ export default function OnboardingSeatsModal({ onClose, onSuccess, initialFloors
           </div>
 
           {/* Progress bar */}
-          <div style={{ width: '100%', height: 6, background: '#E5E7EB', borderRadius: 999, overflow: 'hidden', marginBottom: 14 }}>
+          <div className="progress-track">
             <div
+              className="progress-fill"
               style={{
                 width: `${(currentStep / totalSteps) * 100}%`,
-                height: '100%',
-                background: 'var(--color-brand)',
-                borderRadius: 999,
-                transition: 'width 0.3s ease',
               }}
             />
           </div>
 
           <p style={{ fontSize: '0.92rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-            How many seats does your library have? Add one row per floor. We will automatically generate unique seat codes (<code style={{ background: '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>A-01, A-02, B-01...</code>) and interactive visual maps.
+            How many seats does your library have? Add one row per floor. We will automatically generate unique seat codes (<code className="code-inline">A-01, A-02, B-01...</code>) and interactive visual maps.
           </p>
         </div>
 
         {/* Alerts */}
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '12px 16px', borderRadius: 'var(--radius-md)', fontSize: '0.875rem', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="alert-banner danger" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
             <ShieldAlert size={18} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)', color: 'var(--success-text)', padding: '12px 16px', borderRadius: 'var(--radius-md)', fontSize: '0.875rem', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="alert-banner success" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
             <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
             <span>{success}</span>
           </div>
@@ -186,8 +183,8 @@ export default function OnboardingSeatsModal({ onClose, onSuccess, initialFloors
 
         {/* Floor Setup Form */}
         <form onSubmit={handleComplete}>
-          <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 12, padding: '16px 18px', marginBottom: 18 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 40px', gap: 12, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #E5E7EB' }}>
+          <div className="modal-info-panel" style={{ padding: '16px 18px', marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 40px', gap: 12, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid var(--color-border)' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
                 Floor / Zone Name *
               </div>
@@ -204,7 +201,6 @@ export default function OnboardingSeatsModal({ onClose, onSuccess, initialFloors
                     <input
                       type="text"
                       className="form-input"
-                      style={{ background: '#FFFFFF' }}
                       placeholder="e.g. Floor A"
                       value={floor.name}
                       onChange={(e) => handleNameChange(idx, e.target.value)}
@@ -218,7 +214,6 @@ export default function OnboardingSeatsModal({ onClose, onSuccess, initialFloors
                       min={1}
                       max={500}
                       className="form-input"
-                      style={{ background: '#FFFFFF' }}
                       placeholder="e.g. 50"
                       value={floor.count}
                       onChange={(e) => handleCountChange(idx, e.target.value)}
@@ -230,8 +225,8 @@ export default function OnboardingSeatsModal({ onClose, onSuccess, initialFloors
                     {floors.length > 1 && (
                       <button
                         type="button"
-                        className="btn btn-secondary btn-sm"
-                        style={{ color: '#DC2626', borderColor: '#FCA5A5', padding: '7px 8px' }}
+                        className="btn btn-secondary btn-sm danger-outline"
+                        style={{ padding: '7px 8px' }}
                         title="Remove floor row"
                         onClick={() => handleRemoveFloor(idx)}
                         disabled={loading}
@@ -264,7 +259,7 @@ export default function OnboardingSeatsModal({ onClose, onSuccess, initialFloors
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid #E5E7EB' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
             <button
               type="button"
               className="btn btn-secondary"

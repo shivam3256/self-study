@@ -148,64 +148,84 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
       {/* Top Banner Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--color-heading)' }}>Fee Collection & Invoices</h2>
-          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+          <h2 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', margin: 0, fontWeight: 700 }}>Fee Collection & Invoices</h2>
+          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
             Track outstanding student dues, record payments, and issue printable receipts.
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => onOpenNewPayment()}>
-          <CreditCard size={16} />
+          <CreditCard size={15} />
           <span>Record New Payment</span>
         </button>
       </div>
 
       {/* Revenue Separation Overview Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div className="card" style={{ padding: '14px 18px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-            Total Revenue Collected
+        <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="circle-icon-badge brand">
+            <IndianRupee size={18} />
           </div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-brand)', marginTop: 4 }}>
-            ₹{metrics.totalIncome.toLocaleString('en-IN')}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-            Seat + Locker income (excl. deposits)
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: '14px 18px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-            Seat Income
-          </div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#16A34A', marginTop: 4 }}>
-            ₹{metrics.seatIncome.toLocaleString('en-IN')}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-            Desk memberships
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
+              Total Revenue Collected
+            </div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-brand)', marginTop: 2 }}>
+              ₹{metrics.totalIncome.toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+              Seat + Locker income
+            </div>
           </div>
         </div>
 
-        <div className="card" style={{ padding: '14px 18px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-            Locker Income
+        <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="circle-icon-badge success">
+            <ArrowUpRight size={18} />
           </div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#2563EB', marginTop: 4 }}>
-            ₹{metrics.lockerIncome.toLocaleString('en-IN')}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-            Storage rental renewals
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
+              Seat Income
+            </div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--status-free-solid)', marginTop: 2 }}>
+              ₹{metrics.seatIncome.toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+              Desk memberships
+            </div>
           </div>
         </div>
 
-        <div className="card" style={{ padding: '14px 18px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-            Refundable Deposits Held
+        <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="circle-icon-badge info">
+            <Lock size={18} />
           </div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#D97706', marginTop: 4 }}>
-            ₹{metrics.depositsHeld.toLocaleString('en-IN')}
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
+              Locker Income
+            </div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--status-assigned-solid)', marginTop: 2 }}>
+              ₹{metrics.lockerIncome.toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+              Storage rental renewals
+            </div>
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-            Liability / refundable to students
+        </div>
+
+        <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="circle-icon-badge warning">
+            <Receipt size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
+              Refundable Deposits Held
+            </div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--warning-solid)', marginTop: 2 }}>
+              ₹{metrics.depositsHeld.toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+              Liability / refundable
+            </div>
           </div>
         </div>
       </div>
@@ -219,7 +239,7 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
               <span>Outstanding Dues Alert ({dues.length} Overdue Items)</span>
             </div>
           </div>
-          <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+          <div className="table-container embedded">
             <table className="data-table">
               <thead>
                 <tr>
@@ -238,29 +258,21 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
                   return (
                     <tr key={`${d.student_id}-${d.item_type || 'seat'}-${index}`}>
                       <td>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          background: isLocker ? '#EFF6FF' : '#FFF7ED',
-                          color: isLocker ? '#1D4ED8' : '#C2410C',
-                          border: `1px solid ${isLocker ? '#BFDBFE' : '#FED7AA'}`
-                        }}>
-                          {isLocker && <Lock size={11} />}
+                        <span className={`badge ${isLocker ? 'badge-info' : 'badge-warning'}`}>
+                          {isLocker && <Lock size={11} style={{ marginRight: 4 }} />}
                           <span>{d.plan_name || (isLocker ? 'Locker' : 'Seat')}</span>
                         </span>
                       </td>
                       <td style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{d.student_name}</td>
-                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-brand)' }}>{d.admission_number}</td>
-                      <td style={{ color: 'var(--color-text-secondary)' }}>{d.phone}</td>
-                      <td style={{ color: 'var(--danger-text)', fontWeight: 500 }}>{formatDateDDMMYYYY(d.expiry_date)}</td>
                       <td>
-                        <span className="badge badge-expired">
+                        <span className="font-mono tabular-nums text-brand font-semibold">
+                          {d.admission_number}
+                        </span>
+                      </td>
+                      <td className="tabular-nums" style={{ color: 'var(--color-text-secondary)' }}>{d.phone}</td>
+                      <td className="tabular-nums" style={{ color: 'var(--danger-text)', fontWeight: 500 }}>{formatDateDDMMYYYY(d.expiry_date)}</td>
+                      <td>
+                        <span className="badge badge-expired tabular-nums">
                           {d.days_overdue} days ago
                         </span>
                       </td>
@@ -294,24 +306,32 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
             <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Filter Type:</span>
             <div className="shift-selector">
               <button
+                type="button"
+                aria-pressed={typeFilter === 'all'}
                 className={`shift-btn ${typeFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setTypeFilter('all')}
               >
                 All
               </button>
               <button
+                type="button"
+                aria-pressed={typeFilter === 'seat'}
                 className={`shift-btn ${typeFilter === 'seat' ? 'active' : ''}`}
                 onClick={() => setTypeFilter('seat')}
               >
                 Seat
               </button>
               <button
+                type="button"
+                aria-pressed={typeFilter === 'locker'}
                 className={`shift-btn ${typeFilter === 'locker' ? 'active' : ''}`}
                 onClick={() => setTypeFilter('locker')}
               >
                 Locker
               </button>
               <button
+                type="button"
+                aria-pressed={typeFilter === 'deposit'}
                 className={`shift-btn ${typeFilter === 'deposit' ? 'active' : ''}`}
                 onClick={() => setTypeFilter('deposit')}
               >
@@ -321,7 +341,7 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
           </div>
         </div>
 
-        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+        <div className="table-container embedded">
           <table className="data-table">
             <thead>
               <tr>
@@ -357,43 +377,34 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
                   return (
                     <tr key={p.id}>
                       <td>
-                        <span style={{ fontWeight: 600, color: 'var(--color-brand)', fontFamily: 'var(--font-mono)' }}>
+                        <span className="font-mono tabular-nums text-brand" style={{ fontWeight: 600 }}>
                           {p.receipt_number}
                         </span>
                       </td>
                       <td>
-                        <span style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          background: type === 'locker' ? '#EFF6FF' : type === 'deposit' ? '#FEF3C7' : '#F3F4F6',
-                          color: type === 'locker' ? '#1D4ED8' : type === 'deposit' ? '#B45309' : '#374151',
-                          border: `1px solid ${type === 'locker' ? '#BFDBFE' : type === 'deposit' ? '#FDE68A' : '#E5E7EB'}`
-                        }}>
+                        <span className={`badge ${type === 'locker' ? 'badge-info' : type === 'deposit' ? 'badge-warning' : 'badge-neutral'}`}>
                           {type}
                         </span>
                       </td>
                       <td>
                         <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{p.student_name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{p.student_phone}</div>
+                        <div className="tabular-nums" style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{p.student_phone}</div>
                       </td>
                       <td>{p.plan_name || (type === 'locker' ? 'Locker Fee' : type === 'deposit' ? 'Locker Deposit' : 'Standard Plan')}</td>
                       <td>
-                        <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-secondary)' }}>
+                        <span className="badge badge-neutral" style={{ textTransform: 'uppercase' }}>
                           {p.payment_mode}
                         </span>
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>
+                        <div className="tabular-nums" style={{ fontWeight: 600, color: 'var(--color-heading)' }}>
                           ₹{Number(p.final_amount).toLocaleString('en-IN')}
                         </div>
                       </td>
-                      <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                      <td className="tabular-nums" style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
                         {formatDateDDMMYYYY(p.payment_date)}
                       </td>
-                      <td style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                      <td className="tabular-nums" style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                         {formatDateRange(p.period_start, p.period_end)}
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -412,6 +423,9 @@ export default function Billing({ onOpenNewPayment, onViewReceipt }) {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="table-footer-status">
+          <span>Showing {paginatedPayments.length} of {payments.length} payments · Total Revenue: <strong className="tabular-nums" style={{ color: 'var(--color-heading)' }}>₹{metrics.totalIncome.toLocaleString('en-IN')}</strong></span>
         </div>
         <TablePagination
           currentPage={currentPage}

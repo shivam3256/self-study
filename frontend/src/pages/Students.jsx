@@ -31,7 +31,7 @@ import TablePagination from '../components/TablePagination';
 import { useToast } from '../context/ToastContext';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
 
-function WhatsAppIcon({ size = 16, color = '#22C55E' }) {
+function WhatsAppIcon({ size = 16, color = 'var(--success-solid)' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2ZM12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.16 12.04 20.16C10.67 20.16 9.32 19.8 8.14 19.11L7.84 18.93L4.72 19.75L5.55 16.71L5.35 16.39C4.6 15.19 4.21 13.57 4.21 11.91C4.21 7.37 7.91 3.67 12.05 3.67ZM8.82 7.02C8.63 7.02 8.44 7.03 8.27 7.04C8.04 7.05 7.82 7.15 7.67 7.33C7.45 7.57 6.87 8.12 6.87 9.24C6.87 10.36 7.69 11.44 7.81 11.6C7.93 11.76 9.42 14.06 11.7 15.05C13.6 15.87 14 15.7 14.43 15.66C14.86 15.62 15.82 15.09 16.02 14.52C16.22 13.95 16.22 13.47 16.16 13.37C16.1 13.27 15.94 13.21 15.7 13.09C15.46 12.97 14.28 12.39 14.06 12.31C13.84 12.23 13.68 12.19 13.52 12.43C13.36 12.67 12.9 13.21 12.76 13.37C12.62 13.53 12.48 13.55 12.24 13.43C12 13.31 11.23 13.06 10.31 12.24C9.59 11.6 9.11 10.81 8.97 10.57C8.83 10.33 8.95 10.2 9.07 10.08C9.18 9.97 9.32 9.79 9.44 9.65C9.56 9.51 9.6 9.41 9.68 9.25C9.76 9.09 9.72 8.95 9.66 8.83C9.6 8.71 9.14 7.57 8.95 7.11C8.76 6.66 8.57 6.72 8.42 6.71C8.28 6.7 8.12 6.7 8.82 7.02Z"/>
@@ -364,12 +364,11 @@ export default function Students({
       <div className="card" style={{ marginBottom: 24, padding: '16px 20px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: '240px', maxWidth: '400px' }}>
-            <div style={{ position: 'relative', width: '100%' }}>
-              <Search size={16} color="var(--color-text-secondary)" style={{ position: 'absolute', left: 12, top: 12 }} />
+            <div className="search-box-container">
+              <Search size={16} className="search-box-icon" />
               <input
                 type="text"
-                className="form-input"
-                style={{ paddingLeft: 36 }}
+                className="search-box-input"
                 placeholder="Search student by name, phone or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -377,10 +376,12 @@ export default function Students({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             {['all', 'active', 'paused', 'expired', 'left'].map((st) => (
               <button
                 key={st}
+                type="button"
+                aria-pressed={statusFilter === st}
                 className={`btn btn-sm ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ textTransform: 'capitalize' }}
                 onClick={() => setStatusFilter(st)}
@@ -389,14 +390,15 @@ export default function Students({
               </button>
             ))}
             <button
+              type="button"
               className="btn btn-secondary btn-sm"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => setShowImportModal(true)}
             >
-              <FileSpreadsheet size={15} color="var(--color-brand)" />
+              <FileSpreadsheet size={15} style={{ color: 'var(--color-brand)' }} />
               <span>Import Students</span>
             </button>
-            <button className="btn btn-primary btn-sm" onClick={onOpenNewStudent}>
+            <button type="button" className="btn btn-primary btn-sm" onClick={onOpenNewStudent}>
               Register Student
             </button>
           </div>
@@ -405,7 +407,7 @@ export default function Students({
 
       {/* Students Data Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+        <div className="table-container embedded">
           <table className="data-table">
             <thead>
               <tr>
@@ -441,7 +443,7 @@ export default function Students({
                       <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>{s.phone}</div>
                     </td>
                     <td>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-brand)', fontWeight: 600 }}>
+                      <span className="font-mono" style={{ color: 'var(--color-brand)', fontWeight: 600 }}>
                         {s.admission_number}
                       </span>
                     </td>
@@ -449,7 +451,7 @@ export default function Students({
                       {s.current_desk_number ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div>
-                            <span style={{ fontWeight: 700, color: 'var(--color-brand)', fontFamily: 'var(--font-mono)' }}>
+                            <span className="font-mono" style={{ fontWeight: 700, color: 'var(--color-brand)' }}>
                               Desk {s.current_desk_number}
                             </span>
                             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{s.current_shift_name}</div>
@@ -471,7 +473,7 @@ export default function Students({
                           style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           onClick={() => setSeatModalStudent(s)}
                         >
-                          <Armchair size={13} color="var(--color-brand)" />
+                          <Armchair size={13} style={{ color: 'var(--color-brand)' }} />
                           <span>+ Assign Seat</span>
                         </button>
                       )}
@@ -508,6 +510,17 @@ export default function Students({
               )}
             </tbody>
           </table>
+          <div className="table-footer">
+            <div className="table-footer-left">
+              Showing {filteredStudents.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredStudents.length)} of {filteredStudents.length} students
+              {statusFilter !== 'all' ? ` · Filtered by ${statusFilter}` : ''}
+            </div>
+            <div className="table-footer-right">
+              <span>
+                Total Active Enrolled: <strong className="tabular-nums" style={{ color: 'var(--color-heading)' }}>{students.filter((s) => s.status === 'active').length}</strong>
+              </span>
+            </div>
+          </div>
         </div>
         <TablePagination
           currentPage={currentPage}
@@ -536,7 +549,7 @@ export default function Students({
               className="actions-dropdown-item"
               onClick={() => handleCall(activeMenuStudent)}
             >
-              <Phone size={15} color="#16A34A" />
+              <Phone size={15} style={{ color: 'var(--success-solid)' }} />
               <span>Call</span>
             </button>
             <button
@@ -544,7 +557,7 @@ export default function Students({
               className="actions-dropdown-item"
               onClick={() => handleSms(activeMenuStudent)}
             >
-              <MessageSquare size={15} color="#2563EB" />
+              <MessageSquare size={15} style={{ color: 'var(--info-solid)' }} />
               <span>SMS</span>
             </button>
             <button
@@ -552,7 +565,7 @@ export default function Students({
               className="actions-dropdown-item"
               onClick={() => handleWhatsApp(activeMenuStudent)}
             >
-              <WhatsAppIcon size={16} color="#16A34A" />
+              <WhatsAppIcon size={16} color="var(--success-solid)" />
               <span>WhatsApp</span>
             </button>
 
@@ -568,7 +581,7 @@ export default function Students({
                 setDetailsModalStudent(target);
               }}
             >
-              <Eye size={15} color="#475569" />
+              <Eye size={15} style={{ color: 'var(--color-text-secondary)' }} />
               <span>View details</span>
             </button>
             <button
@@ -580,7 +593,7 @@ export default function Students({
                 setEditModalStudent(target);
               }}
             >
-              <Edit size={15} color="#475569" />
+              <Edit size={15} style={{ color: 'var(--color-text-secondary)' }} />
               <span>Edit Student</span>
             </button>
             <button
@@ -592,7 +605,7 @@ export default function Students({
                 onOpenNewPayment(sid);
               }}
             >
-              <CreditCard size={15} color="#4F46E5" />
+              <CreditCard size={15} style={{ color: 'var(--info-solid)' }} />
               <span>Record Fee</span>
             </button>
 
@@ -602,7 +615,7 @@ export default function Students({
                 className="actions-dropdown-item"
                 onClick={() => handlePause(activeMenuStudent.id)}
               >
-                <Pause size={15} color="#D97706" />
+                <Pause size={15} style={{ color: 'var(--warning-solid)' }} />
                 <span>Pause Membership</span>
               </button>
             ) : activeMenuStudent.status === 'paused' ? (
@@ -611,7 +624,7 @@ export default function Students({
                 className="actions-dropdown-item"
                 onClick={() => handleResume(activeMenuStudent.id)}
               >
-                <Play size={15} color="#16A34A" />
+                <Play size={15} style={{ color: 'var(--success-solid)' }} />
                 <span>Resume Membership</span>
               </button>
             ) : null}
@@ -624,7 +637,7 @@ export default function Students({
               className="actions-dropdown-item danger"
               onClick={() => handleDelete(activeMenuStudent.id, activeMenuStudent.full_name)}
             >
-              <Trash2 size={15} color="#DC2626" />
+              <Trash2 size={15} style={{ color: 'var(--danger-solid)' }} />
               <span>Delete student</span>
             </button>
 
@@ -634,7 +647,7 @@ export default function Students({
                 className="actions-dropdown-item warning"
                 onClick={() => handleMarkLeft(activeMenuStudent.id, activeMenuStudent.full_name)}
               >
-                <UserX size={15} color="#EA580C" />
+                <UserX size={15} style={{ color: 'var(--color-brand-accent)' }} />
                 <span>Mark as Left</span>
               </button>
             )}

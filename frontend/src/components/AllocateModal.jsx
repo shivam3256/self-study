@@ -209,7 +209,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="alert-banner danger" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <ShieldAlert size={16} />
             <span>{error}</span>
           </div>
@@ -219,22 +219,22 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
           <div>
             {/* Grace Period Banner */}
             {isGrace && (
-              <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <AlertTriangle size={18} color="#D97706" style={{ marginTop: 2, flexShrink: 0 }} />
-                <div style={{ fontSize: '0.85rem', color: '#92400E' }}>
+              <div className="alert-banner warning" style={{ marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <AlertTriangle size={18} color="var(--warning-solid)" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div style={{ fontSize: '0.85rem' }}>
                   <strong>30-Day Grace Period Active ({remainingGraceDays} days left):</strong> Subscription expired on {formatDateDDMMYYYY(desk.end_date)}. This seat is protected from public booking until {formatDateDDMMYYYY(desk.grace_end_date)}. As owner, you may renew, reassign to a new student, or mark the student as left.
                 </div>
               </div>
             )}
 
-            <div style={{ background: isGrace ? '#FFFDF5' : 'var(--color-brand-tint)', border: isGrace ? '1px solid #FDE68A' : '1px solid #FED7AA', borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 20 }}>
+            <div className={`modal-info-panel ${isGrace ? 'warning' : ''}`} style={{ padding: 18, marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: isGrace ? '#D97706' : 'var(--color-brand)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: isGrace ? 'var(--warning-solid)' : 'var(--color-brand)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
                   <UserCheck size={16} />
                   <span>{isGrace ? 'Held Under Grace Period' : 'Currently Occupied'}</span>
                 </div>
                 {isGrace && (
-                  <span className="badge" style={{ background: '#FEF3C7', color: '#92400E', fontWeight: 600 }}>
+                  <span className="badge badge-warning">
                     {remainingGraceDays}d Grace Left
                   </span>
                 )}
@@ -243,7 +243,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
                 {desk.student_name}
               </div>
               {desk.student_phone && (
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                <div className="tabular-nums" style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
                   Phone: {desk.student_phone}
                 </div>
               )}
@@ -254,7 +254,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
                 </div>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>Validity Period</div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: isGrace ? '#DC2626' : 'var(--color-heading)' }}>
+                  <div className="tabular-nums font-mono" style={{ fontSize: '0.875rem', fontWeight: 600, color: isGrace ? 'var(--danger-solid)' : 'var(--color-heading)' }}>
                     {formatDateDDMMYYYY(desk.start_date)} to {formatDateDDMMYYYY(desk.end_date)}
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
 
             {/* Panel 1: Move Current Occupant to Another Desk */}
             {isReassigning && (
-              <form onSubmit={handleReassignSubmit} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+              <form onSubmit={handleReassignSubmit} className="modal-info-panel" style={{ padding: 16, marginBottom: 20 }}>
                 <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-heading)', marginBottom: 10 }}>
                   Move {desk.student_name} to Another Desk
                 </h4>
@@ -307,7 +307,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
 
             {/* Panel 2: Replace Occupant / Assign This Desk to Another Student */}
             {isReplacingOccupant && (
-              <form onSubmit={handleReplaceOccupantSubmit} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+              <form onSubmit={handleReplaceOccupantSubmit} className="modal-info-panel" style={{ padding: 16, marginBottom: 20 }}>
                 <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-heading)', marginBottom: 4 }}>
                   Reassign Desk {desk.desk_number} to a New Student
                 </h4>
@@ -441,7 +441,7 @@ export default function AllocateModal({ desk, activeShift, shifts, students, onC
           </div>
         ) : (
           <form onSubmit={handleAllocate}>
-            <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 18, fontSize: '0.85rem', color: 'var(--success-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="alert-banner alert-success" style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
               <CheckCircle size={16} />
               <span>Desk is available for allocation in this shift.</span>
             </div>

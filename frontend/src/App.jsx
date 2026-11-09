@@ -349,51 +349,18 @@ export default function App() {
 
   if (initializingAuth) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#F7F5F2',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        }}
-      >
+      <div className="auth-container">
         <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
-              background: '#C2410C',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              margin: '0 auto 16px',
-              boxShadow: '0 4px 12px rgba(194, 65, 12, 0.3)',
-            }}
-          >
+          <div className="auth-brand-icon" style={{ margin: '0 auto 16px' }}>
             <span style={{ fontSize: '1.5rem', fontWeight: 700 }}>L</span>
           </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1F2933', marginBottom: 8 }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-heading)', marginBottom: 8 }}>
             LibMa
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#6B7280', fontSize: '0.875rem' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                width: 14,
-                height: 14,
-                border: '2px solid #C2410C',
-                borderTopColor: 'transparent',
-                borderRadius: '50%',
-                animation: 'app-spin 0.8s linear infinite',
-              }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+            <span className="spinner-circle" style={{ width: 14, height: 14, borderWidth: 2, margin: 0 }} />
             <span>Loading your workspace…</span>
           </div>
-          <style>{`@keyframes app-spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
     );
@@ -401,29 +368,19 @@ export default function App() {
 
   if (serverConnectionError && (!tenant || !tenant.id)) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#F7F5F2',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          padding: 24,
-        }}
-      >
-        <div style={{ maxWidth: 440, width: '100%', textAlign: 'center', padding: '36px 28px', background: '#FFFFFF', borderRadius: 24, boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.05)' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+      <div className="auth-container" style={{ padding: 24 }}>
+        <div className="auth-card" style={{ textAlign: 'center' }}>
+          <div className="support-circle-icon" style={{ width: 48, height: 48, margin: '0 auto 16px', backgroundColor: 'var(--danger-bg)', color: 'var(--danger-solid)' }}>
             <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>!</span>
           </div>
-          <h3 style={{ fontSize: '1.25rem', color: '#1F2933', margin: '0 0 8px 0', fontWeight: 700 }}>Unable to Connect</h3>
-          <p style={{ color: '#6B7280', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: 24 }}>
+          <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', margin: '0 0 8px 0', fontWeight: 700 }}>Unable to Connect</h3>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: 24 }}>
             We could not verify your account status with the server. Please check your internet connection and try again.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <button
               className="btn btn-primary"
-              style={{ borderRadius: 9999, padding: '10px 24px', background: '#C2410C', borderColor: '#C2410C' }}
+              style={{ padding: '10px 24px' }}
               onClick={() => {
                 setInitializingAuth(true);
                 setServerConnectionError(false);
@@ -433,7 +390,7 @@ export default function App() {
               Retry Connection
             </button>
             <button
-              style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: '0.875rem' }}
+              className="btn btn-secondary"
               onClick={handleLogout}
             >
               Sign Out
@@ -568,7 +525,7 @@ export default function App() {
             {!['dashboard', 'seatmap', 'lockers', 'students', 'billing', 'budget', 'attendance', 'reminders', 'settings', 'account-settings'].includes(activeTab) && (
               <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                 <div className="card" style={{ maxWidth: 480, margin: '0 auto', padding: '36px 24px' }}>
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <div className="support-circle-icon" style={{ width: 52, height: 52, margin: '0 auto 16px', backgroundColor: 'var(--danger-bg)', color: 'var(--danger-solid)' }}>
                     <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>404</span>
                   </div>
                   <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', marginBottom: 8 }}>Page Not Found</h3>

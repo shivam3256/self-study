@@ -111,7 +111,7 @@ export default function SeatMap({ students, onRefreshStudents }) {
                 <span>Occupied</span>
               </div>
               <div className="legend-item">
-                <span className="legend-dot" style={{ background: '#F59E0B', width: 10, height: 10, borderRadius: '50%', display: 'inline-block' }} />
+                <span className="legend-dot grace" />
                 <span>Grace Period</span>
               </div>
               <div className="legend-item">
@@ -125,7 +125,7 @@ export default function SeatMap({ students, onRefreshStudents }) {
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px' }}
               onClick={() => setShowManageSeatsModal(true)}
             >
-              <SettingsIcon size={15} color="var(--color-brand)" />
+              <SettingsIcon size={15} style={{ color: 'var(--color-brand)' }} />
               <span>Manage Seats</span>
             </button>
           </div>
@@ -133,15 +133,15 @@ export default function SeatMap({ students, onRefreshStudents }) {
       </div>
 
       {error && (
-        <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '12px 16px', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
+        <div className="alert-banner danger">
           {error}
         </div>
       )}
 
       {/* ── Empty State when tenant has 0 seats ───────────────────────────── */}
       {!loading && desks.length === 0 && (
-        <div className="card" style={{ padding: '56px 24px', textAlign: 'center', borderRadius: 16, border: '1px dashed #CBD5E1', background: '#FDFDFC', margin: '20px 0' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#FFF3E8', color: 'var(--color-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid #FED7AA' }}>
+        <div className="card" style={{ padding: '56px 24px', textAlign: 'center', border: '1px dashed var(--color-border)', margin: '20px 0' }}>
+          <div className="circle-icon-badge brand lg" style={{ margin: '0 auto 20px' }}>
             <Layers size={32} />
           </div>
 
@@ -195,20 +195,19 @@ export default function SeatMap({ students, onRefreshStudents }) {
                   <div
                     key={d.id}
                     className={`seat-box ${d.is_occupied ? (isGrace ? 'grace-period' : 'occupied') : 'available'}`}
-                    style={isGrace ? { borderColor: '#F59E0B', background: '#FFFDF5' } : {}}
                     onClick={() => setSelectedDesk(d)}
                     title={`Click to ${d.is_occupied ? (isGrace ? `view grace period (${graceLeft}d left) / reassign` : 'view occupant / vacate / reassign') : 'allocate seat'}`}
                   >
-                    <div className="seat-number" style={isGrace ? { color: '#B45309' } : {}}>{d.desk_number}</div>
+                    <div className="seat-number font-mono">{d.desk_number}</div>
                     <div className="seat-category-tag">{d.category}</div>
 
                     {d.is_occupied ? (
                       <>
-                        <div className="seat-occupant" title={d.student_name} style={isGrace ? { color: '#92400E' } : {}}>
+                        <div className="seat-occupant" title={d.student_name}>
                           {d.student_name}
                         </div>
                         {isGrace ? (
-                          <span className="seat-status-pill warning" style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
+                          <span className="seat-status-pill warning">
                             Grace ({graceLeft}d)
                           </span>
                         ) : (

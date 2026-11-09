@@ -273,7 +273,6 @@ function RevenueBarChart({ data = [], totalRevenue = 0 }) {
               textAnchor={idx === 0 ? 'start' : idx === n - 1 ? 'end' : 'middle'}
               fill="var(--color-text-secondary)"
               fontSize="10"
-              fontFamily="var(--font-body)"
             >
               {pt.label}
             </text>
@@ -391,7 +390,7 @@ function WeeklyAttendanceBarChart({ data = [] }) {
                   width={barW}
                   height={barH}
                   rx="3"
-                  fill={d.is_today ? 'var(--color-brand)' : '#EA580C'}
+                  fill={d.is_today ? 'var(--color-brand)' : 'var(--color-brand-accent)'}
                   opacity={isHovered ? 1 : d.is_today ? 1 : 0.78}
                   style={{ transition: 'opacity 150ms ease, fill 150ms ease' }}
                 />
@@ -405,7 +404,6 @@ function WeeklyAttendanceBarChart({ data = [] }) {
                 fill={d.is_today ? 'var(--color-brand)' : 'var(--color-text-secondary)'}
                 fontSize="10"
                 fontWeight={d.is_today ? '600' : '400'}
-                fontFamily="var(--font-body)"
               >
                 {d.day_label}
               </text>
@@ -664,10 +662,10 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div
+                className="tabular-nums"
                 style={{
-                  fontFamily: 'var(--font-heading)',
                   fontSize: '1.45rem',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   color: 'var(--color-heading)',
                   lineHeight: 1.15,
                   whiteSpace: 'nowrap',
@@ -722,16 +720,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                 {duesSoon.slice(0, 5).map((student) => (
                   <div
                     key={student.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      backgroundColor: 'var(--bg-alt)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      gap: 8,
-                    }}
+                    className="dashboard-due-item"
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div
@@ -763,11 +752,9 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                       <span
+                        className="badge"
                         style={{
                           fontSize: '0.72rem',
-                          fontWeight: 600,
-                          padding: '2px 7px',
-                          borderRadius: 'var(--radius-sm)',
                           backgroundColor: student.is_overdue ? 'var(--danger-bg)' : 'var(--warning-bg)',
                           color: student.is_overdue ? 'var(--danger-text)' : 'var(--warning-solid)',
                           border: `1px solid ${student.is_overdue ? 'var(--danger-border)' : 'var(--warning-border)'}`,
@@ -777,20 +764,12 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                       </span>
 
                       <button
-                        className="btn btn-secondary btn-sm"
-                        style={{
-                          padding: '4px 8px',
-                          fontSize: '0.75rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          borderColor: '#25D366',
-                          color: '#128C7E',
-                        }}
+                        type="button"
+                        className="btn-whatsapp-outline"
                         onClick={() => handleWhatsAppRemind(student)}
                         title={`Send WhatsApp fee reminder to ${toTitleCase(student.student_name)}`}
                       >
-                        <MessageSquare size={13} color="#25D366" />
+                        <MessageSquare size={13} className="icon-whatsapp" />
                         <span>Remind</span>
                       </button>
                     </div>
@@ -808,20 +787,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                   textAlign: 'center',
                 }}
               >
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--success-bg)',
-                    color: 'var(--success-solid)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 8,
-                    border: '1px solid var(--success-border)',
-                  }}
-                >
+                <div className="circle-icon-badge success" style={{ marginBottom: 8 }}>
                   <CheckCircle2 size={18} />
                 </div>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-heading)' }}>
@@ -867,12 +833,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
               summary.shifts_breakdown.map((s) => (
                 <div
                   key={s.shift_id}
-                  style={{
-                    backgroundColor: 'var(--bg-alt)',
-                    padding: 14,
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
-                  }}
+                  className="dashboard-shift-item"
                 >
                   <div
                     style={{
@@ -905,6 +866,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                       </span>
                     </div>
                     <span
+                      className="tabular-nums"
                       style={{
                         fontWeight: 600,
                         color: s.occupancy_rate > 80 ? 'var(--warning-solid)' : 'var(--color-brand)',
@@ -918,23 +880,11 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                   </div>
 
                   {/* Progress bar */}
-                  <div
-                    style={{
-                      height: 6,
-                      width: '100%',
-                      backgroundColor: '#E5E7EB',
-                      borderRadius: 3,
-                      overflow: 'hidden',
-                    }}
-                  >
+                  <div className="progress-bar-track">
                     <div
+                      className={`progress-bar-fill ${s.occupancy_rate > 80 ? 'warning' : ''}`}
                       style={{
-                        height: '100%',
                         width: `${Math.min(s.occupancy_rate, 100)}%`,
-                        backgroundColor:
-                          s.occupancy_rate > 80 ? 'var(--warning-solid)' : 'var(--color-brand)',
-                        borderRadius: 3,
-                        transition: 'width 0.3s ease',
                       }}
                     />
                   </div>
@@ -970,14 +920,12 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
               <span
+                className="badge tabular-nums"
                 style={{
                   fontSize: '0.8125rem',
-                  fontWeight: 600,
                   color: hasAttendanceToday ? 'var(--success-solid)' : 'var(--color-text-secondary)',
                   backgroundColor: hasAttendanceToday ? 'var(--success-bg)' : 'var(--bg-alt)',
                   border: `1px solid ${hasAttendanceToday ? 'var(--success-border)' : 'var(--color-border)'}`,
-                  padding: '3px 8px',
-                  borderRadius: 'var(--radius-sm)',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -1018,20 +966,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
                   textAlign: 'center',
                 }}
               >
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--bg-alt)',
-                    color: 'var(--color-text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 8,
-                    border: '1px solid var(--color-border)',
-                  }}
-                >
+                <div className="circle-icon-badge muted" style={{ marginBottom: 8 }}>
                   <UserCheck size={18} />
                 </div>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-heading)' }}>
@@ -1067,75 +1002,37 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
         </div>
 
         {recentPayments && recentPayments.length > 0 ? (
-          <div style={{ overflowX: 'auto', width: '100%' }}>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '0.875rem',
-              }}
-            >
+          <div className="table-container">
+            <table className="data-table">
               <thead>
-                <tr
-                  style={{
-                    borderBottom: '1px solid var(--color-border)',
-                    color: 'var(--color-text-secondary)',
-                    fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '28%' }}>Student</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '30%' }}>Plan / Type</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '16%' }}>Amount</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '12%' }}>Mode</th>
-                  <th style={{ padding: '10px 14px', fontWeight: 600, width: '14%', textAlign: 'right' }}>Time</th>
+                <tr>
+                  <th style={{ width: '28%' }}>Student</th>
+                  <th style={{ width: '30%' }}>Plan / Type</th>
+                  <th style={{ width: '16%' }}>Amount</th>
+                  <th style={{ width: '12%' }}>Mode</th>
+                  <th className="text-right" style={{ width: '14%' }}>Time</th>
                 </tr>
               </thead>
               <tbody>
                 {recentPayments.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="table-row-hover"
-                    style={{
-                      borderBottom: '1px solid var(--color-border)',
-                      transition: 'background-color 150ms ease',
-                    }}
-                  >
-                    <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--color-heading)' }}>
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: 600, color: 'var(--color-heading)' }}>
                       {toTitleCase(p.student_name)}
                     </td>
-                    <td style={{ padding: '12px 14px', color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
+                    <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
                       {toSentenceCase(p.plan_name || p.payment_type || 'Seat')}
                     </td>
-                    <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--color-heading)' }}>
-                      ₹{Number(p.final_amount).toLocaleString('en-IN')}
+                    <td>
+                      <span className="tabular-nums font-semibold" style={{ color: 'var(--color-heading)' }}>
+                        ₹{Number(p.final_amount).toLocaleString('en-IN')}
+                      </span>
                     </td>
-                    <td style={{ padding: '12px 14px' }}>
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          padding: '2px 8px',
-                          borderRadius: 'var(--radius-sm)',
-                          backgroundColor: 'var(--bg-alt)',
-                          border: '1px solid var(--color-border)',
-                          color: 'var(--color-text)',
-                        }}
-                      >
+                    <td>
+                      <span className="code-pill font-mono">
                         {p.payment_mode ? p.payment_mode.toUpperCase() : 'CASH'}
                       </span>
                     </td>
-                    <td
-                      style={{
-                        padding: '12px 14px',
-                        textAlign: 'right',
-                        color: 'var(--color-text-secondary)',
-                        fontSize: '0.8125rem',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <td className="text-right tabular-nums" style={{ color: 'var(--color-text-secondary)', fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
                       {formatPaymentTime(p.created_at || p.payment_date)}
                     </td>
                   </tr>
@@ -1151,20 +1048,7 @@ export default function Dashboard({ setActiveTab, onOpenNewStudent, onOpenNewPay
               color: 'var(--color-text-secondary)',
             }}
           >
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                backgroundColor: 'var(--bg-alt)',
-                border: '1px solid var(--color-border)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 8,
-                color: 'var(--color-text-muted)',
-              }}
-            >
+            <div className="circle-icon-badge muted" style={{ marginBottom: 8 }}>
               <Receipt size={22} />
             </div>
             <div style={{ fontWeight: 600, color: 'var(--color-heading)', fontSize: '0.9375rem' }}>

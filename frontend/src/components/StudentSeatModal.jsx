@@ -132,27 +132,27 @@ export default function StudentSeatModal({ student, onClose, onSuccess }) {
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: 16 }}>
+          <div className="alert-banner danger" style={{ marginBottom: 16 }}>
             {error}
           </div>
         )}
         {success && (
-          <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)', color: 'var(--success-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: 16 }}>
+          <div className="alert-banner success" style={{ marginBottom: 16 }}>
             {success}
           </div>
         )}
 
         {student?.current_desk_number && (
-          <div style={{ background: 'var(--color-brand-tint)', border: '1px solid #FED7AA', borderRadius: 8, padding: '12px 14px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="modal-info-panel" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-brand)', textTransform: 'uppercase' }}>Currently Holding</div>
               <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--color-heading)' }}>
-                Desk {student.current_desk_number} ({student.current_shift_name})
+                Desk <span className="font-mono tabular-nums text-brand">{student.current_desk_number}</span> ({student.current_shift_name})
               </div>
             </div>
             <button
               type="button"
-              className="btn btn-danger btn-sm"
+              className="btn btn-danger-outline btn-sm"
               onClick={handleVacate}
               disabled={submitting}
             >

@@ -70,18 +70,7 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: 'rgba(99, 102, 241, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--color-brand)',
-              }}
-            >
+            <div className="circle-icon-badge brand">
               <Edit3 size={18} />
             </div>
             <div>
@@ -89,7 +78,7 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
                 Edit Student Details
               </h3>
               <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                Admission #{student?.admission_number}
+                Admission <span className="font-mono tabular-nums text-brand font-semibold">#{student?.admission_number}</span>
               </div>
             </div>
           </div>
@@ -100,13 +89,8 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
 
         {error && (
           <div
+            className="alert-banner danger"
             style={{
-              background: 'var(--danger-bg)',
-              border: '1px solid var(--danger-border)',
-              color: 'var(--danger-text)',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.85rem',
               marginBottom: 16,
               display: 'flex',
               alignItems: 'center',

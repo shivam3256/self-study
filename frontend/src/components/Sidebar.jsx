@@ -8,9 +8,7 @@ import {
   QrCode,
   BellRing,
   LogOut,
-  Building2,
   Settings as SettingsIcon,
-  Sparkles,
   Wallet,
   ChevronDown,
   ChevronUp,
@@ -25,7 +23,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
 
-  const navItems = [
+  const managementNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'seatmap', label: 'Visual Seat Map', icon: Grid },
     { id: 'lockers', label: 'Locker Management', icon: Lock },
@@ -34,6 +32,9 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
     { id: 'budget', label: 'Budget & Profit', icon: Wallet },
     { id: 'attendance', label: 'Attendance & QR', icon: QrCode },
     { id: 'reminders', label: 'WhatsApp Reminders', icon: BellRing },
+  ];
+
+  const configNavItems = [
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
@@ -70,14 +71,16 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="brand-badge">
-            <Building2 size={22} />
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21V9m0 0l-8 4v8h16v-8l-8-4zM3 13l9-7 9 7" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M9 21v-6a3 3 0 016 0v6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
-          <div style={{ minWidth: 0, flex: 1 }} title={tenant?.name || 'StudyHub Pro'}>
+          <div className="brand-info" title={tenant?.name || 'StudyHub Pro'}>
             <div
-              className="brand-name"
+              className="brand-name font-tenant"
               title={tenant?.name || 'StudyHub Pro'}
               aria-label={tenant?.name || 'StudyHub Pro'}
-              style={{ cursor: 'default' }}
             >
               {tenant?.name || 'StudyHub Pro'}
             </div>
@@ -85,16 +88,37 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          {navItems.map((item) => {
+        <nav className="sidebar-nav" aria-label="Sidebar Navigation">
+          <div className="sidebar-section-label">Management</div>
+          {managementNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => setActiveTab(item.id)}
                 className={`nav-item ${isActive ? 'active' : ''}`}
               >
+                <div className="nav-indicator" />
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+
+          <div className="sidebar-section-label">Configuration</div>
+          {configNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id)}
+                className={`nav-item ${isActive ? 'active' : ''}`}
+              >
+                <div className="nav-indicator" />
                 <Icon size={18} />
                 <span>{item.label}</span>
               </button>
@@ -103,61 +127,27 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
         </nav>
 
         {/* Expandable Sidebar Footer */}
-        <div className="sidebar-footer" style={{ padding: '10px 12px' }}>
+        <div className="sidebar-footer">
           {/* Header Row (Click to toggle expansion) */}
           <div
             className="sidebar-account-toggle"
             onClick={() => setIsExpanded(!isExpanded)}
             title={isExpanded ? 'Collapse account menu' : 'Expand account menu'}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-              <div
-                className="user-avatar"
-                style={{
-                  background: 'linear-gradient(135deg, #C2410C 0%, #EA580C 100%)',
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  letterSpacing: '0.02em',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 8px rgba(194, 65, 12, 0.28)',
-                }}
-              >
+            <div className="sidebar-user-info">
+              <div className="user-avatar">
                 {getInitials(displayName)}
               </div>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span
-                    style={{
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      color: 'var(--color-heading)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {displayName}
-                  </span>
-                  <span title="Owner" style={{ fontSize: '0.85rem', flexShrink: 0 }}>
-                    👑
-                  </span>
+              <div className="sidebar-user-details">
+                <div className="sidebar-user-name-row">
+                  <span className="sidebar-user-name">{displayName}</span>
+                  <span className="sidebar-user-crown" title="Owner">👑</span>
                 </div>
-                <div
-                  style={{
-                    fontSize: '0.72rem',
-                    color: 'var(--color-text-secondary)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {displayEmail}
-                </div>
+                <div className="sidebar-user-email">{displayEmail}</div>
               </div>
             </div>
 
-            <div style={{ color: 'var(--color-text-secondary)', padding: '2px', display: 'flex', alignItems: 'center' }}>
+            <div className="sidebar-chevron">
               {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
           </div>
@@ -205,21 +195,12 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
                 type="button"
                 className="sidebar-account-item danger"
                 onClick={onLogout}
-                style={{ marginTop: 2, borderTop: '1px solid #F1F5F9', paddingTop: 8 }}
               >
                 <LogOut size={16} />
                 <span>Sign Out</span>
               </button>
 
-              <div
-                style={{
-                  fontSize: '0.72rem',
-                  color: '#94A3B8',
-                  textAlign: 'center',
-                  paddingTop: 6,
-                  userSelect: 'none',
-                }}
-              >
+              <div className="sidebar-version">
                 v1.1
               </div>
             </div>

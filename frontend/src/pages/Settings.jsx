@@ -2,25 +2,22 @@ import React, { useState } from 'react';
 import {
   Clock,
   CreditCard,
-  Save,
   Plus,
   Trash2,
   CheckCircle2,
   AlertCircle,
   AlertTriangle,
   ShieldAlert,
-  Sparkles,
   Users,
   Receipt,
   Grid,
-  Layers,
+  Building2,
   X,
 } from 'lucide-react';
 import { api } from '../api';
 import SeatManagementModal from '../components/SeatManagementModal';
-import OnboardingSeatsModal from '../components/OnboardingSeatsModal';
 
-export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRefreshData, onLogout }) {
+export default function Settings({ tenant, shifts = [], plans = [], onTenantUpdated, onRefreshData, onLogout }) {
   const [activeSection, setActiveSection] = useState('shifts'); // 'shifts', 'plans', 'seats', 'danger'
 
   // Shifts Form State
@@ -47,7 +44,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
   const [feedbackMessage, setFeedbackMessage] = useState({ type: '', text: '' });
   const [actionLoading, setActionLoading] = useState('');
 
-  // Delete Shift / Plan Confirmation Modal State (replaces browser window.confirm for cross-browser support)
+  // Delete Shift / Plan Confirmation Modal State
   const [deleteConfirmItem, setDeleteConfirmItem] = useState(null); // { type: 'shift' | 'plan', id: string, name: string, code?: string }
   const [deletingItem, setDeletingItem] = useState(false);
 
@@ -89,8 +86,6 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     }
   };
 
-
-
   // Handle New Shift Creation
   const handleCreateShift = async (e) => {
     e.preventDefault();
@@ -98,56 +93,50 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     try {
       await api.shifts.create({
         ...newShift,
-        code: newShift.code.toUpperCase(),
-        capacity: Number(newShift.capacity),
-        is_active: true,
+        capacity: parseInt(newShift.capacity, 10),
       });
       setShowNewShiftModal(false);
       setNewShift({ name: '', code: '', start_time: '08:00', end_time: '16:00', capacity: 50 });
-      setFeedbackMessage({ type: 'success', text: `Shift "${newShift.name}" created successfully!` });
+      setFeedbackMessage({ type: 'success', text: 'Operational shift created successfully.' });
       onRefreshData();
     } catch (err) {
-      setFeedbackMessage({ type: 'error', text: err.message });
+      setFeedbackMessage({ type: 'error', text: err.message || 'Failed to create shift.' });
     } finally {
       setActionLoading('');
     }
-  };
-
-  // Request Shift Deletion (Cross-browser safe React modal)
-  const requestDeleteShift = (shift) => {
-    setDeleteConfirmItem({ type: 'shift', id: shift.id, name: shift.name, code: shift.code });
   };
 
   // Handle New Plan Creation
   const handleCreatePlan = async (e) => {
     e.preventDefault();
     if (!newPlan.shift_ids || newPlan.shift_ids.length === 0) {
-      setFeedbackMessage({ type: 'error', text: 'At least one operating shift is required for a membership plan.' });
+      setFeedbackMessage({ type: 'error', text: 'Please select at least one operating shift.' });
       return;
     }
     setActionLoading('create-plan');
     try {
       await api.plans.create({
         ...newPlan,
-        code: newPlan.code.toUpperCase(),
-        price: Number(newPlan.price),
-        duration_days: Number(newPlan.duration_days),
-        duration_months: Math.round(Number(newPlan.duration_days) / 30) || 1,
-        shift_ids: newPlan.shift_ids,
-        is_active: true,
+        price: parseFloat(newPlan.price),
+        duration_days: parseInt(newPlan.duration_days, 10),
       });
       setShowNewPlanModal(false);
       setNewPlan({ name: '', code: '', duration_days: 30, price: '', shift_ids: [], description: '' });
-      setFeedbackMessage({ type: 'success', text: `Membership plan "${newPlan.name}" added!` });
+      setFeedbackMessage({ type: 'success', text: 'Membership plan created successfully.' });
       onRefreshData();
     } catch (err) {
-      setFeedbackMessage({ type: 'error', text: err.message });
+      setFeedbackMessage({ type: 'error', text: err.message || 'Failed to create plan.' });
     } finally {
       setActionLoading('');
     }
   };
 
-  // Request Plan Deletion (Cross-browser safe React modal)
+  // Request Shift Deletion
+  const requestDeleteShift = (shift) => {
+    setDeleteConfirmItem({ type: 'shift', id: shift.id, name: shift.name, code: shift.code });
+  };
+
+  // Request Plan Deletion
   const requestDeletePlan = (plan) => {
     setDeleteConfirmItem({ type: 'plan', id: plan.id, name: plan.name, code: plan.code });
   };
@@ -175,66 +164,67 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
     }
   };
 
+  // Computed metrics for table footers
+  const totalShiftCapacity = shifts.reduce((sum, s) => sum + (Number(s.capacity) || 0), 0);
+  const liveShiftsCount = shifts.filter((s) => s.is_active).length;
+  const allShiftsLive = shifts.length > 0 && liveShiftsCount === shifts.length;
+
+  const activePlansCount = plans.filter((p) => p.is_active).length;
+
   return (
     <div>
-      {/* Settings Navigation Tabs */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: 12, flexWrap: 'wrap' }}>
-        <button
-          className={`btn ${activeSection === 'shifts' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => { setActiveSection('shifts'); setFeedbackMessage({ type: '', text: '' }); }}
-        >
-          <Clock size={16} />
-          <span>Operating Shifts ({shifts.length})</span>
-        </button>
+      {/* Settings Navigation Row: Segmented Pill Tabs on Left + Separate Danger Zone Pill on Right */}
+      <div className="settings-nav-row">
+        <div className="tab-nav" role="tablist" aria-label="Settings configuration sections">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'shifts'}
+            className={`tab-btn ${activeSection === 'shifts' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('shifts'); setFeedbackMessage({ type: '', text: '' }); }}
+          >
+            <Clock size={15} />
+            <span>Operating Shifts ({shifts.length})</span>
+          </button>
 
-        <button
-          className={`btn ${activeSection === 'plans' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => { setActiveSection('plans'); setFeedbackMessage({ type: '', text: '' }); }}
-        >
-          <CreditCard size={16} />
-          <span>Membership Plans ({plans.length})</span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'plans'}
+            className={`tab-btn ${activeSection === 'plans' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('plans'); setFeedbackMessage({ type: '', text: '' }); }}
+          >
+            <CreditCard size={15} />
+            <span>Membership Plans ({plans.length})</span>
+          </button>
 
-        <button
-          className={`btn ${activeSection === 'seats' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => { setActiveSection('seats'); setFeedbackMessage({ type: '', text: '' }); }}
-        >
-          <Grid size={16} />
-          <span>Seats &amp; Floor Zones</span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'seats'}
+            className={`tab-btn ${activeSection === 'seats' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('seats'); setFeedbackMessage({ type: '', text: '' }); }}
+          >
+            <Grid size={15} />
+            <span>Seats &amp; Floor Zones</span>
+          </button>
+        </div>
 
-        <button
-          className="btn"
-          onClick={() => { setActiveSection('danger'); setFeedbackMessage({ type: '', text: '' }); }}
-          style={{
-            marginLeft: 'auto',
-            backgroundColor: activeSection === 'danger' ? '#FEF2F2' : '#FFFFFF',
-            color: '#DC2626',
-            borderColor: activeSection === 'danger' ? '#DC2626' : '#FCA5A5',
-            fontWeight: 600,
-          }}
-        >
-          <AlertTriangle size={16} />
-          <span>Danger Zone</span>
-        </button>
+        <div>
+          <button
+            type="button"
+            className={`btn-danger-outline ${activeSection === 'danger' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('danger'); setFeedbackMessage({ type: '', text: '' }); }}
+          >
+            <AlertTriangle size={15} />
+            <span>Danger Zone</span>
+          </button>
+        </div>
       </div>
 
       {/* Global Alert / Feedback */}
       {feedbackMessage.text && (
-        <div
-          style={{
-            background: feedbackMessage.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
-            border: `1px solid ${feedbackMessage.type === 'error' ? 'var(--danger-border)' : 'var(--success-border)'}`,
-            color: feedbackMessage.type === 'error' ? 'var(--danger-text)' : 'var(--success-text)',
-            padding: '12px 16px',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.88rem',
-            marginBottom: 24,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
+        <div className={`feedback-alert ${feedbackMessage.type === 'error' ? 'error' : 'success'}`}>
           {feedbackMessage.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
           <span>{feedbackMessage.text}</span>
         </div>
@@ -244,60 +234,40 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           DANGER ZONE CARD (Visible in Danger tab)
          ───────────────────────────────────────────────────────────── */}
       {activeSection === 'danger' && (
-        <div
-          className="card"
-          style={{
-            maxWidth: 840,
-            marginTop: 0,
-            borderColor: '#FCA5A5',
-            backgroundColor: '#FFFDFD',
-          }}
-        >
-          <div className="card-header" style={{ borderBottomColor: '#FEE2E2' }}>
+        <div className="card danger-card">
+          <div className="card-header danger-card-header">
             <div className="card-title">
-              <AlertTriangle size={20} color="#DC2626" />
-              <span style={{ color: '#991B1B', fontWeight: 600 }}>Danger Zone — Account Deletion</span>
+              <AlertTriangle size={20} color="var(--danger-solid)" />
+              <span style={{ color: 'var(--danger-text)', fontWeight: 700 }}>Danger Zone — Account Deletion</span>
             </div>
-            <span
-              className="badge"
-              style={{
-                backgroundColor: '#FEE2E2',
-                color: '#991B1B',
-                fontWeight: 600,
-                border: '1px solid #FCA5A5',
-              }}
-            >
+            <span className="badge badge-expired">
               Irreversible Action
             </span>
           </div>
 
-          <div style={{ padding: '20px 0 8px 0' }}>
+          <div style={{ padding: '16px 0 8px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
               <div style={{ maxWidth: 540 }}>
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '0.98rem', color: '#1F2933', fontWeight: 600 }}>
-                  Permanently Delete Workspace & Account
+                <h4 style={{ margin: '0 0 6px 0', fontSize: '0.98rem', color: 'var(--color-heading)', fontWeight: 700 }}>
+                  Permanently Delete Workspace &amp; Account
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#5C5C5C', lineHeight: 1.5 }}>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
                   Delete <strong>{tenant?.name}</strong> and all associated student profiles, desks, shift allocations, payment history, attendance logs, and owner credentials.
                 </p>
               </div>
 
               <button
                 type="button"
-                className="btn btn-danger"
+                className="btn btn-danger-solid"
                 onClick={() => {
                   setShowDeleteModal(true);
                   setDeleteConfirmationText('');
                   setDeleteAgreed(false);
                   setDeleteError('');
                 }}
-                style={{
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                }}
               >
-                <Trash2 size={16} />
-                <span>Delete Account & Workspace</span>
+                <Trash2 size={15} />
+                <span>Delete Account &amp; Workspace</span>
               </button>
             </div>
           </div>
@@ -322,14 +292,18 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
          ───────────────────────────────────────────────────────────── */}
       {activeSection === 'shifts' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div className="section-header-row">
             <div>
-              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-heading)' }}>Library Slots & Shift Timings</h3>
-              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+              <h3 className="section-title">Library Slots &amp; Shift Timings</h3>
+              <div className="section-subtitle">
                 Configure daily shifts, timing windows, and maximum seat capacities.
               </div>
             </div>
-            <button className="btn btn-primary" onClick={() => setShowNewShiftModal(true)}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowNewShiftModal(true)}
+            >
               <Plus size={16} />
               <span>Add Shift</span>
             </button>
@@ -344,45 +318,93 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   <th>Start Time</th>
                   <th>End Time</th>
                   <th>Desk Capacity</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th className="text-center">Status</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {shifts.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{s.name}</div>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.78rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
-                        {s.code}
-                      </span>
-                    </td>
-                    <td style={{ color: 'var(--color-text)' }}>{s.start_time}</td>
-                    <td style={{ color: 'var(--color-text)' }}>{s.end_time}</td>
-                    <td style={{ color: 'var(--info-solid)', fontWeight: 600 }}>{s.capacity} seats</td>
-                    <td>
-                      <span className={`badge ${s.is_active ? 'badge-active' : 'badge-paused'}`}>
-                        {s.is_active ? 'ACTIVE' : 'INACTIVE'}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        disabled={actionLoading === s.id || deletingItem}
-                        onClick={() => requestDeleteShift(s)}
-                        style={{ color: 'var(--danger-text)' }}
-                        title="Delete Shift"
-                      >
-                        <Trash2 size={13} />
-                        <span>Delete</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {shifts.map((s) => {
+                  const sNameUpper = (s.name || '').toUpperCase();
+                  const dotClass = sNameUpper.includes('MORNING')
+                    ? 'morning'
+                    : sNameUpper.includes('AFTERNOON')
+                    ? 'afternoon'
+                    : sNameUpper.includes('NIGHT')
+                    ? 'night'
+                    : 'default';
+
+                  return (
+                    <tr key={s.id}>
+                      <td>
+                        <div className="shift-name-cell">
+                          <span className={`shift-dot ${dotClass}`} />
+                          <span className="shift-name-text">{s.name}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="code-pill font-mono">{s.code}</span>
+                      </td>
+                      <td>
+                        <div className="time-cell">
+                          <Clock size={13} className="text-muted" />
+                          <span>{s.start_time}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="time-cell">
+                          <Clock size={13} className="text-muted" />
+                          <span>{s.end_time}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="capacity-pill">
+                          <Building2 size={12} />
+                          <span>{s.capacity} seats</span>
+                        </div>
+                      </td>
+                      <td className="text-center">
+                        <span className={`badge ${s.is_active ? 'badge-active' : 'badge-paused'}`}>
+                          {s.is_active && <span className="badge-dot pulse" />}
+                          {s.is_active ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                      </td>
+                      <td className="text-right">
+                        <button
+                          type="button"
+                          className="btn-danger-outline btn-sm"
+                          disabled={actionLoading === s.id || deletingItem}
+                          onClick={() => requestDeleteShift(s)}
+                          title="Delete Shift"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+
+            {/* Computed Table Footer Summary Bar */}
+            <div className="table-footer">
+              <div className="table-footer-left">
+                <span>Showing {shifts.length} operational timing windows</span>
+                <span className="footer-dot">•</span>
+                <span>
+                  Total Library Capacity:{' '}
+                  <strong className="footer-highlight tabular-nums">
+                    {totalShiftCapacity} daily slot reservations
+                  </strong>
+                </span>
+              </div>
+              <div className="table-footer-right">
+                <span className="inline-status">
+                  <span className={`status-circle ${allShiftsLive ? 'bg-success' : 'bg-warning'}`} />
+                  <span>{allShiftsLive ? 'All shifts live' : `${liveShiftsCount} of ${shifts.length} shifts live`}</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -392,14 +414,18 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
          ───────────────────────────────────────────────────────────── */}
       {activeSection === 'plans' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div className="section-header-row">
             <div>
-              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-heading)' }}>Membership & Pricing Plans</h3>
-              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+              <h3 className="section-title">Membership &amp; Pricing Plans</h3>
+              <div className="section-subtitle">
                 Customize subscription packages, duration days, and monthly rates.
               </div>
             </div>
-            <button className="btn btn-primary" onClick={() => setShowNewPlanModal(true)}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowNewPlanModal(true)}
+            >
               <Plus size={16} />
               <span>Add Plan</span>
             </button>
@@ -414,44 +440,35 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   <th>Duration</th>
                   <th>Price</th>
                   <th>Included Shifts</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th className="text-center">Status</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {plans.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{p.name}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--color-heading)' }}>{p.name}</div>
                       {p.description && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{p.description}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>{p.description}</div>
                       )}
                     </td>
                     <td>
-                      <span style={{ fontSize: '0.78rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
-                        {p.code}
-                      </span>
+                      <span className="code-pill font-mono">{p.code}</span>
                     </td>
-                    <td style={{ color: 'var(--color-text)' }}>{p.duration_days} days</td>
-                    <td style={{ color: 'var(--success-solid)', fontWeight: 600 }}>
-                      ₹{Number(p.price).toLocaleString('en-IN')}
+                    <td>
+                      <span className="tabular-nums font-semibold">{p.duration_days}</span> days
+                    </td>
+                    <td>
+                      <span className="tabular-nums font-semibold" style={{ color: 'var(--success-solid)' }}>
+                        ₹{Number(p.price).toLocaleString('en-IN')}
+                      </span>
                     </td>
                     <td>
                       {p.shifts && p.shifts.length > 0 ? (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                           {p.shifts.map((s) => (
-                            <span
-                              key={s.id}
-                              style={{
-                                fontSize: '0.74rem',
-                                background: '#EFF6FF',
-                                border: '1px solid #BFDBFE',
-                                color: '#1E40AF',
-                                padding: '2px 6px',
-                                borderRadius: 4,
-                                fontWeight: 600,
-                              }}
-                            >
+                            <span key={s.id} className="plan-shift-chip">
                               {s.name}
                             </span>
                           ))}
@@ -462,17 +479,18 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${p.is_active ? 'badge-active' : 'badge-paused'}`}>
+                        {p.is_active && <span className="badge-dot pulse" />}
                         {p.is_active ? 'ACTIVE' : 'INACTIVE'}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td className="text-right">
                       <button
-                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        className="btn-danger-outline btn-sm"
                         disabled={actionLoading === p.id || deletingItem}
                         onClick={() => requestDeletePlan(p)}
-                        style={{ color: 'var(--danger-text)' }}
                         title="Delete Plan"
                       >
                         <Trash2 size={13} />
@@ -483,6 +501,26 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 ))}
               </tbody>
             </table>
+
+            {/* Computed Table Footer Summary Bar */}
+            <div className="table-footer">
+              <div className="table-footer-left">
+                <span>Showing {plans.length} subscription plans</span>
+                <span className="footer-dot">•</span>
+                <span>
+                  Active Plans:{' '}
+                  <strong className="footer-highlight tabular-nums">
+                    {activePlansCount}
+                  </strong>
+                </span>
+              </div>
+              <div className="table-footer-right">
+                <span className="inline-status">
+                  <span className={`status-circle ${plans.length === activePlansCount && plans.length > 0 ? 'bg-success' : 'bg-warning'}`} />
+                  <span>{plans.length === activePlansCount && plans.length > 0 ? 'All plans active' : `${activePlansCount} of ${plans.length} active`}</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -493,20 +531,22 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
       {showNewShiftModal && (
         <div className="modal-overlay">
           <div className="modal-card" style={{ maxWidth: 440 }}>
-            <div className="card-header">
-              <div className="card-title">
+            <div className="modal-title-row">
+              <div className="modal-title">
                 <Clock size={18} color="var(--color-brand)" />
                 <span>Add Library Shift</span>
               </div>
               <button
-                className="btn btn-secondary btn-sm"
+                type="button"
+                className="modal-close-btn"
                 onClick={() => setShowNewShiftModal(false)}
+                title="Close"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateShift} style={{ padding: '8px 0' }}>
+            <form onSubmit={handleCreateShift}>
               <div className="form-group">
                 <label className="form-label">Shift Name</label>
                 <input
@@ -523,7 +563,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 <label className="form-label">Shift Code</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className="form-input font-mono"
                   placeholder="e.g. NIGHT"
                   required
                   value={newShift.code}
@@ -531,12 +571,12 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Start Time</label>
                   <input
                     type="time"
-                    className="form-input"
+                    className="form-input font-mono"
                     required
                     value={newShift.start_time}
                     onChange={(e) => setNewShift({ ...newShift, start_time: e.target.value })}
@@ -546,7 +586,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   <label className="form-label">End Time</label>
                   <input
                     type="time"
-                    className="form-input"
+                    className="form-input font-mono"
                     required
                     value={newShift.end_time}
                     onChange={(e) => setNewShift({ ...newShift, end_time: e.target.value })}
@@ -558,7 +598,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 <label className="form-label">Desk Capacity</label>
                 <input
                   type="number"
-                  className="form-input"
+                  className="form-input tabular-nums"
                   min="1"
                   required
                   value={newShift.capacity}
@@ -566,7 +606,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+              <div className="modal-actions">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -579,7 +619,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   className="btn btn-primary"
                   disabled={actionLoading === 'create-shift'}
                 >
-                  <span>Create Shift</span>
+                  <span>{actionLoading === 'create-shift' ? 'Creating...' : 'Create Shift'}</span>
                 </button>
               </div>
             </form>
@@ -592,21 +632,23 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
          ───────────────────────────────────────────────────────────── */}
       {showNewPlanModal && (
         <div className="modal-overlay">
-          <div className="modal-card" style={{ maxWidth: 460 }}>
-            <div className="card-header">
-              <div className="card-title">
+          <div className="modal-card" style={{ maxWidth: 480 }}>
+            <div className="modal-title-row">
+              <div className="modal-title">
                 <CreditCard size={18} color="var(--color-brand)" />
                 <span>Add Membership Plan</span>
               </div>
               <button
-                className="btn btn-secondary btn-sm"
+                type="button"
+                className="modal-close-btn"
                 onClick={() => setShowNewPlanModal(false)}
+                title="Close"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreatePlan} style={{ padding: '8px 0' }}>
+            <form onSubmit={handleCreatePlan}>
               <div className="form-group">
                 <label className="form-label">Plan Name</label>
                 <input
@@ -619,12 +661,12 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Plan Code</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className="form-input font-mono"
                     placeholder="e.g. QTR-FULL"
                     required
                     value={newPlan.code}
@@ -635,7 +677,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   <label className="form-label">Duration (Days)</label>
                   <input
                     type="number"
-                    className="form-input"
+                    className="form-input tabular-nums"
                     min="1"
                     required
                     value={newPlan.duration_days}
@@ -648,7 +690,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 <label className="form-label">Price (₹)</label>
                 <input
                   type="number"
-                  className="form-input"
+                  className="form-input tabular-nums"
                   placeholder="e.g. 3500"
                   min="0"
                   step="0.01"
@@ -665,23 +707,13 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                     (select operating shift building blocks)
                   </span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, marginTop: 4 }}>
+                <div className="shift-selection-grid">
                   {shifts.map((s) => {
                     const isChecked = newPlan.shift_ids?.includes(s.id);
                     return (
                       <label
                         key={s.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '8px 10px',
-                          borderRadius: 6,
-                          border: isChecked ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
-                          background: isChecked ? 'rgba(59, 130, 246, 0.05)' : '#FFFFFF',
-                          cursor: 'pointer',
-                          fontSize: '0.85rem',
-                        }}
+                        className={`shift-checkbox-card ${isChecked ? 'selected' : ''}`}
                       >
                         <input
                           type="checkbox"
@@ -696,7 +728,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                         />
                         <div>
                           <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{s.name}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+                          <div className="font-mono text-muted" style={{ fontSize: '0.72rem' }}>
                             {s.start_time} - {s.end_time}
                           </div>
                         </div>
@@ -722,7 +754,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+              <div className="modal-actions">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -735,7 +767,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   className="btn btn-primary"
                   disabled={actionLoading === 'create-plan'}
                 >
-                  <span>Save Plan</span>
+                  <span>{actionLoading === 'create-plan' ? 'Saving...' : 'Save Plan'}</span>
                 </button>
               </div>
             </form>
@@ -747,65 +779,19 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
           4. DELETE ACCOUNT & WORKSPACE CONFIRMATION POPUP MODAL
          ───────────────────────────────────────────────────────────── */}
       {showDeleteModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            zIndex: 1000,
-            background: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
-        >
-          <div
-            className="modal-card"
-            style={{
-              maxWidth: 580,
-              width: '100%',
-              borderRadius: '12px',
-              border: '1px solid #FCA5A5',
-              padding: 0,
-              overflow: 'hidden',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              backgroundColor: '#FFFFFF',
-            }}
-          >
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal-card delete-account-modal">
             {/* Modal Header */}
-            <div
-              style={{
-                backgroundColor: '#FEF2F2',
-                padding: '20px 24px',
-                borderBottom: '1px solid #FEE2E2',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 16,
-              }}
-            >
+            <div className="delete-account-header">
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    backgroundColor: '#FEE2E2',
-                    border: '1px solid #FECACA',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#DC2626',
-                    flexShrink: 0,
-                  }}
-                >
+                <div className="delete-account-icon">
                   <AlertTriangle size={24} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#991B1B', fontWeight: 700 }}>
-                    Delete Account & Workspace?
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--danger-text)', fontWeight: 700 }}>
+                    Delete Account &amp; Workspace?
                   </h3>
-                  <div style={{ fontSize: '0.82rem', color: '#B91C1C', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--danger-solid)', marginTop: 2 }}>
                     Permanent, irreversible destruction of your study center data
                   </div>
                 </div>
@@ -817,14 +803,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   setDeleteError('');
                 }}
                 disabled={deletingAccount}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#991B1B',
-                  padding: 4,
-                  borderRadius: 4,
-                }}
+                className="modal-close-btn"
                 title="Close"
               >
                 <X size={20} />
@@ -832,60 +811,21 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
             </div>
 
             {/* Modal Content */}
-            <div style={{ padding: '22px 24px', maxHeight: '78vh', overflowY: 'auto' }}>
+            <div className="delete-account-body">
               {deleteError && (
-                <div
-                  style={{
-                    backgroundColor: 'var(--danger-bg)',
-                    border: '1px solid var(--danger-border)',
-                    color: 'var(--danger-text)',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '0.84rem',
-                    marginBottom: 16,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                >
+                <div className="feedback-alert error">
                   <AlertCircle size={16} />
                   <span>{deleteError}</span>
                 </div>
               )}
 
               {/* SECTION: PRECAUTIONS */}
-              <div
-                style={{
-                  backgroundColor: '#FFFBEB',
-                  border: '1px solid #FDE68A',
-                  borderRadius: 8,
-                  padding: '14px 16px',
-                  marginBottom: 18,
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 700,
-                    color: '#92400E',
-                    fontSize: '0.88rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    marginBottom: 6,
-                  }}
-                >
-                  <ShieldAlert size={16} color="#B45309" />
+              <div className="precautions-box">
+                <div className="precautions-title">
+                  <ShieldAlert size={16} color="var(--warning-solid)" />
                   <span>Precautions Before Proceeding</span>
                 </div>
-                <ul
-                  style={{
-                    margin: 0,
-                    paddingLeft: 18,
-                    fontSize: '0.8125rem',
-                    color: '#78350F',
-                    lineHeight: 1.55,
-                  }}
-                >
+                <ul className="precautions-list">
                   <li>
                     <strong>Action is permanent:</strong> Once confirmed, this cannot be undone, restored, or recovered by any administrator.
                   </li>
@@ -902,7 +842,7 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               <div style={{ marginBottom: 20 }}>
                 <div
                   style={{
-                    fontSize: '0.85rem',
+                    fontSize: '0.8125rem',
                     fontWeight: 700,
                     color: 'var(--color-heading)',
                     marginBottom: 10,
@@ -913,130 +853,49 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   Results of deleting your account:
                 </div>
 
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: 10,
-                  }}
-                >
-                  <div
-                    style={{
-                      backgroundColor: '#F9FAFB',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: 8,
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        fontWeight: 600,
-                        fontSize: '0.83rem',
-                        color: '#1F2933',
-                      }}
-                    >
-                      <Users size={15} color="#DC2626" />
+                <div className="consequences-grid">
+                  <div className="consequence-card">
+                    <div className="consequence-card-title">
+                      <Users size={15} color="var(--danger-solid)" />
                       <span>Student Records Purged</span>
                     </div>
-                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                    <div className="consequence-card-desc">
                       All registered student profiles, contact details, photos, and ID cards permanently deleted.
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      backgroundColor: '#F9FAFB',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: 8,
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        fontWeight: 600,
-                        fontSize: '0.83rem',
-                        color: '#1F2933',
-                      }}
-                    >
-                      <Building2 size={15} color="#DC2626" />
-                      <span>Desks & Seat Allocations Cleared</span>
+                  <div className="consequence-card">
+                    <div className="consequence-card-title">
+                      <Building2 size={15} color="var(--danger-solid)" />
+                      <span>Desks &amp; Seat Allocations Cleared</span>
                     </div>
-                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                    <div className="consequence-card-desc">
                       Seat layout grids, shift allocations, and desk reservation histories wiped out.
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      backgroundColor: '#F9FAFB',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: 8,
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        fontWeight: 600,
-                        fontSize: '0.83rem',
-                        color: '#1F2933',
-                      }}
-                    >
-                      <Receipt size={15} color="#DC2626" />
-                      <span>Billing & Invoices Erased</span>
+                  <div className="consequence-card">
+                    <div className="consequence-card-title">
+                      <Receipt size={15} color="var(--danger-solid)" />
+                      <span>Billing &amp; Invoices Erased</span>
                     </div>
-                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                    <div className="consequence-card-desc">
                       All payment receipts, invoices, fee collection records, and revenue logs destroyed.
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      backgroundColor: '#F9FAFB',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: 8,
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        fontWeight: 600,
-                        fontSize: '0.83rem',
-                        color: '#1F2933',
-                      }}
-                    >
-                      <Clock size={15} color="#DC2626" />
-                      <span>Shifts, Logs & Reminders</span>
+                  <div className="consequence-card">
+                    <div className="consequence-card-title">
+                      <Clock size={15} color="var(--danger-solid)" />
+                      <span>Shifts, Logs &amp; Reminders</span>
                     </div>
-                    <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                    <div className="consequence-card-desc">
                       Daily student check-in/out attendance logs, shift timings, and WhatsApp histories erased.
                     </div>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    backgroundColor: '#FEF2F2',
-                    border: '1px dashed #FCA5A5',
-                    borderRadius: 8,
-                    padding: '10px 14px',
-                    marginTop: 10,
-                    fontSize: '0.78rem',
-                    color: '#991B1B',
-                    lineHeight: 1.45,
-                  }}
-                >
+                <div className="warning-banner">
                   🔒 <strong>Workspace Shutdown:</strong> Your library workspace URL (<code>{tenant?.slug || 'workspace'}</code>) will be immediately deactivated and all owner login sessions terminated.
                 </div>
               </div>
@@ -1044,8 +903,8 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               {/* CONFIRMATION FORM */}
               <form onSubmit={handleDeleteAccount}>
                 <div className="form-group" style={{ marginBottom: 14 }}>
-                  <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>
-                    To confirm, please type your library name: <span style={{ color: '#DC2626' }}>{tenant?.name}</span>
+                  <label className="form-label">
+                    To confirm, please type your library name: <span style={{ color: 'var(--danger-solid)' }}>{tenant?.name}</span>
                   </label>
                   <input
                     type="text"
@@ -1056,45 +915,25 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                     disabled={deletingAccount}
                     autoFocus
                     required
-                    style={{
-                      borderColor:
-                        deleteConfirmationText.trim().toLowerCase() === (tenant?.name || '').trim().toLowerCase()
-                          ? '#10B981'
-                          : undefined,
-                    }}
                   />
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 10,
-                    marginBottom: 20,
-                    padding: '8px 10px',
-                    backgroundColor: '#F9FAFB',
-                    borderRadius: 6,
-                    border: '1px solid #E5E7EB',
-                  }}
-                >
+                <label className="checkbox-agreement-row" htmlFor="delete-agree-checkbox">
                   <input
                     type="checkbox"
                     id="delete-agree-checkbox"
                     checked={deleteAgreed}
                     onChange={(e) => setDeleteAgreed(e.target.checked)}
                     disabled={deletingAccount}
-                    style={{ marginTop: 2, cursor: 'pointer' }}
                     required
+                    style={{ marginTop: 2, cursor: 'pointer' }}
                   />
-                  <label
-                    htmlFor="delete-agree-checkbox"
-                    style={{ fontSize: '0.8125rem', color: '#374151', cursor: 'pointer', lineHeight: 1.4 }}
-                  >
+                  <span>
                     I understand that this action is <strong>permanent and irreversible</strong>. I confirm the permanent deletion of my account and all associated study center data.
-                  </label>
-                </div>
+                  </span>
+                </label>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <div className="modal-actions">
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -1108,30 +947,12 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
                   </button>
                   <button
                     type="submit"
-                    className="btn"
+                    className="btn btn-danger-solid"
                     disabled={
                       deletingAccount ||
                       !deleteAgreed ||
                       deleteConfirmationText.trim().toLowerCase() !== (tenant?.name || '').trim().toLowerCase()
                     }
-                    style={{
-                      backgroundColor: '#DC2626',
-                      borderColor: '#DC2626',
-                      color: '#FFFFFF',
-                      fontWeight: 600,
-                      opacity:
-                        deletingAccount ||
-                        !deleteAgreed ||
-                        deleteConfirmationText.trim().toLowerCase() !== (tenant?.name || '').trim().toLowerCase()
-                          ? 0.5
-                          : 1,
-                      cursor:
-                        deletingAccount ||
-                        !deleteAgreed ||
-                        deleteConfirmationText.trim().toLowerCase() !== (tenant?.name || '').trim().toLowerCase()
-                          ? 'not-allowed'
-                          : 'pointer',
-                    }}
                   >
                     <Trash2 size={16} />
                     <span>{deletingAccount ? 'Deleting Account...' : 'Permanently Delete Workspace'}</span>
@@ -1143,24 +964,16 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
         </div>
       )}
 
-      {/* ── Custom React Confirmation Modal for Shift / Plan Deletion (Cross-browser safe) ── */}
+      {/* ── Custom React Confirmation Modal for Shift / Plan Deletion ── */}
       {deleteConfirmItem && (
-        <div className="modal-overlay" style={{ zIndex: 1200 }} onClick={() => !deletingItem && setDeleteConfirmItem(null)}>
+        <div
+          className="modal-overlay"
+          style={{ zIndex: 1200 }}
+          onClick={() => !deletingItem && setDeleteConfirmItem(null)}
+        >
           <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  backgroundColor: '#FEE2E2',
-                  color: '#DC2626',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
+              <div className="delete-account-icon">
                 <Trash2 size={22} />
               </div>
               <div>
@@ -1173,13 +986,13 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               </div>
             </div>
 
-            <p style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: 1.5, marginBottom: 20 }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text)', lineHeight: 1.5, marginBottom: 20 }}>
               Are you sure you want to permanently delete{' '}
               <strong>"{deleteConfirmItem.name}"</strong>
               {deleteConfirmItem.code ? ` (${deleteConfirmItem.code})` : ''}?
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <div className="modal-actions">
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -1190,18 +1003,9 @@ export default function Settings({ tenant, shifts, plans, onTenantUpdated, onRef
               </button>
               <button
                 type="button"
-                className="btn btn-danger"
+                className="btn btn-danger-solid"
                 onClick={handleConfirmDeleteItem}
                 disabled={deletingItem}
-                style={{
-                  backgroundColor: '#DC2626',
-                  borderColor: '#DC2626',
-                  color: '#FFFFFF',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
               >
                 <Trash2 size={15} />
                 <span>{deletingItem ? 'Deleting...' : `Delete ${deleteConfirmItem.type === 'shift' ? 'Shift' : 'Plan'}`}</span>

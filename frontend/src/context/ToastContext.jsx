@@ -52,56 +52,19 @@ export function ToastProvider({ children }) {
         }}
       >
         {toasts.map((t) => {
-          let icon = <CheckCircle2 size={18} style={{ color: '#16A34A', flexShrink: 0 }} />;
-          let borderColor = '#BBF7D0';
-          let accentBg = '#F0FDF4';
-
-          if (t.type === 'error') {
-            icon = <AlertCircle size={18} style={{ color: '#DC2626', flexShrink: 0 }} />;
-            borderColor = '#FECACA';
-            accentBg = '#FEF2F2';
-          } else if (t.type === 'warning') {
-            icon = <AlertTriangle size={18} style={{ color: '#D97706', flexShrink: 0 }} />;
-            borderColor = '#FDE68A';
-            accentBg = '#FFFBEB';
-          } else if (t.type === 'info') {
-            icon = <Info size={18} style={{ color: '#2563EB', flexShrink: 0 }} />;
-            borderColor = '#BFDBFE';
-            accentBg = '#EFF6FF';
-          }
+          let icon = <CheckCircle2 size={18} style={{ flexShrink: 0 }} />;
+          if (t.type === 'error') icon = <AlertCircle size={18} style={{ flexShrink: 0 }} />;
+          else if (t.type === 'warning') icon = <AlertTriangle size={18} style={{ flexShrink: 0 }} />;
+          else if (t.type === 'info') icon = <Info size={18} style={{ flexShrink: 0 }} />;
 
           return (
             <div
               key={t.id}
               role="alert"
-              className="toast-item"
-              style={{
-                pointerEvents: 'auto',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 12,
-                padding: '12px 14px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: 'var(--radius-lg)',
-                border: `1px solid ${borderColor}`,
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
-                animation: 'toastSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
+              className={`toast-item ${t.type}`}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    backgroundColor: accentBg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
+                <div className={`toast-icon-box ${t.type}`}>
                   {icon}
                 </div>
                 <div
@@ -118,23 +81,9 @@ export function ToastProvider({ children }) {
               </div>
               <button
                 type="button"
+                className="toast-close-btn"
                 onClick={() => removeToast(t.id)}
                 aria-label="Dismiss notification"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--color-text-muted)',
-                  cursor: 'pointer',
-                  padding: 4,
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'color 0.15s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-heading)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
               >
                 <X size={14} />
               </button>
@@ -160,5 +109,3 @@ export function useToast() {
   }
   return context;
 }
-
-export default useToast;

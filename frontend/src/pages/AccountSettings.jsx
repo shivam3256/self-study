@@ -95,13 +95,8 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
       {/* Global Alert / Feedback */}
       {feedbackMessage.text && (
         <div
+          className={`alert-banner ${feedbackMessage.type === 'error' ? 'danger' : 'success'}`}
           style={{
-            background: feedbackMessage.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
-            border: `1px solid ${feedbackMessage.type === 'error' ? 'var(--danger-border)' : 'var(--success-border)'}`,
-            color: feedbackMessage.type === 'error' ? 'var(--danger-text)' : 'var(--success-text)',
-            padding: '12px 16px',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.88rem',
             display: 'flex',
             alignItems: 'center',
             gap: 10,
@@ -117,18 +112,10 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div
+              className="circle-icon-badge brand lg"
               style={{
-                width: 52,
-                height: 52,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #C2410C 0%, #EA580C 100%)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 fontSize: '1.25rem',
                 fontWeight: 700,
-                boxShadow: '0 4px 12px rgba(194, 65, 12, 0.25)',
               }}
             >
               {tenant?.name ? tenant.name[0].toUpperCase() : 'L'}
@@ -299,7 +286,7 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-          <div style={{ background: 'var(--bg-alt)', padding: '14px 16px', borderRadius: 10 }}>
+          <div className="info-tile">
             <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>
               Primary Login Email
             </div>
@@ -308,7 +295,7 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
             </div>
           </div>
 
-          <div style={{ background: 'var(--bg-alt)', padding: '14px 16px', borderRadius: 10 }}>
+          <div className="info-tile">
             <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>
               User Role
             </div>
@@ -323,47 +310,39 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
       <div
         className="card"
         style={{
-          borderColor: '#FCA5A5',
-          backgroundColor: '#FFFDFD',
+          borderColor: 'var(--danger-border)',
+          backgroundColor: 'var(--danger-bg)',
         }}
       >
-        <div className="card-header" style={{ borderBottomColor: '#FEE2E2' }}>
+        <div className="card-header" style={{ borderBottomColor: 'var(--danger-border)' }}>
           <div className="card-title">
-            <AlertTriangle size={20} color="#DC2626" />
-            <span style={{ color: '#991B1B', fontWeight: 600 }}>Danger Zone — Account Deletion</span>
+            <AlertTriangle size={20} color="var(--danger-solid)" />
+            <span style={{ color: 'var(--danger-text)', fontWeight: 600 }}>Danger Zone — Account Deletion</span>
           </div>
-          <span
-            className="badge"
-            style={{
-              backgroundColor: '#FEE2E2',
-              color: '#991B1B',
-              fontWeight: 600,
-              border: '1px solid #FCA5A5',
-            }}
-          >
+          <span className="badge badge-danger">
             Irreversible Action
           </span>
         </div>
 
         <div style={{ padding: '4px 0' }}>
-          <p style={{ color: '#7F1D1D', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 16 }}>
+          <p style={{ color: 'var(--danger-text)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 16 }}>
             Permanently delete this entire library workspace. This will immediately and irreversibly erase:
           </p>
 
-          <ul style={{ color: '#991B1B', fontSize: '0.85rem', lineHeight: 1.8, paddingLeft: 20, marginBottom: 20 }}>
+          <ul style={{ color: 'var(--danger-text)', fontSize: '0.85rem', lineHeight: 1.8, paddingLeft: 20, marginBottom: 20 }}>
             <li>All registered student records, attendance logs, and photo verifications</li>
             <li>All desk allocations, seat map layouts, and locker assignments</li>
             <li>All billing transactions, payment receipts, and financial expense records</li>
             <li>Your library owner account credentials and authentication sessions</li>
           </ul>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, borderTop: '1px solid #FEE2E2', paddingTop: 16 }}>
-            <div style={{ fontSize: '0.8rem', color: '#991B1B' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, borderTop: '1px solid var(--danger-border)', paddingTop: 16 }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--danger-text)' }}>
               Once deleted, your library data cannot be recovered by any administrator.
             </div>
             <button
               type="button"
-              className="btn btn-danger"
+              className="btn btn-danger-outline"
               onClick={() => {
                 setShowDeleteModal(true);
                 setDeleteError('');
@@ -382,29 +361,29 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="modal-overlay" onClick={() => !deletingAccount && setShowDeleteModal(false)}>
-          <div className="modal-card" style={{ maxWidth: 500, borderColor: '#F87171' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card" style={{ maxWidth: 500, borderColor: 'var(--danger-border)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', flexShrink: 0 }}>
-                <AlertTriangle size={22} />
+              <div className="circle-icon-badge danger">
+                <AlertTriangle size={20} />
               </div>
               <div>
-                <h3 style={{ fontSize: '1.15rem', color: '#991B1B', margin: 0, fontWeight: 700 }}>
+                <h3 style={{ fontSize: '1.15rem', color: 'var(--danger-text)', margin: 0, fontWeight: 700 }}>
                   Permanently Delete Workspace
                 </h3>
-                <div style={{ fontSize: '0.8rem', color: '#B91C1C' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--danger-solid)' }}>
                   This action is permanent and completely irreversible.
                 </div>
               </div>
             </div>
 
             {deleteError && (
-              <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', padding: '10px 14px', borderRadius: 8, fontSize: '0.85rem', marginBottom: 16 }}>
+              <div className="alert-banner danger" style={{ marginBottom: 16 }}>
                 {deleteError}
               </div>
             )}
 
             <form onSubmit={handleDeleteAccount}>
-              <div style={{ marginBottom: 16, fontSize: '0.875rem', color: '#374151' }}>
+              <div style={{ marginBottom: 16, fontSize: '0.875rem', color: 'var(--color-heading)' }}>
                 To confirm deletion, please type the library name <strong>"{tenant?.name}"</strong> below:
               </div>
 
@@ -412,7 +391,6 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
                 <input
                   type="text"
                   className="form-input"
-                  style={{ borderColor: '#FCA5A5' }}
                   placeholder={tenant?.name}
                   value={deleteConfirmationText}
                   onChange={(e) => setDeleteConfirmationText(e.target.value)}
@@ -421,16 +399,16 @@ export default function AccountSettings({ tenant, user, onTenantUpdated, onLogou
                 />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20 }}>
+              <div className="modal-info-panel" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20, padding: '10px 14px' }}>
                 <input
                   type="checkbox"
                   id="confirm-delete-check"
                   checked={deleteAgreed}
                   onChange={(e) => setDeleteAgreed(e.target.checked)}
                   disabled={deletingAccount}
-                  style={{ marginTop: 3 }}
+                  style={{ marginTop: 3, accentColor: 'var(--danger-solid)' }}
                 />
-                <label htmlFor="confirm-delete-check" style={{ fontSize: '0.82rem', color: '#4B5563', cursor: 'pointer', lineHeight: 1.4 }}>
+                <label htmlFor="confirm-delete-check" style={{ fontSize: '0.82rem', color: 'var(--color-heading)', cursor: 'pointer', lineHeight: 1.4 }}>
                   I understand that all student data, seating records, lockers, and financial books will be destroyed immediately and cannot be recovered.
                 </label>
               </div>

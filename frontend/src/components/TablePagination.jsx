@@ -46,7 +46,6 @@ export default function TablePagination({
         justifyContent: 'space-between',
         padding: '12px 18px',
         borderTop: '1px solid var(--color-border)',
-        backgroundColor: '#FFFFFF',
         flexWrap: 'wrap',
         gap: 12,
         fontSize: '0.85rem',
@@ -54,9 +53,9 @@ export default function TablePagination({
     >
       <div style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 12 }}>
         <span>
-          Showing <strong style={{ color: 'var(--color-heading)' }}>{startItem}</strong> to{' '}
-          <strong style={{ color: 'var(--color-heading)' }}>{endItem}</strong> of{' '}
-          <strong style={{ color: 'var(--color-heading)' }}>{totalItems}</strong> entries
+          Showing <strong className="tabular-nums" style={{ color: 'var(--color-heading)' }}>{startItem}</strong> to{' '}
+          <strong className="tabular-nums" style={{ color: 'var(--color-heading)' }}>{endItem}</strong> of{' '}
+          <strong className="tabular-nums" style={{ color: 'var(--color-heading)' }}>{totalItems}</strong> entries
         </span>
 
         {onPageSizeChange && (
@@ -74,7 +73,6 @@ export default function TablePagination({
                 padding: '3px 8px',
                 fontSize: '0.8rem',
                 height: 28,
-                borderRadius: 'var(--radius-sm)',
                 width: 'auto',
               }}
             >

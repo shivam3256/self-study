@@ -60,7 +60,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: 16 }}>
+          <div className="alert-banner danger" style={{ marginBottom: 16 }}>
             {error}
           </div>
         )}

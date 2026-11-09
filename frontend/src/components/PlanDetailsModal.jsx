@@ -24,19 +24,7 @@ export default function PlanDetailsModal({ tenant, onClose }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FFFFFF',
-                boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
-              }}
-            >
+            <div className="plan-badge-icon">
               <Crown size={24} />
             </div>
             <div>
@@ -59,27 +47,19 @@ export default function PlanDetailsModal({ tenant, onClose }) {
         </div>
 
         {/* Plan Highlights Box */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
-            border: '1px solid #FDE68A',
-            borderRadius: 12,
-            padding: '16px 18px',
-            marginBottom: 20,
-          }}
-        >
+        <div className="plan-highlight-box">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#B45309', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--warning-text)', textTransform: 'uppercase' }}>
                 Subscription Tier
               </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#92400E', marginTop: 2 }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--warning-text)', marginTop: 2 }}>
                 Full Access Lifetime / Pro
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 600 }}>Status</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#15803D', fontWeight: 700, fontSize: '0.85rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--warning-text)', fontWeight: 600 }}>Status</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success-solid)', fontWeight: 700, fontSize: '0.85rem' }}>
                 <CheckCircle2 size={15} />
                 <span>Verified</span>
               </div>
@@ -94,8 +74,8 @@ export default function PlanDetailsModal({ tenant, onClose }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
             {planFeatures.map((feat, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.875rem', color: '#334155' }}>
-                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.875rem', color: 'var(--color-text)' }}>
+                <div className="plan-feature-icon">
                   <CheckCircle2 size={13} />
                 </div>
                 <span>{feat}</span>

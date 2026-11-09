@@ -320,7 +320,7 @@ export default function NewPaymentModal({
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: 16 }}>
+          <div className="alert-banner danger" style={{ marginBottom: 16 }}>
             {error}
           </div>
         )}
@@ -349,8 +349,8 @@ export default function NewPaymentModal({
               </div>
             )}
             {studentId && activeLocker && (
-              <div style={{ fontSize: '0.75rem', color: '#1E40AF', background: '#EFF6FF', padding: '4px 8px', borderRadius: 4, marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Lock size={13} color="#2563EB" />
+              <div className="modal-info-panel info" style={{ padding: '6px 10px', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--info-text)', marginBottom: 0 }}>
+                <Lock size={13} color="var(--info-solid)" />
                 <span>
                   Active Locker: <strong>{activeLocker.label || activeLocker.locker_label}</strong> (₹{activeLocker.monthly_fee}/mo) • Paid until: <strong>{activeLocker.paid_until || 'Not set'}</strong>
                 </span>
@@ -391,7 +391,7 @@ export default function NewPaymentModal({
 
               {/* Shifts & Seat Auto-Suggestion / Manual Override */}
               {planId && (
-                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+                <div className="modal-info-panel" style={{ padding: '12px 14px', marginBottom: 14 }}>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-heading)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -406,15 +406,8 @@ export default function NewPaymentModal({
                           return chosenPlan.shifts.map((sh) => (
                             <span
                               key={sh.id}
-                              style={{
-                                background: '#EFF6FF',
-                                border: '1px solid #BFDBFE',
-                                color: '#1E40AF',
-                                padding: '2px 6px',
-                                borderRadius: 4,
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                              }}
+                              className="badge badge-info"
+                              style={{ fontSize: '0.75rem', fontWeight: 600 }}
                             >
                               {sh.name}
                             </span>
@@ -435,7 +428,7 @@ export default function NewPaymentModal({
                       value={selectedSeatId}
                       onChange={(e) => setSelectedSeatId(e.target.value)}
                       disabled={loadingSeats || availableSeats.length === 0}
-                      style={{ background: '#FFFFFF', fontSize: '0.85rem' }}
+                      style={{ fontSize: '0.85rem' }}
                     >
                       {availableSeats.length === 0 ? (
                         <option value="">No seats available in all shifts for this date range</option>
@@ -452,13 +445,13 @@ export default function NewPaymentModal({
               )}
 
               {/* Validity Dates */}
-              <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+              <div className="modal-info-panel" style={{ padding: '12px 14px', marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-heading)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Calendar size={14} color="var(--color-brand)" />
                     <span>Validity Period</span>
                   </label>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: durationDays > 0 ? '#ECFDF5' : '#FEF2F2', color: durationDays > 0 ? '#047857' : '#DC2626' }}>
+                  <span className={`badge ${durationDays > 0 ? 'badge-active' : 'badge-danger'}`} style={{ fontSize: '0.75rem', fontWeight: 600 }}>
                     {getDurationLabel()}
                   </span>
                 </div>
@@ -518,9 +511,9 @@ export default function NewPaymentModal({
               LOCKER PAYMENT SECTION (shown in 'locker' and 'combined' mode)
              ══════════════════════════════════════════════════════════ */}
           {(paymentType === 'locker' || paymentType === 'combined') && (
-            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: '14px', marginBottom: 16 }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#1E40AF', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Lock size={14} color="#2563EB" />
+            <div className="modal-info-panel info" style={{ padding: 14, marginBottom: 16 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--info-text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Lock size={14} color="var(--info-solid)" />
                 <span>{paymentType === 'combined' ? '2. Locker Renewal Details' : 'Locker Renewal Details'}</span>
               </div>
 
@@ -528,14 +521,14 @@ export default function NewPaymentModal({
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
                     <div>
-                      <div style={{ fontSize: '0.75rem', color: '#1E40AF' }}>Assigned Locker</div>
-                      <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1E3A8A' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--info-text)' }}>Assigned Locker</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-heading)' }}>
                         {activeLocker.label || activeLocker.locker_label} (₹{activeLocker.monthly_fee}/mo)
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.75rem', color: '#1E40AF' }}>Current Paid Until</div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1E3A8A' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--info-text)' }}>Current Paid Until</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-heading)' }}>
                         {activeLocker.paid_until || 'No payment recorded'}
                       </div>
                     </div>
@@ -543,12 +536,11 @@ export default function NewPaymentModal({
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'center' }}>
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.8rem', color: '#1E40AF' }}>Number of Months *</label>
+                      <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--info-text)' }}>Number of Months *</label>
                       <select
                         className="form-input"
                         value={lockerMonths}
                         onChange={(e) => setLockerMonths(Number(e.target.value))}
-                        style={{ background: '#FFFFFF' }}
                       >
                         {[1, 2, 3, 4, 5, 6, 9, 12].map((m) => (
                           <option key={m} value={m}>{m} {m === 1 ? 'Month' : 'Months'}</option>
@@ -557,15 +549,15 @@ export default function NewPaymentModal({
                     </div>
 
                     <div>
-                      <label className="form-label" style={{ fontSize: '0.8rem', color: '#1E40AF' }}>Locker Fee Amount</label>
-                      <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1D4ED8' }}>
+                      <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--info-text)' }}>Locker Fee Amount</label>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--info-solid)' }}>
                         ₹{lockerAmount.toLocaleString('en-IN')}
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div style={{ fontSize: '0.85rem', color: '#DC2626' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--danger-text)' }}>
                   Please select a student who currently holds an active locker.
                 </div>
               )}
@@ -576,7 +568,7 @@ export default function NewPaymentModal({
               COMBINED LINE ITEMS SUMMARY BOX
              ══════════════════════════════════════════════════════════ */}
           {paymentType === 'combined' && activeLocker && (
-            <div style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+            <div className="modal-info-panel" style={{ padding: '12px 16px', marginBottom: 16 }}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-heading)', marginBottom: 8 }}>
                 Combined Receipt Line Items:
               </div>
@@ -588,7 +580,7 @@ export default function NewPaymentModal({
                 <span>• Locker: {activeLocker.label} ({lockerMonths} mo)</span>
                 <span style={{ fontWeight: 600 }}>₹{lockerAmount.toLocaleString('en-IN')}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: 6, fontWeight: 700, fontSize: '1rem', color: 'var(--color-brand)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: 6, fontWeight: 700, fontSize: '1rem', color: 'var(--color-brand)' }}>
                 <span>Total Combined:</span>
                 <span>₹{combinedTotal.toLocaleString('en-IN')}</span>
               </div>

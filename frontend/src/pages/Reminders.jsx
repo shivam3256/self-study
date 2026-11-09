@@ -96,17 +96,16 @@ export default function Reminders() {
 
         {resultMessage && (
           <div
+            className={`alert-banner ${resultMessage.type === 'error' ? 'danger' : 'success'}`}
             style={{
-              background: resultMessage.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
-              border: `1px solid ${resultMessage.type === 'error' ? 'var(--danger-border)' : 'var(--success-border)'}`,
-              color: resultMessage.type === 'error' ? 'var(--danger-text)' : 'var(--success-text)',
-              padding: '12px 16px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.88rem',
               marginTop: 18,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
             }}
           >
-            {resultMessage.text}
+            {resultMessage.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+            <span>{resultMessage.text}</span>
           </div>
         )}
       </div>
@@ -119,7 +118,7 @@ export default function Reminders() {
             <span>Recent WhatsApp Notification Audit Logs</span>
           </div>
         </div>
-        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+        <div className="table-container embedded">
           <table className="data-table">
             <thead>
               <tr>
@@ -160,9 +159,9 @@ export default function Reminders() {
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{l.student_name}</div>
                     </td>
-                    <td style={{ color: 'var(--color-text-secondary)' }}>{l.phone}</td>
+                    <td className="tabular-nums" style={{ color: 'var(--color-text-secondary)' }}>{l.phone}</td>
                     <td>
-                      <span style={{ textTransform: 'capitalize', fontSize: '0.78rem', background: 'var(--bg-alt)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-secondary)' }}>
+                      <span className="badge badge-neutral" style={{ textTransform: 'capitalize', fontSize: '0.78rem' }}>
                         {l.reminder_type.replace(/_/g, ' ')}
                       </span>
                     </td>
@@ -171,18 +170,19 @@ export default function Reminders() {
                     </td>
                     <td>
                       <span
-                        className={`badge ${l.status === 'sent' || l.status === 'delivered' ? 'badge-active' : 'badge-paused'}`}
+                        className={`badge ${l.status === 'sent' || l.status === 'delivered' ? 'badge-active' : 'badge-danger'}`}
                         style={{ fontSize: '0.72rem' }}
                       >
                         {l.status.toUpperCase()}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                    <td className="tabular-nums font-mono" style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                       {new Date(l.sent_at).toLocaleString()}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       {l.status === 'failed' ? (
                         <button
+                          type="button"
                           className="btn btn-secondary btn-sm"
                           disabled={retryingId === l.id}
                           onClick={() => handleRetry(l.id)}
@@ -200,6 +200,9 @@ export default function Reminders() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="table-footer-status">
+          <span>Showing {logs.length} reminder audit logs</span>
         </div>
       </div>
     </div>

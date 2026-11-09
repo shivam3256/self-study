@@ -78,17 +78,16 @@ export default function Attendance({ students }) {
 
           {statusMessage.text && (
             <div
+              className={`alert-banner ${statusMessage.type === 'error' ? 'danger' : 'success'}`}
               style={{
-                background: statusMessage.type === 'error' ? 'var(--danger-bg)' : 'var(--success-bg)',
-                border: `1px solid ${statusMessage.type === 'error' ? 'var(--danger-border)' : 'var(--success-border)'}`,
-                color: statusMessage.type === 'error' ? 'var(--danger-text)' : 'var(--success-text)',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.85rem',
                 marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
-              {statusMessage.text}
+              {statusMessage.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+              <span>{statusMessage.text}</span>
             </div>
           )}
 
@@ -132,10 +131,10 @@ export default function Attendance({ students }) {
           </div>
 
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: '3rem', fontWeight: 600, color: 'var(--info-solid)', fontFamily: 'var(--font-heading)' }}>
+            <div className="tabular-nums" style={{ fontSize: '3rem', fontWeight: 700, color: 'var(--status-assigned-solid)' }}>
               {attendanceList.filter((a) => !a.check_out_time).length}
             </div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
               Active students studying right now
             </div>
           </div>
@@ -145,9 +144,9 @@ export default function Attendance({ students }) {
       {/* Attendance History Log for Today */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
-          <h3 style={{ fontSize: '1.1rem', color: 'var(--color-heading)' }}>Today's Complete Attendance Log</h3>
+          <h3 style={{ fontSize: '1.1rem', color: 'var(--color-heading)', margin: 0 }}>Today's Complete Attendance Log</h3>
         </div>
-        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+        <div className="table-container embedded">
           <table className="data-table">
             <thead>
               <tr>
@@ -191,19 +190,19 @@ export default function Attendance({ students }) {
                     <tr key={a.id}>
                       <td>
                         <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>{a.student_name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{a.student_phone}</div>
+                        <div className="tabular-nums" style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{a.student_phone}</div>
                       </td>
                       <td>
                         {a.desk_number ? (
-                          <span style={{ fontWeight: 600, color: 'var(--color-heading)' }}>Desk {a.desk_number}</span>
+                          <span className="font-mono tabular-nums text-brand font-semibold">Desk {a.desk_number}</span>
                         ) : (
                           <span style={{ color: 'var(--color-text-secondary)' }}>General</span>
                         )}
                       </td>
-                      <td style={{ color: 'var(--color-text)' }}>
+                      <td className="tabular-nums font-mono" style={{ color: 'var(--color-heading)' }}>
                         {checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      <td style={{ color: checkOutDate ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
+                      <td className="tabular-nums font-mono" style={{ color: checkOutDate ? 'var(--color-heading)' : 'var(--color-text-secondary)' }}>
                         {checkOutDate
                           ? checkOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : '—'}
@@ -216,6 +215,7 @@ export default function Attendance({ students }) {
                       <td style={{ textAlign: 'right' }}>
                         {isPresent ? (
                           <button
+                            type="button"
                             className="btn btn-secondary btn-sm"
                             onClick={() => handleCheckOut(a.id, a.student_name)}
                           >
@@ -232,6 +232,9 @@ export default function Attendance({ students }) {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="table-footer-status">
+          <span>Showing {attendanceList.length} check-in records · Active in Library: <strong className="tabular-nums" style={{ color: 'var(--color-heading)' }}>{attendanceList.filter((a) => !a.check_out_time).length}</strong></span>
         </div>
       </div>
     </div>

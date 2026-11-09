@@ -143,21 +143,17 @@ export default function Details({ user, onDetailsSuccess, onLogout }) {
 
             {/* Read-only verified email badge */}
             <div
-              className="auth-verified-badge"
+              className="modal-info-panel success"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
                 padding: '10px 14px',
-                background: '#F0FDF4',
-                borderRadius: 12,
-                border: '1px solid #DCFCE7',
                 marginBottom: 20,
                 fontSize: '0.8125rem',
-                color: '#166534',
               }}
             >
-              <CheckCircle2 size={16} color="#16A34A" style={{ flexShrink: 0 }} />
+              <CheckCircle2 size={16} color="var(--success-solid)" style={{ flexShrink: 0 }} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 Account email: <strong>{email || user?.email || 'Verified user'}</strong>
               </span>
@@ -315,7 +311,7 @@ export default function Details({ user, onDetailsSuccess, onLogout }) {
             </form>
 
             {/* Sign out link */}
-            <div style={{ textAlign: 'center', marginTop: 24, fontSize: '0.8125rem', color: '#6B7280' }}>
+            <div style={{ textAlign: 'center', marginTop: 24, fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
               Signed into the wrong account?{' '}
               <button
                 type="button"
@@ -329,7 +325,7 @@ export default function Details({ user, onDetailsSuccess, onLogout }) {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#C2410C',
+                  color: 'var(--color-primary)',
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'inline-flex',

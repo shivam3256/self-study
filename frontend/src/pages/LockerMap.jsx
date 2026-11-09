@@ -100,87 +100,97 @@ export default function LockerMap({ students = [], onOpenPayment, onViewReceipt 
       {/* ── Summary KPI Tiles ────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 20 }}>
         <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#F1F5F9', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Lock size={20} />
+          <div className="circle-icon-badge muted">
+            <Lock size={18} />
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Total Lockers</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-heading)' }}>{summary.total}</div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-heading)' }}>{summary.total}</div>
           </div>
         </div>
 
         <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CheckCircle2 size={20} />
+          <div className="circle-icon-badge success">
+            <CheckCircle2 size={18} />
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Vacant</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#16A34A' }}>{summary.vacant}</div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--status-free-solid)' }}>{summary.vacant}</div>
           </div>
         </div>
 
         <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#DBEAFE', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <UserCheck size={20} />
+          <div className="circle-icon-badge info">
+            <UserCheck size={18} />
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Assigned</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#2563EB' }}>{summary.assigned}</div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--status-assigned-solid)' }}>{summary.assigned}</div>
           </div>
         </div>
 
         <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AlertTriangle size={20} />
+          <div className="circle-icon-badge danger">
+            <AlertTriangle size={18} />
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Overdue</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#DC2626' }}>{summary.overdue}</div>
+            <div className="tabular-nums" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--status-overdue-solid)' }}>{summary.overdue}</div>
           </div>
         </div>
 
         <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#F3F4F6', color: '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Wrench size={20} />
+          <div className="circle-icon-badge muted">
+            <Wrench size={18} />
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Maintenance</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#6B7280' }}>{summary.maintenance}</div>
+            <div className="tabular-nums text-muted" style={{ fontSize: '1.4rem', fontWeight: 700 }}>{summary.maintenance}</div>
           </div>
         </div>
       </div>
 
       {/* ── Filter & Action Bar ──────────────────────────────────────── */}
-      <div className="card" style={{ marginBottom: 20, padding: '14px 18px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
+      <div className="card" style={{ marginBottom: 20, padding: '14px 18px', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 14, minWidth: 0 }}>
           {/* Status Tabs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', maxWidth: '100%', minWidth: 0 }}>
             <div className="shift-selector">
               <button
+                type="button"
+                aria-pressed={statusFilter === 'all'}
                 className={`shift-btn ${statusFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('all')}
               >
                 All ({summary.total})
               </button>
               <button
+                type="button"
+                aria-pressed={statusFilter === 'vacant'}
                 className={`shift-btn ${statusFilter === 'vacant' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('vacant')}
               >
                 Vacant ({summary.vacant})
               </button>
               <button
+                type="button"
+                aria-pressed={statusFilter === 'assigned'}
                 className={`shift-btn ${statusFilter === 'assigned' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('assigned')}
               >
                 Assigned ({summary.assigned})
               </button>
               <button
+                type="button"
+                aria-pressed={statusFilter === 'overdue'}
                 className={`shift-btn ${statusFilter === 'overdue' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('overdue')}
               >
                 Overdue ({summary.overdue})
               </button>
               <button
+                type="button"
+                aria-pressed={statusFilter === 'maintenance'}
                 className={`shift-btn ${statusFilter === 'maintenance' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('maintenance')}
               >
@@ -191,15 +201,14 @@ export default function LockerMap({ students = [], onOpenPayment, onViewReceipt 
 
           {/* Search & Actions */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-            <div style={{ position: 'relative', width: 220 }}>
-              <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)' }} />
+            <div className="search-box-container" style={{ width: 240 }}>
+              <Search size={15} className="search-box-icon" />
               <input
                 type="text"
                 placeholder="Search locker or student..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="form-input"
-                style={{ paddingLeft: 32, fontSize: '0.85rem' }}
+                className="search-box-input"
               />
             </div>
 
@@ -242,7 +251,7 @@ export default function LockerMap({ students = [], onOpenPayment, onViewReceipt 
 
       {/* Error state */}
       {error && (
-        <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '12px 16px', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
+        <div className="alert-banner danger">
           {error}
         </div>
       )}
@@ -257,8 +266,8 @@ export default function LockerMap({ students = [], onOpenPayment, onViewReceipt 
 
       {/* Empty state: No lockers configured */}
       {!loading && lockers.length === 0 && (
-        <div className="card" style={{ padding: '56px 24px', textAlign: 'center', borderRadius: 16, border: '1px dashed #CBD5E1', background: '#FDFDFC', margin: '20px 0' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid #BFDBFE' }}>
+        <div className="card" style={{ padding: '56px 24px', textAlign: 'center', border: '1px dashed var(--color-border)', margin: '20px 0' }}>
+          <div className="circle-icon-badge info lg" style={{ margin: '0 auto 20px' }}>
             <Lock size={32} />
           </div>
 
@@ -318,12 +327,12 @@ export default function LockerMap({ students = [], onOpenPayment, onViewReceipt 
                 onClick={() => handleLockerClick(locker)}
                 title={`Locker ${locker.label} - Click to ${status === 'available' ? 'assign' : 'manage'}`}
               >
-                <div className="seat-number" style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                <div className="seat-number font-mono" style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
                   <Lock size={13} style={{ opacity: 0.6 }} />
                   <span>{locker.label}</span>
                 </div>
 
-                <div className="seat-category-tag">
+                <div className="seat-category-tag font-mono">
                   ₹{locker.monthly_fee}/mo
                 </div>
 
@@ -336,7 +345,7 @@ export default function LockerMap({ students = [], onOpenPayment, onViewReceipt 
 
                 {status === 'maintenance' && (
                   <>
-                    <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: 2 }}>Unavailable</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>Unavailable</div>
                     <span className="seat-status-pill maintenance">Maintenance</span>
                   </>
                 )}
@@ -466,7 +475,7 @@ function AddLockersModal({ onClose, onSuccess }) {
       <div className="modal-card" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="circle-icon-badge info">
               <Plus size={20} />
             </div>
             <div>
@@ -500,7 +509,7 @@ function AddLockersModal({ onClose, onSuccess }) {
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: '0.85rem' }}>
+          <div className="alert-banner danger">
             {error}
           </div>
         )}
@@ -587,11 +596,11 @@ function AddLockersModal({ onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px 14px', borderRadius: 8, marginBottom: 20 }}>
+              <div className="modal-info-panel" style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>
                   Preview Generated Lockers:
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#1E293B', fontFamily: 'monospace' }}>
+                <div className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--color-heading)' }}>
                   {previewLabels.join(', ')} {count > 5 ? `... (${count} total)` : ''}
                 </div>
               </div>
@@ -688,7 +697,7 @@ function AssignLockerModal({ locker, students = [], onClose, onSuccess }) {
       <div className="modal-card" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="circle-icon-badge success">
               <Lock size={20} />
             </div>
             <div>
@@ -704,7 +713,7 @@ function AssignLockerModal({ locker, students = [], onClose, onSuccess }) {
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: '0.85rem' }}>
+          <div className="alert-banner danger">
             {error}
           </div>
         )}
@@ -782,7 +791,7 @@ function AssignLockerModal({ locker, students = [], onClose, onSuccess }) {
           </div>
 
           {/* Collect First Payment Option */}
-          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px', borderRadius: 10, marginBottom: 20 }}>
+          <div className="modal-info-panel" style={{ padding: 14, marginBottom: 20 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-heading)' }}>
               <input
                 type="checkbox"
@@ -794,7 +803,7 @@ function AssignLockerModal({ locker, students = [], onClose, onSuccess }) {
             </label>
 
             {collectPayment && (
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #E2E8F0' }}>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                   <div>
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>Duration (Months)</label>
@@ -836,9 +845,9 @@ function AssignLockerModal({ locker, students = [], onClose, onSuccess }) {
                   />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#EFF6FF', padding: '10px 14px', borderRadius: 8 }}>
-                  <span style={{ fontSize: '0.85rem', color: '#1E40AF', fontWeight: 600 }}>Total To Collect Now:</span>
-                  <span style={{ fontSize: '1.15rem', color: '#1E40AF', fontWeight: 700 }}>
+                <div className="modal-summary-row info">
+                  <span style={{ fontSize: '0.85rem', color: 'var(--info-text)', fontWeight: 600 }}>Total To Collect Now:</span>
+                  <span className="tabular-nums" style={{ fontSize: '1.15rem', color: 'var(--info-text)', fontWeight: 700 }}>
                     ₹{totalToCollect.toLocaleString('en-IN')}
                     {depositAmount > 0 ? ` (incl. ₹${depositAmount} deposit)` : ''}
                   </span>
@@ -1040,12 +1049,12 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 8, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="circle-icon-badge info">
               <Lock size={20} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-heading)' }}>
+                <h3 className="font-mono" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-heading)' }}>
                   Locker {locker.label}
                 </h3>
                 <span className={`seat-status-pill ${
@@ -1110,7 +1119,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
         </div>
 
         {error && (
-          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: '0.85rem' }}>
+          <div className="alert-banner danger">
             {error}
           </div>
         )}
@@ -1120,7 +1129,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
           <div>
             {isAssigned ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ background: '#F8FAFC', padding: '14px 16px', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                <div className="modal-info-panel" style={{ padding: '14px 16px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: 6 }}>
                     Assigned Student
                   </div>
@@ -1144,7 +1153,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
 
                   <div className="card" style={{ padding: '12px 14px' }}>
                     <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Paid Until</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: locker.computed_status === 'overdue' ? '#DC2626' : '#16A34A', marginTop: 4 }}>
+                    <div className="tabular-nums" style={{ fontSize: '0.95rem', fontWeight: 700, color: locker.computed_status === 'overdue' ? 'var(--status-overdue-solid)' : 'var(--status-free-solid)', marginTop: 4 }}>
                       {locker.paid_until || 'No payment recorded'}
                     </div>
                   </div>
@@ -1153,23 +1162,23 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="card" style={{ padding: '12px 14px' }}>
                     <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Monthly Fee</div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-heading)', marginTop: 4 }}>
+                    <div className="tabular-nums font-bold" style={{ fontSize: '1.05rem', color: 'var(--color-heading)', marginTop: 4 }}>
                       ₹{locker.monthly_fee}/month
                     </div>
                   </div>
 
                   <div className="card" style={{ padding: '12px 14px' }}>
                     <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Refundable Deposit</div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#2563EB', marginTop: 4 }}>
+                    <div className="tabular-nums font-bold" style={{ fontSize: '1.05rem', color: 'var(--status-assigned-solid)', marginTop: 4 }}>
                       ₹{locker.deposit_amount || 0}
                     </div>
                   </div>
                 </div>
 
                 {locker.computed_status === 'overdue' && (
-                  <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', padding: '12px 14px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <AlertTriangle size={18} color="#D97706" />
-                    <div style={{ fontSize: '0.85rem', color: '#92400E' }}>
+                  <div className="alert-banner warning" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <AlertTriangle size={18} style={{ color: 'var(--warning-solid)' }} />
+                    <div style={{ fontSize: '0.85rem', color: 'var(--warning-text)' }}>
                       <strong>30-Day Grace Period Active ({Math.max(0, 30 - (locker.overdue_days || 0))} days left):</strong> Locker fee is overdue (expired on {locker.paid_until}). This locker is held exclusively for this student until Day 30. Click <strong>Renew Fee</strong> or <strong>Change Student</strong> to reassign.
                     </div>
                   </div>
@@ -1178,8 +1187,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
                   <button
                     type="button"
-                    className="btn btn-outline-danger btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#DC2626', borderColor: '#FECDD3' }}
+                    className="btn-danger-outline btn-sm"
                     onClick={handleMarkLeft}
                     disabled={loading}
                     title="Mark student as Left (releases locker and study seat)"
@@ -1193,7 +1201,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
               <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                 {locker.computed_status === 'maintenance' ? (
                   <div>
-                    <Wrench size={36} style={{ margin: '0 auto 10px', color: '#9CA3AF' }} />
+                    <Wrench size={36} style={{ margin: '0 auto 10px', color: 'var(--status-maintenance-solid)' }} />
                     <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--color-heading)', marginBottom: 6 }}>
                       Locker is Under Maintenance
                     </div>
@@ -1210,7 +1218,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
                   </div>
                 ) : (
                   <div>
-                    <CheckCircle2 size={36} style={{ margin: '0 auto 10px', color: '#16A34A' }} />
+                    <CheckCircle2 size={36} style={{ margin: '0 auto 10px', color: 'var(--status-free-solid)' }} />
                     <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--color-heading)', marginBottom: 6 }}>
                       Locker is Vacant & Available
                     </div>
@@ -1227,11 +1235,11 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
         {/* ── TAB: Renew Fee ──────────────────────────────────────────── */}
         {activeTab === 'renew' && (
           <form onSubmit={handleRenew}>
-            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '12px 14px', borderRadius: 8, marginBottom: 16 }}>
-              <div style={{ fontSize: '0.85rem', color: '#1E40AF', fontWeight: 600 }}>
+            <div className="modal-info-panel info">
+              <div style={{ fontSize: '0.85rem', color: 'var(--info-text)', fontWeight: 600 }}>
                 Current Paid Until: {locker.paid_until || 'Not set'}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#3B82F6', marginTop: 2 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--info-solid)', marginTop: 2 }}>
                 Locker renewal extends paid_until independently of seat allocations.
               </div>
             </div>
@@ -1277,9 +1285,9 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', padding: '12px 16px', borderRadius: 8, marginBottom: 20 }}>
+            <div className="modal-summary-row">
               <span style={{ fontSize: '0.9rem', color: 'var(--color-heading)', fontWeight: 600 }}>Total Renewal Amount:</span>
-              <span style={{ fontSize: '1.25rem', color: 'var(--color-brand)', fontWeight: 700 }}>
+              <span className="tabular-nums" style={{ fontSize: '1.25rem', color: 'var(--color-brand)', fontWeight: 700 }}>
                 ₹{renewTotal.toLocaleString('en-IN')}
               </span>
             </div>
@@ -1298,20 +1306,20 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
         {/* ── TAB: Release Locker ──────────────────────────────────────── */}
         {activeTab === 'release' && (
           <form onSubmit={handleRelease}>
-            <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', padding: '14px', borderRadius: 8, marginBottom: 16 }}>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#C2410C', marginBottom: 4 }}>
+            <div className="modal-info-panel brand">
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-brand)', marginBottom: 4 }}>
                 Release Locker Assignment
               </h4>
-              <p style={{ fontSize: '0.82rem', color: '#9A3412', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--color-brand)', lineHeight: 1.5 }}>
                 Releasing this locker will end <strong>{locker.student_name}</strong>'s access and return the locker to vacant status.
               </p>
             </div>
 
             {Number(locker.deposit_amount) > 0 ? (
-              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px', borderRadius: 8, marginBottom: 20 }}>
+              <div className="modal-info-panel" style={{ padding: 14, marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Security Deposit Held:</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2563EB' }}>₹{locker.deposit_amount}</span>
+                  <span className="tabular-nums font-bold" style={{ fontSize: '1.1rem', color: 'var(--status-assigned-solid)' }}>₹{locker.deposit_amount}</span>
                 </div>
 
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-heading)' }}>
@@ -1334,7 +1342,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
               <button type="button" className="btn btn-secondary" onClick={() => setActiveTab('details')}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-danger" disabled={loading}>
+              <button type="submit" className="btn-danger-outline" disabled={loading}>
                 {loading ? 'Releasing...' : 'Confirm Release Locker'}
               </button>
             </div>
@@ -1344,11 +1352,11 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
         {/* ── TAB: Change Student ──────────────────────────────────────── */}
         {activeTab === 'change' && (
           <form onSubmit={handleTransfer}>
-            <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '12px 14px', borderRadius: 8, marginBottom: 16 }}>
-              <div style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600 }}>
+            <div className="modal-info-panel success">
+              <div style={{ fontSize: '0.85rem', color: 'var(--success-text)', fontWeight: 600 }}>
                 Transfer Locker {locker.label}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#15803D', marginTop: 2 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--success-solid)', marginTop: 2 }}>
                 Current occupant ({locker.student_name})'s assignment will be closed, and a new assignment created for the selected student.
               </div>
             </div>
@@ -1465,7 +1473,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
                 <span>{locker.status === 'maintenance' ? 'Resume Availability' : 'Mark Under Maintenance'}</span>
               </button>
               {isAssigned && (
-                <div style={{ fontSize: '0.75rem', color: '#DC2626', marginTop: 4 }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--danger-solid)', marginTop: 4 }}>
                   Release the locker assignment before marking it under maintenance.
                 </div>
               )}
@@ -1475,7 +1483,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
 
             {/* Delete Locker */}
             <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#DC2626', marginBottom: 6 }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--danger-solid)', marginBottom: 6 }}>
                 Delete Locker
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: 10 }}>
@@ -1483,7 +1491,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
               </p>
               <button
                 type="button"
-                className="btn btn-danger btn-sm"
+                className="btn-danger-outline btn-sm"
                 onClick={handleDelete}
                 disabled={loading || isAssigned}
                 title={isAssigned ? 'Cannot delete locker with an active assignment.' : ''}
@@ -1492,7 +1500,7 @@ function LockerDetailsModal({ locker, students = [], onClose, onSuccess }) {
                 <span>Delete Locker</span>
               </button>
               {isAssigned && (
-                <div style={{ fontSize: '0.75rem', color: '#DC2626', marginTop: 4 }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--danger-solid)', marginTop: 4 }}>
                   Cannot delete: Locker currently has an active assignment.
                 </div>
               )}
