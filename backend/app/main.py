@@ -19,24 +19,24 @@ async def lifespan(app: FastAPI):
             inspector = inspect(sync_conn)
             table_names = inspector.get_table_names()
 
+            def add_column_if_not_exists(table: str, col_name: str, col_type: str):
+                if table not in table_names:
+                    return
+                if sync_conn.dialect.name == "postgresql":
+                    sync_conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+                else:
+                    cols = [c["name"] for c in inspect(sync_conn).get_columns(table)]
+                    if col_name not in cols:
+                        try:
+                            sync_conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}"))
+                        except Exception:
+                            pass
+
             # Dialect-agnostic migrations (SQLite & PostgreSQL)
-            if "users" in table_names:
-                user_cols = [c["name"] for c in inspector.get_columns("users")]
-                if "pending_password_hash" not in user_cols:
-                    sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_password_hash VARCHAR(255)"))
-
-            if "email_otps" in table_names:
-                otp_cols = [c["name"] for c in inspector.get_columns("email_otps")]
-                if "pending_password_hash" not in otp_cols:
-                    sync_conn.execute(text("ALTER TABLE email_otps ADD COLUMN pending_password_hash VARCHAR(255)"))
-
-            if "tenants" in table_names:
-                columns = [c["name"] for c in inspector.get_columns("tenants")]
-                if "additional_email" not in columns:
-                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN additional_email VARCHAR(255)"))
+            add_column_if_not_exists("users", "pending_password_hash", "VARCHAR(255)")
 
             if "users" in table_names and sync_conn.dialect.name == "postgresql":
-                user_cols = [c["name"] for c in inspector.get_columns("users")]
+                user_cols = [c["name"] for c in inspect(sync_conn).get_columns("users")]
                 sync_conn.execute(text("ALTER TABLE users ALTER COLUMN tenant_id DROP NOT NULL"))
                 if "email_verified" not in user_cols:
                     sync_conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE"))
@@ -52,8 +52,7 @@ async def lifespan(app: FastAPI):
                     ("pending_pincode", "VARCHAR(20)"),
                     ("pending_additional_email", "VARCHAR(255)"),
                 ]:
-                    if col_name not in user_cols:
-                        sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                    sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
 
             if "users" in table_names and sync_conn.dialect.name == "sqlite":
                 user_info = sync_conn.execute(text("PRAGMA table_info(users)")).fetchall()
@@ -119,40 +118,26 @@ async def lifespan(app: FastAPI):
                         sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_additional_email VARCHAR(255)"))
                     if "pending_password_hash" not in user_columns:
                         sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_password_hash VARCHAR(255)"))
-            if "email_otps" in table_names:
-                otp_cols = [c["name"] for c in inspector.get_columns("email_otps")]
-                if "pending_password_hash" not in otp_cols:
-                    sync_conn.execute(text("ALTER TABLE email_otps ADD COLUMN pending_password_hash VARCHAR(255)"))
+
+            add_column_if_not_exists("email_otps", "pending_password_hash", "VARCHAR(255)")
+
             if "tenants" in table_names:
-                tenant_cols = [c["name"] for c in inspector.get_columns("tenants")]
-                if "additional_email" not in tenant_cols:
-                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN additional_email VARCHAR(255)"))
-                if "grace_period_days" not in tenant_cols:
-                    sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN grace_period_days INTEGER DEFAULT 30"))
+                add_column_if_not_exists("tenants", "additional_email", "VARCHAR(255)")
+                add_column_if_not_exists("tenants", "grace_period_days", "INTEGER DEFAULT 30")
                 sync_conn.execute(text("UPDATE tenants SET grace_period_days = 30 WHERE grace_period_days IS NULL OR grace_period_days = 5"))
 
-            if "plans" in table_names:
-                plan_cols = [c["name"] for c in inspector.get_columns("plans")]
-                if "zone_id" not in plan_cols:
-                    sync_conn.execute(text("ALTER TABLE plans ADD COLUMN zone_id VARCHAR(100)"))
-
-            if "students" in table_names:
-                student_columns = [c["name"] for c in inspector.get_columns("students")]
-                if "gender" not in student_columns:
-                    sync_conn.execute(text("ALTER TABLE students ADD COLUMN gender VARCHAR(20)"))
+            add_column_if_not_exists("plans", "zone_id", "VARCHAR(100)")
+            add_column_if_not_exists("students", "gender", "VARCHAR(20)")
 
             if "desks" in table_names:
                 sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_desk_number ON desks (tenant_id, desk_number)"))
 
             if "payments" in table_names:
-                payment_cols = [c["name"] for c in inspector.get_columns("payments")]
-                if "payment_type" not in payment_cols:
-                    sync_conn.execute(text("ALTER TABLE payments ADD COLUMN payment_type VARCHAR(50) DEFAULT 'seat'"))
-                    sync_conn.execute(text("UPDATE payments SET payment_type = 'seat' WHERE payment_type IS NULL"))
-                if "locker_assignment_id" not in payment_cols:
-                    sync_conn.execute(text("ALTER TABLE payments ADD COLUMN locker_assignment_id VARCHAR(36)"))
-                if "receipt_id" not in payment_cols:
-                    sync_conn.execute(text("ALTER TABLE payments ADD COLUMN receipt_id VARCHAR(100)"))
+                add_column_if_not_exists("payments", "payment_type", "VARCHAR(50) DEFAULT 'seat'")
+                sync_conn.execute(text("UPDATE payments SET payment_type = 'seat' WHERE payment_type IS NULL"))
+                add_column_if_not_exists("payments", "locker_assignment_id", "VARCHAR(36)")
+                add_column_if_not_exists("payments", "receipt_id", "VARCHAR(100)")
+                if "receipt_number" in [c["name"] for c in inspect(sync_conn).get_columns("payments")]:
                     sync_conn.execute(text("UPDATE payments SET receipt_id = receipt_number WHERE receipt_id IS NULL"))
 
             if "lockers" in table_names:
