@@ -3,13 +3,24 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 
 class SignupRequest(BaseModel):
-    library_name: str
-    owner_name: str
     email: EmailStr
-    phone: str
     password: str
+    # Optional legacy fields for backward compatibility
+    library_name: Optional[str] = None
+    owner_name: Optional[str] = None
+    phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    additional_email: Optional[str] = None
+
+class SetupWorkspaceRequest(BaseModel):
+    library_name: Optional[str] = None
+    owner_name: Optional[str] = None
+    phone: Optional[str] = None
+    city: Optional[str] = None
+    address: Optional[str] = None
     state: Optional[str] = None
     pincode: Optional[str] = None
     additional_email: Optional[str] = None
@@ -57,7 +68,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: "UserResponse"
-    tenant: "TenantResponse"
+    tenant: Optional["TenantResponse"] = None
 
 class GoogleAuthResponse(BaseModel):
     is_new_user: bool = False
@@ -79,7 +90,16 @@ class UserResponse(BaseModel):
     is_active: bool
     email_verified: bool = False
     email_verified_at: Optional[datetime] = None
+    profile_complete: bool = False
     created_at: datetime
+    # Prefill data for in-flight onboarding
+    pending_library_name: Optional[str] = None
+    pending_phone: Optional[str] = None
+    pending_city: Optional[str] = None
+    pending_address: Optional[str] = None
+    pending_state: Optional[str] = None
+    pending_pincode: Optional[str] = None
+    pending_additional_email: Optional[str] = None
 
 class TenantResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

@@ -85,3 +85,6 @@ logs/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Local scripts with credentials
+backend/app/populate_shivam_library.py

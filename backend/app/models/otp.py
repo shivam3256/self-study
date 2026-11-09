@@ -11,6 +11,7 @@ class EmailOTP(BaseModel):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     attempts = Column(Integer, default=0, nullable=False)
     consumed_at = Column(DateTime(timezone=True), nullable=True)
+    pending_password_hash = Column(String(255), nullable=True)
 
     user = relationship("User", back_populates="otps")
 

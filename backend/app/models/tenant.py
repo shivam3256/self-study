@@ -46,6 +46,7 @@ class User(BaseModel):
     email_verified = Column(Boolean, default=False, nullable=False)
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
+    pending_password_hash = Column(String(255), nullable=True)
 
     # Pending onboarding details stored until email verification
     pending_library_name = Column(String(255), nullable=True)
@@ -58,4 +59,8 @@ class User(BaseModel):
 
     tenant = relationship("Tenant", back_populates="users")
     otps = relationship("EmailOTP", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def profile_complete(self) -> bool:
+        return bool(self.tenant_id and self.email_verified)
 

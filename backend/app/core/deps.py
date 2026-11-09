@@ -10,10 +10,14 @@ from app.models.tenant import Tenant, User
 
 security = HTTPBearer(auto_error=False)
 
-async def get_current_user(
+async def get_current_user_allow_incomplete(
     auth_header: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
+    """
+    Dependency for onboarding endpoints (setup-workspace, get-me, etc.).
+    Allows authenticated users whose workspace/profile is not yet complete.
+    """
     if not auth_header:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -31,15 +35,14 @@ async def get_current_user(
         )
     
     user_id: str = payload.get("sub")
-    tenant_id: str = payload.get("tenant_id")
-    if not user_id or not tenant_id:
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Malformed token claims.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    query = select(User).where(User.id == user_id, User.tenant_id == tenant_id, User.is_active == True)
+    query = select(User).where(User.id == user_id, User.is_active == True)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
     
@@ -50,6 +53,47 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    return user
+
+
+async def get_current_user(
+    auth_header: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """
+    Strict dependency for all standard workspace endpoints.
+    Rejects incomplete users with 403 PROFILE_INCOMPLETE and unverified users with 403 EMAIL_NOT_VERIFIED.
+    Guarantees user.tenant_id is a non-null string.
+    """
+    user = await get_current_user_allow_incomplete(auth_header=auth_header, db=db)
+
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "EMAIL_NOT_VERIFIED", "message": "Email is not verified."}
+        )
+
+    if not user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "PROFILE_INCOMPLETE", "message": "Workspace profile is incomplete. Please complete setup."}
+        )
+    
+    # Token claims tenant integrity check
+    payload = decode_access_token(auth_header.credentials)
+    token_tenant_id = payload.get("tenant_id") if payload else None
+    if not token_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "PROFILE_INCOMPLETE", "message": "Workspace profile is incomplete. Please complete setup."}
+        )
+    if token_tenant_id != user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token tenant claims mismatch.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user
 
 async def get_current_tenant(

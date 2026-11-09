@@ -1,5 +1,46 @@
-const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+const API_BASE = (import.meta.env?.VITE_API_URL || '').replace(/\/+$/, '');
 const BASE_URL = `${API_BASE}/api/v1`;
+
+export function parseApiError(error) {
+  if (!error) return 'An unexpected error occurred.';
+  if (typeof error === 'string') return error;
+
+  const detail = error.detail !== undefined ? error.detail : (error.data?.detail !== undefined ? error.data.detail : error);
+  if (typeof detail === 'string') return detail;
+
+  if (Array.isArray(detail)) {
+    // 422 validation error list from FastAPI
+    const messages = detail.map((item) => {
+      if (typeof item === 'string') return item;
+      if (item?.msg) {
+        const cleanMsg = item.msg.replace(/^Value error,\s*/i, '');
+        const field = item.loc ? item.loc[item.loc.length - 1] : '';
+        if (field && !cleanMsg.toLowerCase().includes(field.toLowerCase())) {
+          const fieldLabel = field.replace(/_/g, ' ');
+          return `${fieldLabel.charAt(0).toUpperCase() + fieldLabel.slice(1)}: ${cleanMsg}`;
+        }
+        return cleanMsg;
+      }
+      return 'Invalid input.';
+    });
+    return messages.join('. ') || 'Validation failed. Please check your inputs.';
+  }
+
+  if (typeof detail === 'object' && detail !== null) {
+    if (detail.message && typeof detail.message === 'string') {
+      return detail.message;
+    }
+    if (detail.detail && typeof detail.detail === 'string') {
+      return detail.detail;
+    }
+  }
+
+  if (error.message && typeof error.message === 'string') {
+    return error.message;
+  }
+
+  return 'An unexpected error occurred. Please try again.';
+}
 
 export function getAuthToken() {
   return localStorage.getItem('study_token');
@@ -24,7 +65,9 @@ export function setStoredUser(user, tenant) {
   } else {
     localStorage.removeItem('study_user');
   }
-  if (tenant) {
+  // Never write a stub tenant ({id} only) to localStorage.
+  // Full tenant objects must have a name.
+  if (tenant && tenant.name) {
     localStorage.setItem('study_tenant', JSON.stringify(tenant));
   } else {
     localStorage.removeItem('study_tenant');
@@ -68,10 +111,14 @@ async function request(endpoint, options = {}) {
   }
 
   if (response.status === 401) {
-    // If unauthorized, clear storage
-    setAuthToken(null);
-    setStoredUser(null, null);
-    window.dispatchEvent(new Event('auth-unauthorized'));
+    // If unauthorized, clear storage unless skipAuthEvents is requested
+    if (!options.skipAuthEvents) {
+      setAuthToken(null);
+      setStoredUser(null, null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-unauthorized'));
+      }
+    }
   }
 
   if (response.status === 204) {
@@ -81,12 +128,21 @@ async function request(endpoint, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const errorMsg = typeof data?.detail === 'string' ? data.detail : (data?.detail?.message || 'An error occurred while processing your request.');
+    const errorMsg = parseApiError(data) || 'An error occurred while processing your request.';
     const error = new Error(errorMsg);
     error.status = response.status;
-    if (data?.detail && typeof data.detail === 'object') {
-      error.code = data.detail.code;
+    error.data = data;
+    if (data?.detail !== undefined) {
       error.detail = data.detail;
+      if (typeof data.detail === 'object' && data.detail !== null) {
+        error.code = data.detail.code;
+      }
+    }
+    const code = typeof data?.detail === 'object' ? data?.detail?.code : data?.detail;
+    if (token && response.status === 403 && (code === 'PROFILE_INCOMPLETE' || code === 'EMAIL_NOT_VERIFIED')) {
+      if (!options.skipAuthEvents && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth-stage-invalid', { detail: data?.detail }));
+      }
     }
     throw error;
   }
@@ -131,13 +187,18 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, code, new_password }),
       }),
-    googleAuth: (credential, extraData = {}) =>
+    googleAuth: (credential) =>
       request('/auth/google', {
         method: 'POST',
-        body: JSON.stringify({ credential, ...extraData }),
+        body: JSON.stringify({ credential }),
       }),
-    getMe: () => request('/auth/me'),
-    getTenant: () => request('/auth/tenant'),
+    setupWorkspace: (data) =>
+      request('/auth/setup-workspace', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getMe: (options = {}) => request('/auth/me', options),
+    getTenant: (options = {}) => request('/auth/tenant', options),
     updateTenant: (data) =>
       request('/auth/tenant', {
         method: 'PUT',

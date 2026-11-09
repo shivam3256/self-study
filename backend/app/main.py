@@ -18,10 +18,42 @@ async def lifespan(app: FastAPI):
             from sqlalchemy import inspect, text
             inspector = inspect(sync_conn)
             table_names = inspector.get_table_names()
+
+            # Dialect-agnostic migrations (SQLite & PostgreSQL)
+            if "users" in table_names:
+                user_cols = [c["name"] for c in inspector.get_columns("users")]
+                if "pending_password_hash" not in user_cols:
+                    sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_password_hash VARCHAR(255)"))
+
+            if "email_otps" in table_names:
+                otp_cols = [c["name"] for c in inspector.get_columns("email_otps")]
+                if "pending_password_hash" not in otp_cols:
+                    sync_conn.execute(text("ALTER TABLE email_otps ADD COLUMN pending_password_hash VARCHAR(255)"))
+
             if "tenants" in table_names:
                 columns = [c["name"] for c in inspector.get_columns("tenants")]
                 if "additional_email" not in columns:
                     sync_conn.execute(text("ALTER TABLE tenants ADD COLUMN additional_email VARCHAR(255)"))
+
+            if "users" in table_names and sync_conn.dialect.name == "postgresql":
+                user_cols = [c["name"] for c in inspector.get_columns("users")]
+                sync_conn.execute(text("ALTER TABLE users ALTER COLUMN tenant_id DROP NOT NULL"))
+                if "email_verified" not in user_cols:
+                    sync_conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE"))
+                    sync_conn.execute(text("UPDATE users SET email_verified = TRUE WHERE email_verified IS NULL OR email_verified = FALSE"))
+                if "email_verified_at" not in user_cols:
+                    sync_conn.execute(text("ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP WITH TIME ZONE"))
+                for col_name, col_type in [
+                    ("pending_library_name", "VARCHAR(255)"),
+                    ("pending_phone", "VARCHAR(50)"),
+                    ("pending_city", "VARCHAR(100)"),
+                    ("pending_address", "TEXT"),
+                    ("pending_state", "VARCHAR(100)"),
+                    ("pending_pincode", "VARCHAR(20)"),
+                    ("pending_additional_email", "VARCHAR(255)"),
+                ]:
+                    if col_name not in user_cols:
+                        sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
 
             if "users" in table_names and sync_conn.dialect.name == "sqlite":
                 user_info = sync_conn.execute(text("PRAGMA table_info(users)")).fetchall()
@@ -83,6 +115,14 @@ async def lifespan(app: FastAPI):
                         sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_state VARCHAR(100)"))
                     if "pending_pincode" not in user_columns:
                         sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_pincode VARCHAR(20)"))
+                    if "pending_additional_email" not in user_columns:
+                        sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_additional_email VARCHAR(255)"))
+                    if "pending_password_hash" not in user_columns:
+                        sync_conn.execute(text("ALTER TABLE users ADD COLUMN pending_password_hash VARCHAR(255)"))
+            if "email_otps" in table_names:
+                otp_cols = [c["name"] for c in inspector.get_columns("email_otps")]
+                if "pending_password_hash" not in otp_cols:
+                    sync_conn.execute(text("ALTER TABLE email_otps ADD COLUMN pending_password_hash VARCHAR(255)"))
             if "tenants" in table_names:
                 tenant_cols = [c["name"] for c in inspector.get_columns("tenants")]
                 if "additional_email" not in tenant_cols:

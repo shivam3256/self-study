@@ -19,10 +19,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(
     subject: str,
-    tenant_id: str,
-    role: str,
-    email: str,
-    tenant_name: str = "",
+    tenant_id: Optional[str] = None,
+    role: str = "owner",
+    email: str = "",
+    tenant_name: Optional[str] = "",
+    profile_complete: Optional[bool] = None,
     expires_delta: Optional[timedelta] = None
 ) -> str:
     if expires_delta:
@@ -30,12 +31,15 @@ def create_access_token(
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
+    is_complete = profile_complete if profile_complete is not None else bool(tenant_id)
+
     to_encode: Dict[str, Any] = {
         "sub": subject,
         "tenant_id": tenant_id,
         "role": role,
         "email": email,
-        "tenant_name": tenant_name,
+        "tenant_name": tenant_name or "",
+        "profile_complete": is_complete,
         "exp": expire,
         "iat": datetime.now(timezone.utc)
     }

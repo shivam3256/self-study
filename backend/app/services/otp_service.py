@@ -43,7 +43,9 @@ class OTPService:
     async def create_and_send_otp(
         db: AsyncSession,
         user: User,
-        purpose: str = "signup_verify"
+        purpose: str = "signup_verify",
+        pending_password_hash: Optional[str] = None,
+        invalidate_previous: bool = True
     ) -> Tuple[bool, int, Optional[str]]:
         """
         Generates and sends an OTP for the user and purpose.
@@ -84,20 +86,24 @@ class OTPService:
         if hourly_count >= settings.OTP_HOURLY_LIMIT:
             return False, 0, "Too many verification requests. Please try again in an hour."
 
-        # 3. Invalidate previous unconsumed OTPs for this user & purpose
-        await db.execute(
-            update(EmailOTP)
-            .where(
-                and_(
-                    EmailOTP.user_id == user.id,
-                    EmailOTP.purpose == purpose,
-                    EmailOTP.consumed_at.is_(None)
+        # 3. Invalidate previous unconsumed OTPs for this user & purpose (if requested)
+        if invalidate_previous:
+            await db.execute(
+                update(EmailOTP)
+                .where(
+                    and_(
+                        EmailOTP.user_id == user.id,
+                        EmailOTP.purpose == purpose,
+                        EmailOTP.consumed_at.is_(None)
+                    )
                 )
+                .values(consumed_at=now)
             )
-            .values(consumed_at=now)
-        )
 
         # 4. Generate fresh OTP
+        if pending_password_hash is None and not user.email_verified:
+            pending_password_hash = getattr(user, "pending_password_hash", None)
+
         code = generate_otp_code()
         code_hash = hash_otp_code(code)
         expires_at = now + timedelta(minutes=settings.OTP_EXPIRY_MINUTES)
@@ -108,7 +114,8 @@ class OTPService:
             code_hash=code_hash,
             expires_at=expires_at,
             attempts=0,
-            consumed_at=None
+            consumed_at=None,
+            pending_password_hash=pending_password_hash
         )
         db.add(otp_record)
         await db.flush()
@@ -135,55 +142,84 @@ class OTPService:
         now = get_utc_now()
         clean_code = code.strip()
 
-        # Find the latest unconsumed OTP for this user and purpose
+        # Find all unconsumed OTPs for this user and purpose
         query = select(EmailOTP).where(
             and_(
                 EmailOTP.user_id == user.id,
                 EmailOTP.purpose == purpose,
                 EmailOTP.consumed_at.is_(None)
             )
-        ).order_by(EmailOTP.created_at.desc()).limit(1)
+        ).order_by(EmailOTP.created_at.desc())
 
         result = await db.execute(query)
-        otp = result.scalar_one_or_none()
+        otps = result.scalars().all()
 
-        if not otp:
+        if not otps:
             return False, "Invalid or expired verification code. Please request a new code.", None
 
-        # Check if expired
-        # Make sure datetime comparison handles timezone awareness correctly
-        exp = otp.expires_at
-        if exp.tzinfo is None:
-            exp = exp.replace(tzinfo=timezone.utc)
-        if now.tzinfo is None:
-            now = now.replace(tzinfo=timezone.utc)
+        # Normalize now to UTC timezone
+        curr_now = ensure_utc(now)
 
-        if now > exp:
-            otp.consumed_at = now
+        # 1. Filter out and consume expired OTPs
+        live_otps = []
+        matched_expired = False
+        for otp in otps:
+            exp = ensure_utc(otp.expires_at)
+            is_match = verify_otp_code(clean_code, otp.code_hash)
+            if exp and curr_now > exp:
+                otp.consumed_at = now
+                if is_match:
+                    matched_expired = True
+            else:
+                live_otps.append(otp)
+
+        if not live_otps:
             await db.flush()
-            return False, "Verification code has expired. Please request a new code.", None
+            if matched_expired:
+                return False, "Verification code has expired. Please request a new code.", None
+            return False, "Invalid or expired verification code. Please request a new code.", None
 
-        # Check attempts limit
-        if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
-            otp.consumed_at = now
+        # 2. Check combined failed attempts across ALL live OTPs for this user & purpose
+        combined_attempts = sum(otp.attempts for otp in live_otps)
+        if combined_attempts >= settings.OTP_MAX_ATTEMPTS:
+            for otp in live_otps:
+                otp.consumed_at = now
             await db.flush()
             return False, "Too many failed attempts. This code has been invalidated. Please request a new code.", None
 
-        # Constant-time comparison
-        is_match = verify_otp_code(clean_code, otp.code_hash)
-        if not is_match:
-            otp.attempts += 1
-            if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
-                otp.consumed_at = now
-                await db.flush()
-                return False, "Too many failed attempts. This code has been invalidated. Please request a new code.", None
-            await db.flush()
-            return False, "Incorrect verification code. Please try again.", None
+        # 3. Check for matching code among live OTPs
+        matched_otp = None
+        for otp in live_otps:
+            if verify_otp_code(clean_code, otp.code_hash):
+                matched_otp = otp
+                break
 
-        # OTP is valid!
-        otp.consumed_at = now
+        if matched_otp:
+            # Code matches! Mark matching OTP and all other live OTPs as consumed
+            matched_otp.consumed_at = now
+            for otp in live_otps:
+                if otp.consumed_at is None:
+                    otp.consumed_at = now
+            await db.flush()
+            return True, None, matched_otp
+
+        if matched_expired:
+            await db.flush()
+            return False, "Verification code has expired. Please request a new code.", None
+
+        # 4. No match found: record failed attempt on the latest live OTP and evaluate combined cap
+        latest_live = live_otps[0]
+        latest_live.attempts += 1
+        combined_attempts += 1
+
+        if combined_attempts >= settings.OTP_MAX_ATTEMPTS:
+            for otp in live_otps:
+                otp.consumed_at = now
+            await db.flush()
+            return False, "Too many failed attempts. This code has been invalidated. Please request a new code.", None
+
         await db.flush()
-        return True, None, otp
+        return False, "Incorrect verification code. Please try again.", None
 
 
 otp_service = OTPService()
