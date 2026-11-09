@@ -57,7 +57,7 @@ async def test_download_excel_template():
         ws = wb["Students"]
         headers_in_sheet = [cell.value for cell in ws[1]]
         assert headers_in_sheet == [
-            "Name", "Mob No.", "Gender", "ID Proof Type", "ID Proof", "Email", "Notes"
+            "Name", "Mob No.", "Gender", "Date of Birth", "ID Proof Type", "ID Proof", "Email", "Notes"
         ]
 
         # Verify Row 2 is the reference example (Rahul Sharma)

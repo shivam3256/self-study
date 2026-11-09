@@ -9,6 +9,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState('other');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [idProofType, setIdProofType] = useState('Aadhaar');
   const [idProofNumber, setIdProofNumber] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,6 +32,7 @@ export default function NewStudentModal({ onClose, onSuccess }) {
         phone,
         email: email || undefined,
         gender,
+        date_of_birth: dateOfBirth || undefined,
         id_proof_type: idProofType,
         id_proof_number: idProofNumber || undefined,
         notes: notes || undefined,
@@ -103,17 +105,28 @@ export default function NewStudentModal({ onClose, onSuccess }) {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Gender *</label>
-            <select
-              className="form-select"
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label">Gender *</label>
+              <select
+                className="form-select"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date of Birth</label>
+              <input
+                type="date"
+                className="form-input"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+              />
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 12 }}>

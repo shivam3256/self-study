@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Edit3, UserCheck, AlertCircle } from 'lucide-react';
+import { X, Edit3, AlertCircle } from 'lucide-react';
 import { api } from '../api';
 import useEscapeDismiss from '../hooks/useEscapeDismiss';
 
@@ -9,6 +9,7 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
   const [phone, setPhone] = useState(student?.phone || '');
   const [email, setEmail] = useState(student?.email || '');
   const [gender, setGender] = useState(student?.gender || 'other');
+  const [dateOfBirth, setDateOfBirth] = useState(student?.date_of_birth || '');
   const [idProofType, setIdProofType] = useState(student?.id_proof_type || 'Aadhaar');
   const [idProofNumber, setIdProofNumber] = useState(student?.id_proof_number || '');
   const [address, setAddress] = useState(student?.address || '');
@@ -34,6 +35,7 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
         phone: phone.trim(),
         email: email.trim() || undefined,
         gender,
+        date_of_birth: dateOfBirth || null,
         id_proof_type: idProofType,
         id_proof_number: idProofNumber.trim() || undefined,
         address: address.trim() || undefined,
@@ -140,17 +142,28 @@ export default function EditStudentModal({ student, onClose, onSuccess }) {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Gender</label>
-            <select
-              className="form-select"
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label">Gender</label>
+              <select
+                className="form-select"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date of Birth</label>
+              <input
+                type="date"
+                className="form-input"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+              />
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 12 }}>

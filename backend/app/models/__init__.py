@@ -9,6 +9,7 @@ from app.models.allocation import Allocation, AllocationShift, SeatAllocation
 from app.models.payment import Payment
 from app.models.attendance import Attendance
 from app.models.reminder import ReminderLog
+from app.models.notification import Notification
 from app.models.expense import Expense
 from app.models.locker import Locker, LockerAssignment
 
@@ -30,6 +31,7 @@ __all__ = [
     "Payment",
     "Attendance",
     "ReminderLog",
+    "Notification",
     "Expense",
     "Locker",
     "LockerAssignment",

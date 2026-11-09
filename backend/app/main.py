@@ -128,6 +128,8 @@ async def lifespan(app: FastAPI):
 
             add_column_if_not_exists("plans", "zone_id", "VARCHAR(100)")
             add_column_if_not_exists("students", "gender", "VARCHAR(20)")
+            add_column_if_not_exists("students", "date_of_birth", "DATE")
+            add_column_if_not_exists("reminder_logs", "error_reason", "TEXT")
 
             if "desks" in table_names:
                 sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_desk_number ON desks (tenant_id, desk_number)"))

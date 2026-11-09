@@ -22,6 +22,7 @@ EXPECTED_HEADERS = [
     "Name",
     "Mob No.",
     "Gender",
+    "Date of Birth",
     "ID Proof Type",
     "ID Proof",
     "Email",
@@ -79,6 +80,7 @@ class ExcelImportService:
             "Rahul Sharma",
             "+91 9876543210",
             "Male",
+            "2002-05-15",
             "Aadhaar",
             "1234-5678-9012",
             "rahul.sharma@example.com",
@@ -99,10 +101,11 @@ class ExcelImportService:
             1: 24, # Name
             2: 18, # Mob No.
             3: 14, # Gender
-            4: 18, # ID Proof Type
-            5: 20, # ID Proof
-            6: 28, # Email
-            7: 30, # Notes
+            4: 16, # Date of Birth
+            5: 18, # ID Proof Type
+            6: 20, # ID Proof
+            7: 28, # Email
+            8: 30, # Notes
         }
         for col_idx, width in col_widths.items():
             ws_data.column_dimensions[get_column_letter(col_idx)].width = width
@@ -263,13 +266,14 @@ class ExcelImportService:
             raw_name = get_val("name", "student name", "full name")
             raw_phone = get_val("mob no.", "mob no", "mobile no", "mobile no.", "mobile number", "phone", "phone number", "mob", "contact")
             raw_gender = get_val("gender", "sex")
+            raw_dob = get_val("date of birth", "dob", "birth date", "birthday", "birth_date")
             raw_id_type = get_val("id proof type", "id_proof_type", "id type", "proof type")
             raw_id_num = get_val("id proof", "id_proof", "id proof number", "id proof no", "id_proof_number", "id number")
             raw_email = get_val("email", "email address", "email id")
             raw_notes = get_val("notes", "remarks", "note", "address")
 
             # Check for completely empty row
-            if all(v is None or str(v).strip() == "" for v in [raw_name, raw_phone, raw_gender, raw_email, raw_id_num, raw_notes]):
+            if all(v is None or str(v).strip() == "" for v in [raw_name, raw_phone, raw_gender, raw_dob, raw_email, raw_id_num, raw_notes]):
                 consecutive_empty += 1
                 if consecutive_empty > 50:
                     break
@@ -333,12 +337,32 @@ class ExcelImportService:
                 if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
                     row_errors.append(f"Invalid email format: '{email}'.")
 
+            # Validate / parse Date of Birth (Optional)
+            date_of_birth = None
+            if raw_dob is not None and str(raw_dob).strip():
+                if isinstance(raw_dob, (datetime, date)):
+                    date_of_birth = raw_dob.strftime("%Y-%m-%d") if isinstance(raw_dob, date) else raw_dob.date().strftime("%Y-%m-%d")
+                else:
+                    dob_str = str(raw_dob).strip()
+                    parsed = None
+                    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"):
+                        try:
+                            parsed = datetime.strptime(dob_str, fmt).date()
+                            break
+                        except ValueError:
+                            pass
+                    if parsed:
+                        date_of_birth = parsed.strftime("%Y-%m-%d")
+                    else:
+                        row_warnings.append(f"Invalid Date of Birth format: '{dob_str}'. Expected YYYY-MM-DD.")
+
             is_valid = len(row_errors) == 0
             item = ImportRowItem(
                 row_number=row_num,
                 name=name or f"Row {row_num}",
                 phone=phone,
                 gender=gender,
+                date_of_birth=date_of_birth,
                 id_proof_type=id_proof_type,
                 id_proof=id_proof,
                 email=email,
@@ -394,12 +418,20 @@ class ExcelImportService:
                 qr_token = secrets.token_urlsafe(16)
 
                 # 2. Create Student with details matching registration
+                parsed_dob = None
+                if row.date_of_birth:
+                    try:
+                        parsed_dob = datetime.strptime(row.date_of_birth, "%Y-%m-%d").date()
+                    except Exception:
+                        parsed_dob = None
+
                 student = Student(
                     tenant_id=tenant_id,
                     admission_number=adm_no,
                     full_name=row.name.strip(),
                     phone=row.phone.strip() if row.phone else "N/A",
                     gender=row.gender or "other",
+                    date_of_birth=parsed_dob,
                     email=row.email.strip() if row.email else None,
                     id_proof_type=row.id_proof_type or "Aadhaar",
                     id_proof_number=row.id_proof if row.id_proof else None,

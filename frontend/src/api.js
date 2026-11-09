@@ -103,6 +103,9 @@ async function request(endpoint, options = {}) {
     });
   } catch (err) {
     if (err.name === 'AbortError') {
+      if (options.signal?.aborted) {
+        throw err;
+      }
       throw new Error('Server request timed out. Please check your connection and try again.');
     }
     throw err;
@@ -321,6 +324,10 @@ export const api = {
   },
 
   students: {
+    search: (query, { signal, limit = 8 } = {}) => {
+      const sp = new URLSearchParams({ q: query, limit: String(limit) });
+      return request(`/students/search?${sp.toString()}`, { signal });
+    },
     list: (params = {}) => {
       const sp = new URLSearchParams();
       if (params.search) sp.append('search', params.search);
@@ -526,6 +533,30 @@ export const api = {
     getLogs: () => request('/reminders/logs'),
     retry: (logId) =>
       request(`/reminders/retry/${logId}`, {
+        method: 'POST',
+      }),
+  },
+
+  notifications: {
+    list: (limit = 20) => request(`/notifications?limit=${limit}`),
+    markRead: (id) =>
+      request(`/notifications/${id}/read`, {
+        method: 'POST',
+      }),
+    markAllRead: () =>
+      request('/notifications/read-all', {
+        method: 'POST',
+      }),
+    dismiss: (id) =>
+      request(`/notifications/${id}/dismiss`, {
+        method: 'POST',
+      }),
+    retryWhatsApp: (id) =>
+      request(`/notifications/${id}/retry-whatsapp`, {
+        method: 'POST',
+      }),
+    sendBirthdayWishes: (id) =>
+      request(`/notifications/${id}/send-birthday-wishes`, {
         method: 'POST',
       }),
   },

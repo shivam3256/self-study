@@ -12,5 +12,6 @@ class ReminderLog(TenantScopedModel):
     message = Column(Text, nullable=False)
     sent_at = Column(DateTime(timezone=True), default=get_utc_now, nullable=False)
     provider_response = Column(Text, nullable=True)
+    error_reason = Column(Text, nullable=True)
 
     student = relationship("Student", back_populates="reminders")

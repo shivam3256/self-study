@@ -14,6 +14,7 @@ class StudentCreate(BaseModel):
     address: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
+    date_of_birth: Optional[date] = None
     join_date: Optional[date] = None
     expiry_date: Optional[date] = None
     notes: Optional[str] = None
@@ -36,6 +37,7 @@ class StudentUpdate(BaseModel):
     address: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
+    date_of_birth: Optional[date] = None
     status: Optional[str] = None
     expiry_date: Optional[date] = None
     notes: Optional[str] = None
@@ -56,6 +58,7 @@ class StudentResponse(BaseModel):
     address: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
+    date_of_birth: Optional[date] = None
     status: str
     join_date: date
     expiry_date: Optional[date] = None
@@ -71,5 +74,19 @@ class StudentResponse(BaseModel):
     current_shift_id: Optional[str] = None
     current_shift_name: Optional[str] = None
     current_desk_category: Optional[str] = None
+
+class StudentSearchResult(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    admission_number: str
+    full_name: str
+    phone: str
+    status: str
+    expiry_date: Optional[date] = None
+    assigned_desk: Optional[str] = None
+    assigned_shift: Optional[str] = None
+    currently_inside: bool = False
+    days_overdue: Optional[int] = None
 
 

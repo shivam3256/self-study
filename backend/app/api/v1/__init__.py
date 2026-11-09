@@ -10,6 +10,7 @@ from app.api.v1.payments import router as payments_router
 from app.api.v1.attendance import router as attendance_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.reminders import router as reminders_router
+from app.api.v1.notifications import router as notifications_router
 from app.api.v1.expenses import router as expenses_router
 from app.api.v1.lockers import router as lockers_router
 from app.schemas.desk import DeskResponse
@@ -31,5 +32,6 @@ api_router.include_router(payments_router)
 api_router.include_router(attendance_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(reminders_router)
+api_router.include_router(notifications_router)
 api_router.include_router(expenses_router)
 

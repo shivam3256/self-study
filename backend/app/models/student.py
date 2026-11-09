@@ -19,6 +19,7 @@ class Student(TenantScopedModel):
     
     emergency_contact_name = Column(String(255), nullable=True)
     emergency_contact_phone = Column(String(50), nullable=True)
+    date_of_birth = Column(Date, nullable=True, index=True)
     
     status = Column(String(50), default="active", nullable=False, index=True)  # active, paused, expired, suspended
     join_date = Column(Date, default=date.today, nullable=False)

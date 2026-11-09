@@ -1,20 +1,23 @@
 from datetime import date, timedelta
 import csv
 import io
+import re
 import secrets
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_, func
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.tenant import User
 from app.models.student import Student
+from app.models.attendance import Attendance
 from app.models.allocation import Allocation, AllocationShift, SeatAllocation
-from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse
+from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse, StudentSearchResult
+from app.services.notification_service import get_kolkata_today
 from app.schemas.import_student import (
     ImportValidationSummary,
     ImportConfirmRequest,
@@ -112,6 +115,7 @@ async def create_student(
         address=data.address,
         emergency_contact_name=data.emergency_contact_name,
         emergency_contact_phone=data.emergency_contact_phone,
+        date_of_birth=data.date_of_birth,
         join_date=data.join_date or date.today(),
         expiry_date=data.expiry_date,
         notes=data.notes,
@@ -146,6 +150,143 @@ async def create_student(
             resp.current_shift_id = active_alloc.allocation_shifts[0].shift_id
         resp.current_desk_category = active_alloc.desk.category if active_alloc.desk else None
     return resp
+
+
+# ─────────────────────────────────────────────
+# Search students (prefix-ranked, tenant-scoped)
+# ─────────────────────────────────────────────
+@router.get("/search", response_model=List[StudentSearchResult])
+async def search_students(
+    q: str = Query("", description="Search term for student name, phone or admission number"),
+    limit: int = Query(8, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Find students fast by name, phone (ignoring spaces, dashes, +91), or admission number.
+    Strictly scoped to current authenticated library/tenant.
+    Ranks prefix matches above substring matches.
+    Returns computed currently_inside and days_overdue fields.
+    """
+    if not current_user.tenant_id:
+        return []
+
+    raw_q = (q or "").strip()
+    if len(raw_q) < 2:
+        return []
+
+    clean_q = raw_q.lower()
+    clean_adm = clean_q.replace(" ", "").replace("-", "")
+    clean_db_phone = func.replace(func.replace(func.replace(Student.phone, " ", ""), "-", ""), "+91", "")
+    clean_db_adm = func.replace(func.replace(Student.admission_number, " ", ""), "-", "")
+
+    conditions = [
+        Student.full_name.ilike(f"%{clean_q}%"),
+        Student.admission_number.ilike(f"%{clean_q}%"),
+        clean_db_adm.ilike(f"%{clean_adm}%"),
+    ]
+
+    # Phone matching: match when search term is phone-like (digits, +, spaces, dashes)
+    phone_clean_input = re.sub(r"[\s\-\+\(\)]", "", raw_q)
+    is_phone_query = phone_clean_input.isdigit() and len(phone_clean_input) >= 2
+    phone_digits = ""
+    if is_phone_query:
+        phone_digits = phone_clean_input
+        if phone_digits.startswith("91") and len(phone_digits) > 10:
+            phone_digits = phone_digits[2:]
+        conditions.append(Student.phone.ilike(f"%{phone_digits}%"))
+        conditions.append(clean_db_phone.ilike(f"%{phone_digits}%"))
+
+    query = (
+        select(Student)
+        .options(
+            selectinload(Student.allocations).selectinload(Allocation.desk),
+            selectinload(Student.allocations).selectinload(Allocation.allocation_shifts).selectinload(AllocationShift.shift),
+        )
+        .where(
+            Student.tenant_id == current_user.tenant_id,
+            or_(*conditions)
+        )
+    )
+    res = await db.execute(query)
+    all_matched = res.scalars().all()
+
+    # Ranking: Prefix matches above substring matches
+    def rank_student(s: Student):
+        name_l = (s.full_name or "").lower()
+        adm_l = (s.admission_number or "").lower()
+        st_phone_digits = re.sub(r"[^\d]", "", s.phone or "")
+        if st_phone_digits.startswith("91") and len(st_phone_digits) > 10:
+            st_phone_digits = st_phone_digits[2:]
+
+        # Prefix checks
+        is_exact = (clean_q == name_l or clean_q == adm_l or (phone_digits and phone_digits == st_phone_digits))
+        is_adm_pfx = adm_l.startswith(clean_q) or (clean_adm and adm_l.replace("-", "").startswith(clean_adm))
+        is_name_pfx = name_l.startswith(clean_q) or any(w.startswith(clean_q) for w in name_l.split())
+        is_phone_pfx = bool(phone_digits and st_phone_digits.startswith(phone_digits))
+
+        if is_exact:
+            tier = 0
+        elif is_adm_pfx:
+            tier = 1
+        elif is_name_pfx:
+            tier = 2
+        elif is_phone_pfx:
+            tier = 3
+        else:
+            tier = 4  # Substring match
+
+        return (tier, name_l)
+
+    sorted_students = sorted(all_matched, key=rank_student)[:limit]
+
+    if not sorted_students:
+        return []
+
+    today = get_kolkata_today()
+    student_ids = [s.id for s in sorted_students]
+
+    # Check which students are currently inside today
+    att_q = select(Attendance.student_id).where(
+        Attendance.tenant_id == current_user.tenant_id,
+        Attendance.student_id.in_(student_ids),
+        Attendance.date == today,
+        Attendance.check_out_time.is_(None)
+    )
+    att_res = await db.execute(att_q)
+    inside_student_ids = set(att_res.scalars().all())
+
+    output: List[StudentSearchResult] = []
+    for s in sorted_students:
+        active_alloc = next(
+            (a for a in s.allocations if a.status in ("active", "overdue")), None
+        )
+        desk_label = active_alloc.desk.desk_number if (active_alloc and active_alloc.desk) else None
+        shift_label = None
+        if active_alloc and active_alloc.allocation_shifts:
+            sh_names = [ash.shift.name for ash in active_alloc.allocation_shifts if ash.shift]
+            shift_label = " / ".join(sh_names) if sh_names else None
+
+        days_od = None
+        if s.expiry_date and s.expiry_date < today:
+            days_od = (today - s.expiry_date).days
+
+        output.append(
+            StudentSearchResult(
+                id=s.id,
+                admission_number=s.admission_number,
+                full_name=s.full_name,
+                phone=s.phone,
+                status=s.status,
+                expiry_date=s.expiry_date,
+                assigned_desk=desk_label,
+                assigned_shift=shift_label,
+                currently_inside=(s.id in inside_student_ids),
+                days_overdue=days_od
+            )
+        )
+
+    return output
 
 
 # ─────────────────────────────────────────────

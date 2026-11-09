@@ -9,6 +9,7 @@ class ImportRowItem(BaseModel):
     id_proof_type: Optional[str] = "Aadhaar"
     id_proof: Optional[str] = None
     email: Optional[str] = None
+    date_of_birth: Optional[str] = None
     notes: Optional[str] = None
     
     # Deprecated fields retained as optional for API compatibility

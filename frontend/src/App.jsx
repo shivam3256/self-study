@@ -23,6 +23,8 @@ import Details from './pages/Details';
 import NewStudentModal from './components/NewStudentModal';
 import NewPaymentModal from './components/NewPaymentModal';
 import ReceiptModal from './components/ReceiptModal';
+import StudentDetailsModal from './components/StudentDetailsModal';
+import EditStudentModal from './components/EditStudentModal';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -144,6 +146,8 @@ export default function App() {
   const [preselectedStudentIdForPayment, setPreselectedStudentIdForPayment] = useState(null);
   const [initialPaymentTypeForModal, setInitialPaymentTypeForModal] = useState('seat');
   const [currentReceipt, setCurrentReceipt] = useState(null);
+  const [selectedStudentForDetails, setSelectedStudentForDetails] = useState(null);
+  const [showEditStudentModal, setShowEditStudentModal] = useState(false);
 
   // Listen for unauthorized events
   useEffect(() => {
@@ -347,6 +351,20 @@ export default function App() {
     setShowNewPaymentModal(true);
   };
 
+  const handleNavigateStudent = async (studentId) => {
+    let target = students.find((s) => s.id === studentId);
+    if (!target) {
+      try {
+        target = await api.students.get(studentId);
+      } catch (err) {
+        console.error('Error fetching student details:', err);
+      }
+    }
+    if (target) {
+      setSelectedStudentForDetails(target);
+    }
+  };
+
   if (initializingAuth) {
     return (
       <div className="auth-container">
@@ -445,7 +463,10 @@ export default function App() {
           subtitle={pageInfo.subtitle}
           tenant={tenant}
           onOpenNewStudent={() => setShowNewStudentModal(true)}
+          onOpenPayment={(id) => handleOpenPayment(id)}
           onOpenNewPayment={() => handleOpenPayment(null)}
+          onNavigateStudent={handleNavigateStudent}
+          onRefreshData={loadSharedData}
         />
 
         <main className="content-body">
@@ -571,6 +592,34 @@ export default function App() {
         <ReceiptModal
           receipt={currentReceipt}
           onClose={() => setCurrentReceipt(null)}
+        />
+      )}
+
+      {selectedStudentForDetails && !showEditStudentModal && (
+        <StudentDetailsModal
+          student={selectedStudentForDetails}
+          onClose={() => setSelectedStudentForDetails(null)}
+          onEdit={() => setShowEditStudentModal(true)}
+          onRecordFee={() => {
+            handleOpenPayment(selectedStudentForDetails.id);
+            setSelectedStudentForDetails(null);
+          }}
+          onAssignSeat={() => {
+            setActiveTab('seatmap');
+            setSelectedStudentForDetails(null);
+          }}
+        />
+      )}
+
+      {showEditStudentModal && selectedStudentForDetails && (
+        <EditStudentModal
+          student={selectedStudentForDetails}
+          onClose={() => setShowEditStudentModal(false)}
+          onSuccess={() => {
+            loadSharedData();
+            setShowEditStudentModal(false);
+            setSelectedStudentForDetails(null);
+          }}
         />
       )}
     </div>

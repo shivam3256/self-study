@@ -134,15 +134,55 @@ async def _send_whatsapp_async(log_id: str, phone: str, message: str):
 
     # Update the ReminderLog in database
     from app.models.reminder import ReminderLog
+    from app.models.notification import Notification
+    from app.core.database import get_utc_now
+    from sqlalchemy.orm import selectinload
+
     engine = create_async_engine(settings.DATABASE_URL)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with session_factory() as db:
-        await db.execute(
-            update(ReminderLog)
+        log_res = await db.execute(
+            select(ReminderLog)
+            .options(selectinload(ReminderLog.student))
             .where(ReminderLog.id == log_id)
-            .values(status=status, provider_response=response_text)
         )
-        await db.commit()
+        log = log_res.scalar_one_or_none()
+        if log:
+            log.status = status
+            log.provider_response = response_text
+            log.error_reason = response_text if status == "failed" else None
+
+            dedupe_key = f"whatsapp_failed:{log.id}"
+            notif_res = await db.execute(
+                select(Notification).where(
+                    Notification.tenant_id == log.tenant_id,
+                    Notification.dedupe_key == dedupe_key
+                )
+            )
+            existing_notif = notif_res.scalar_one_or_none()
+
+            if status == "failed":
+                s_name = log.student.full_name if log.student else "Student"
+                if not existing_notif:
+                    new_notif = Notification(
+                        tenant_id=log.tenant_id,
+                        type="whatsapp_failed",
+                        student_id=log.student_id,
+                        title=f"WhatsApp reminder failed for {s_name}",
+                        body=response_text,
+                        dedupe_key=dedupe_key
+                    )
+                    db.add(new_notif)
+                else:
+                    existing_notif.body = response_text
+                    existing_notif.read_at = None
+                    existing_notif.dismissed_at = None
+            elif status == "sent" and existing_notif:
+                now_utc = get_utc_now()
+                existing_notif.read_at = now_utc
+                existing_notif.dismissed_at = now_utc
+
+            await db.commit()
     await engine.dispose()
 
     if status != "sent":
@@ -158,8 +198,10 @@ async def _process_all_tenants():
         res = await db.execute(query)
         tenants = res.scalars().all()
         
+        from app.services.notification_service import NotificationService
         for tenant in tenants:
             await ReminderService.process_tenant_reminders(db, tenant.id)
+            await NotificationService.generate_notifications_for_tenant(db, tenant.id)
     
     await engine.dispose()
 

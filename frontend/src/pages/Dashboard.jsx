@@ -67,17 +67,7 @@ function handleWhatsAppRemind(student) {
 function TrendBadge({ trend, overrideText }) {
   if (overrideText) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          fontSize: '0.75rem',
-          fontWeight: 500,
-          color: 'var(--color-text-secondary)',
-          marginTop: 6,
-          minHeight: 18,
-        }}
-      >
+      <div className="kpi-trend" style={{ color: 'var(--color-text-secondary)' }}>
         <span>{overrideText}</span>
       </div>
     );
@@ -85,17 +75,7 @@ function TrendBadge({ trend, overrideText }) {
 
   if (!trend || trend.diff_pct === undefined || trend.diff_pct === null) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          fontSize: '0.75rem',
-          fontWeight: 500,
-          color: 'var(--color-text-secondary)',
-          marginTop: 6,
-          minHeight: 18,
-        }}
-      >
+      <div className="kpi-trend" style={{ color: 'var(--color-text-secondary)' }}>
         <span>No data yet</span>
       </div>
     );
@@ -108,17 +88,7 @@ function TrendBadge({ trend, overrideText }) {
   const prefix = isUp ? '▲ ' : isDown ? '▼ ' : '';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '0.75rem',
-        fontWeight: 500,
-        color,
-        marginTop: 6,
-        minHeight: 18,
-      }}
-    >
+    <div className="kpi-trend" style={{ color }}>
       <span>
         {isNeutral ? `No change ${trend.label}` : `${prefix}${Math.abs(trend.diff_pct)}% ${trend.label}`}
       </span>

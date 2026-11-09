@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Phone, MessageSquare, CreditCard, Edit3, Armchair, Calendar, ShieldCheck, Mail, MapPin, User, Clock, CheckCircle2 } from 'lucide-react';
+import { X, Phone, MessageSquare, CreditCard, Edit3, Armchair, Calendar } from 'lucide-react';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
 import useEscapeDismiss from '../hooks/useEscapeDismiss';
 import { useToast } from '../context/ToastContext';
@@ -212,6 +212,13 @@ export default function StudentDetailsModal({
               <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.78rem' }}>Gender</span>
               <div style={{ fontWeight: 500, color: 'var(--color-heading)', textTransform: 'capitalize', marginTop: 2 }}>
                 {student.gender || 'Other'}
+              </div>
+            </div>
+
+            <div>
+              <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.78rem' }}>Date of Birth</span>
+              <div style={{ fontWeight: 500, color: 'var(--color-heading)', marginTop: 2 }}>
+                {student.date_of_birth ? formatDateDDMMYYYY(student.date_of_birth) : 'Not recorded'}
               </div>
             </div>
 
