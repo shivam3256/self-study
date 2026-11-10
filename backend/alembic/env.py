@@ -25,7 +25,7 @@ db_url = settings.DATABASE_URL
 if "sqlite" in db_url and "+aiosqlite" in db_url:
     db_url = db_url.replace("+aiosqlite", "")
 elif "postgresql+asyncpg" in db_url:
-    db_url = db_url.replace("+asyncpg", "")
+    db_url = db_url.replace("+asyncpg", "+psycopg2")
 config.set_main_option("sqlalchemy.url", db_url)
 
 # other values from the config, defined by the needs of env.py,
