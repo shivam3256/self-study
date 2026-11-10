@@ -370,7 +370,12 @@ export default function App() {
       <div className="auth-container">
         <div style={{ textAlign: 'center' }}>
           <div className="auth-brand-icon" style={{ margin: '0 auto 16px' }}>
-            <span style={{ fontSize: '1.5rem', fontWeight: 700 }}>L</span>
+            <img
+              src="/brand/libma-icon.svg"
+              alt="LibMa"
+              className="brand-badge-icon"
+              style={{ width: 28, height: 28 }}
+            />
           </div>
           <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-heading)', marginBottom: 8 }}>
             LibMa
@@ -443,8 +448,6 @@ export default function App() {
     );
   }
 
-  const pageInfo = getPageInfo(activeTab, tenant?.name);
-
   return (
     <div className="app-container">
       {/* Sidebar */}
@@ -459,8 +462,6 @@ export default function App() {
       {/* Main Panel */}
       <div className="main-wrapper">
         <TopBar
-          title={pageInfo.title}
-          subtitle={pageInfo.subtitle}
           tenant={tenant}
           onOpenNewStudent={() => setShowNewStudentModal(true)}
           onOpenPayment={(id) => handleOpenPayment(id)}

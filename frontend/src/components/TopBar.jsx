@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, UserPlus, Search, Bell } from 'lucide-react';
+import { MapPin, UserPlus, Search, Bell, Building2 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationsPopover from './NotificationsPopover';
 import GlobalSearchModal from './GlobalSearchModal';
@@ -13,8 +13,6 @@ function getShortcutLabel() {
 }
 
 export default function TopBar({
-  title,
-  subtitle,
   tenant,
   pageTool = null,
   primaryAction = null,
@@ -67,20 +65,20 @@ export default function TopBar({
     <>
       <header className="topbar">
         <div className="topbar-inner">
-          {/* Left: title, subtitle, status chips */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h2 className="topbar-title" style={{ margin: 0 }}>
-                <span>{title}</span>
-              </h2>
-              {tenant?.city && (
-                <div className="location-pill">
-                  <MapPin size={13} color="var(--color-brand)" />
-                  <span>{tenant.city}</span>
-                </div>
-              )}
+          {/* Left: User library name & location pill */}
+          <div className="topbar-left">
+            <div className="topbar-library-badge" aria-hidden="true">
+              <Building2 size={16} />
             </div>
-            {subtitle && <div className="topbar-subtitle">{subtitle}</div>}
+            <h2 className="topbar-library-name">
+              {tenant?.name || 'Your Library'}
+            </h2>
+            {tenant?.city && (
+              <div className="location-pill">
+                <MapPin size={13} color="var(--color-brand)" />
+                <span>{tenant.city}</span>
+              </div>
+            )}
           </div>
 
           {/* Right: [page-specific tool] [one orange primary button] | divider | [search] [bell] */}

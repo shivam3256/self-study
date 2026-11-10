@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Building2,
   KeyRound,
   Mail,
   Eye,
@@ -34,7 +33,12 @@ export function AuthLeftPanel() {
         {/* Logo */}
         <div className="auth-logo-row">
           <div className="auth-brand-icon large">
-            <Building2 size={28} />
+            <img
+              src="/brand/libma-icon.svg"
+              alt="LibMa"
+              className="brand-badge-icon"
+              style={{ width: 30, height: 30 }}
+            />
           </div>
           <div>
             <div className="auth-logo-title">LibMa</div>

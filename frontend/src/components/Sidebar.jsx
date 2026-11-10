@@ -71,20 +71,20 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="brand-badge">
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 21V9m0 0l-8 4v8h16v-8l-8-4zM3 13l9-7 9 7" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M9 21v-6a3 3 0 016 0v6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <img
+              src="/brand/libma-icon.svg"
+              alt="LibMa"
+              className="brand-badge-icon"
+            />
           </div>
-          <div className="brand-info" title={tenant?.name || 'StudyHub Pro'}>
+          <div className="brand-info">
             <div
-              className="brand-name font-tenant"
-              title={tenant?.name || 'StudyHub Pro'}
-              aria-label={tenant?.name || 'StudyHub Pro'}
+              className="brand-name"
+              title="LibMa"
+              aria-label="LibMa"
             >
-              {tenant?.name || 'StudyHub Pro'}
+              LibMa
             </div>
-            <div className="brand-sub">Multi-Tenant SaaS</div>
           </div>
         </div>
 
