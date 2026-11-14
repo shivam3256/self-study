@@ -19,7 +19,7 @@ from app.core.rate_limit import check_ip_rate_limit
 from app.models.tenant import Tenant, User
 from app.models.otp import EmailOTP
 from app.models.shift import Shift
-from app.models.plan import Plan
+from app.models.plan import Plan, PlanShift
 from app.models.student import Student
 from app.models.desk import Desk
 from app.models.allocation import SeatAllocation
@@ -33,6 +33,9 @@ from app.schemas.auth import (
     SignupRequest,
     SignupResponse,
     SetupWorkspaceRequest,
+    ShiftSetupItem,
+    PlanSetupItem,
+    FloorSetupItem,
     VerifyEmailRequest,
     ResendOTPRequest,
     ResendOTPResponse,
@@ -66,6 +69,18 @@ async def generate_unique_slug(db: AsyncSession, base_name: str) -> str:
         slug = f"{base_slug}-{counter}"
         counter += 1
 
+def _extract_floor_prefix(floor_name: str, index: int) -> str:
+    """Derives a short uppercase letter/prefix for seat naming (e.g. 'Floor A' -> 'A', 'Ground Floor' -> 'G')."""
+    cleaned = floor_name.strip()
+    match = re.search(r'\b([A-Za-z])\b', cleaned)
+    if match:
+        return match.group(1).upper()
+    first_char_match = re.search(r'[A-Za-z]', cleaned)
+    if first_char_match:
+        return first_char_match.group(0).upper()
+    return chr(65 + (index % 26))
+
+
 def seed_tenant_defaults(db: AsyncSession, tenant_id: str):
     default_shifts = [
         Shift(tenant_id=tenant_id, name="Morning Shift", code="MORN", start_time="06:00", end_time="14:00", capacity=40),
@@ -93,11 +108,15 @@ async def create_tenant_workspace(
     state: Optional[str] = None,
     pincode: Optional[str] = None,
     additional_email: Optional[str] = None,
+    shifts: Optional[List[ShiftSetupItem]] = None,
+    plans: Optional[List[PlanSetupItem]] = None,
+    floors: Optional[List[FloorSetupItem]] = None,
 ) -> Tenant:
     """
     Shared atomic workspace creator.
     Creates Tenant, links user as owner, clears pending registration fields,
-    and seeds default shifts and membership plans.
+    and atomically creates configured shifts, membership plans, floors and desks.
+    Falls back to legacy defaults if custom setup items are not supplied.
     """
     slug = await generate_unique_slug(db, library_name)
 
@@ -129,7 +148,122 @@ async def create_tenant_workspace(
     user.pending_pincode = None
     user.pending_additional_email = None
 
-    seed_tenant_defaults(db, tenant.id)
+    # Calculate total seats if floors are provided
+    total_seat_capacity = 0
+    if floors and len(floors) > 0:
+        total_seat_capacity = sum(f.seat_count for f in floors)
+
+    # 1. Shifts
+    created_shifts: List[Shift] = []
+    if shifts and len(shifts) > 0:
+        shift_code_counts = {}
+        for idx, s in enumerate(shifts):
+            s_name = s.name.strip()
+            code = (s.code or "").strip().upper()
+            if not code:
+                words = re.findall(r'[A-Za-z0-9]+', s_name)
+                base_code = ("".join(w[0] for w in words)[:4] if len(words) > 1 else s_name[:4]).upper() or f"SH{idx+1}"
+                code = base_code
+            if code in shift_code_counts:
+                shift_code_counts[code] += 1
+                code = f"{code}{shift_code_counts[code]}"
+            else:
+                shift_code_counts[code] = 1
+
+            cap = s.capacity if s.capacity and s.capacity > 0 else (total_seat_capacity or 50)
+            shift = Shift(
+                tenant_id=tenant.id,
+                name=s_name,
+                code=code,
+                start_time=s.start_time.strip(),
+                end_time=s.end_time.strip(),
+                capacity=cap,
+                is_active=True,
+            )
+            db.add(shift)
+            created_shifts.append(shift)
+        await db.flush()
+    elif shifts is None and plans is None and floors is None:
+        seed_tenant_defaults(db, tenant.id)
+        return tenant
+
+    # 2. Plans
+    if plans and len(plans) > 0:
+        plan_code_counts = {}
+        for idx, p in enumerate(plans):
+            p_name = p.name.strip()
+            code = (p.code or "").strip().upper()
+            if not code:
+                words = re.findall(r'[A-Za-z0-9]+', p_name)
+                base_code = ("".join(w[0] for w in words)[:4] if len(words) > 1 else p_name[:4]).upper() or f"PLN{idx+1}"
+                code = base_code
+            if code in plan_code_counts:
+                plan_code_counts[code] += 1
+                code = f"{code}{plan_code_counts[code]}"
+            else:
+                plan_code_counts[code] = 1
+
+            plan = Plan(
+                tenant_id=tenant.id,
+                name=p_name,
+                code=code,
+                duration_days=p.duration_days if p.duration_days > 0 else 30,
+                duration_months=p.duration_months if p.duration_months > 0 else 1,
+                price=p.price,
+                description=p.description,
+                is_active=True,
+            )
+            db.add(plan)
+            await db.flush()
+
+            # Associate shifts
+            target_shifts: List[Shift] = []
+            if p.shift_indices is not None and len(p.shift_indices) > 0:
+                for s_idx in p.shift_indices:
+                    if 0 <= s_idx < len(created_shifts):
+                        target_shifts.append(created_shifts[s_idx])
+            elif p.shift_names is not None and len(p.shift_names) > 0:
+                name_map = {cs.name.lower(): cs for cs in created_shifts}
+                for sn in p.shift_names:
+                    if sn.strip().lower() in name_map:
+                        target_shifts.append(name_map[sn.strip().lower()])
+            else:
+                target_shifts = created_shifts
+
+            for ts in target_shifts:
+                ps = PlanShift(
+                    tenant_id=tenant.id,
+                    plan_id=plan.id,
+                    shift_id=ts.id
+                )
+                db.add(ps)
+
+    # 3. Floors & Desks
+    if floors and len(floors) > 0:
+        used_prefixes = set()
+        for idx, f in enumerate(floors):
+            floor_name = f.name.strip()
+            prefix = _extract_floor_prefix(floor_name, idx)
+            if prefix in used_prefixes:
+                prefix = f"{prefix}{idx + 1}"
+            used_prefixes.add(prefix)
+
+            for s_idx in range(1, f.seat_count + 1):
+                desk_num = f"{prefix}-{s_idx:02d}"
+                row_num = ((s_idx - 1) // 6) + 1
+                col_num = ((s_idx - 1) % 6) + 1
+                desk = Desk(
+                    tenant_id=tenant.id,
+                    desk_number=desk_num,
+                    zone=floor_name,
+                    row=row_num,
+                    column=col_num,
+                    category="general",
+                    is_active=True,
+                    notes=f"Auto-generated during onboarding setup ({floor_name})"
+                )
+                db.add(desk)
+
     return tenant
 
 
@@ -404,12 +538,16 @@ async def setup_workspace(
                     detail="Study center name must be at least 2 characters."
                 )
 
-            owner_name = (data.owner_name or "").strip()
-            if len(owner_name) < 2:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Owner name must be at least 2 characters."
-                )
+            # Owner name: if provided, validate min 2 chars; otherwise default from user
+            if data.owner_name is not None:
+                owner_name = data.owner_name.strip()
+                if len(owner_name) < 2:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="Owner name must be at least 2 characters."
+                    )
+            else:
+                owner_name = (user.full_name or "Library Owner").strip()
 
             city = (data.city or "").strip()
             if len(city) < 2:
@@ -425,6 +563,97 @@ async def setup_workspace(
                     detail="Please enter a valid 10-digit Indian phone number."
                 )
 
+            pincode = (data.pincode or "").strip() if data.pincode else None
+            if pincode:
+                if not re.match(r'^[1-9][0-9]{5}$', pincode):
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="Please enter a valid 6-digit Indian pincode."
+                    )
+
+            if data.shifts is not None:
+                if len(data.shifts) == 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="At least one operating shift is required."
+                    )
+                shift_names_seen = set()
+                for s in data.shifts:
+                    s_name = (s.name or "").strip()
+                    if not s_name:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail="Shift name cannot be empty."
+                        )
+                    if s_name.lower() in shift_names_seen:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Duplicate shift name '{s_name}'. Each shift must have a unique name."
+                        )
+                    shift_names_seen.add(s_name.lower())
+                    st = (s.start_time or "").strip()
+                    et = (s.end_time or "").strip()
+                    if not re.match(r'^\d{1,2}:\d{2}$', st) or not re.match(r'^\d{1,2}:\d{2}$', et):
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Invalid time format for shift '{s_name}'. Please use HH:MM format."
+                        )
+                    if st == et:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Start time and end time cannot be identical for shift '{s_name}'."
+                        )
+
+            if data.plans is not None:
+                if len(data.plans) == 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="At least one membership plan is required."
+                    )
+                for p in data.plans:
+                    p_name = (p.name or "").strip()
+                    if not p_name:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail="Plan name cannot be empty."
+                        )
+                    if p.price < 0:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Price for plan '{p_name}' must be non-negative."
+                        )
+                    if p.duration_days < 1:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Duration for plan '{p_name}' must be at least 1 day."
+                        )
+
+            if data.floors is not None:
+                if len(data.floors) == 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="At least one floor setup is required."
+                    )
+                floor_names_seen = set()
+                for f in data.floors:
+                    f_name = (f.name or "").strip()
+                    if not f_name:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail="Floor name cannot be empty."
+                        )
+                    if f_name.lower() in floor_names_seen:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Duplicate floor name '{f_name}'. Each floor must have a unique name."
+                        )
+                    floor_names_seen.add(f_name.lower())
+                    if f.seat_count < 1 or f.seat_count > 500:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Seat count for floor '{f_name}' must be between 1 and 500."
+                        )
+
             # Create tenant workspace and link user atomically
             try:
                 tenant = await create_tenant_workspace(
@@ -436,8 +665,11 @@ async def setup_workspace(
                     city=city,
                     address=data.address.strip() if data.address else None,
                     state=data.state.strip() if data.state else None,
-                    pincode=data.pincode.strip() if data.pincode else None,
+                    pincode=pincode,
                     additional_email=data.additional_email.strip() if data.additional_email else None,
+                    shifts=data.shifts,
+                    plans=data.plans,
+                    floors=data.floors,
                 )
 
                 await db.commit()

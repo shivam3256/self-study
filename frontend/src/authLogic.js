@@ -10,12 +10,75 @@
  * @param {string|null} token
  * @param {object|null} user
  * @param {object|null} tenant
- * @returns {'logged_out' | 'ready' | 'needs_details'}
+ * @returns {'logged_out' | 'ready' | 'needs_setup'}
  */
 export function deriveAuthStage(token, user, tenant) {
   if (!token) return 'logged_out';
   if (tenant && (tenant.id || tenant.name)) return 'ready';
-  return 'needs_details';
+  return 'needs_setup';
+}
+
+/**
+ * Generates an isolated localStorage key for a specific user's onboarding wizard draft.
+ * Prevents setup progress from leaking between different accounts on the same device.
+ *
+ * @param {string|null} userId
+ * @returns {string}
+ */
+export function getSetupDraftKey(userId) {
+  return `study_setup_draft_${userId || 'anonymous'}`;
+}
+
+/**
+ * Loads the wizard draft for a user.
+ *
+ * @param {string|null} userId
+ * @param {Storage|null} storage
+ * @returns {object|null}
+ */
+export function loadSetupDraft(userId, storage = (typeof window !== 'undefined' ? window.localStorage : null)) {
+  if (!storage || !userId) return null;
+  try {
+    const raw = storage.getItem(getSetupDraftKey(userId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persists the wizard draft for a user.
+ *
+ * @param {string|null} userId
+ * @param {object|null} data
+ * @param {Storage|null} storage
+ */
+export function saveSetupDraft(userId, data, storage = (typeof window !== 'undefined' ? window.localStorage : null)) {
+  if (!storage || !userId) return;
+  try {
+    if (data) {
+      storage.setItem(getSetupDraftKey(userId), JSON.stringify(data));
+    } else {
+      storage.removeItem(getSetupDraftKey(userId));
+    }
+  } catch (e) {
+    console.warn('Failed to persist setup draft:', e);
+  }
+}
+
+/**
+ * Removes the wizard draft for a user upon successful completion or logout.
+ *
+ * @param {string|null} userId
+ * @param {Storage|null} storage
+ */
+export function clearSetupDraft(userId, storage = (typeof window !== 'undefined' ? window.localStorage : null)) {
+  if (!storage || !userId) return;
+  try {
+    storage.removeItem(getSetupDraftKey(userId));
+  } catch {
+    // ignore
+  }
 }
 
 /**

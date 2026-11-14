@@ -1467,6 +1467,134 @@ async def test_get_me_returns_tenant_id_for_complete_user_and_null_for_incomplet
         assert "pending_password_hash" not in json_incomplete
 
 
+@pytest.mark.asyncio
+async def test_setup_workspace_four_step_wizard_atomic():
+    """Verify that posting custom shifts, plans, and floors creates all resources atomically."""
+    async with AsyncSessionLocal() as db:
+        user = await _create_test_user(db, email=f"wizard_{uuid.uuid4().hex[:6]}@example.com", email_verified=True)
+        token = create_access_token(subject=user.id, tenant_id=None, email=user.email, profile_complete=False)
+
+    payload = {
+        "library_name": "Wizard Apex Library",
+        "phone": "9876543210",
+        "city": "Jaipur",
+        "pincode": "302001",
+        "shifts": [
+            {"name": "Morning", "start_time": "06:00", "end_time": "12:00"},
+            {"name": "Afternoon", "start_time": "12:00", "end_time": "17:00"},
+            {"name": "Evening", "start_time": "17:00", "end_time": "22:00"},
+            {"name": "Night", "start_time": "22:00", "end_time": "06:00"},
+        ],
+        "plans": [
+            {"name": "Single Shift (Morning)", "price": 1200, "duration_days": 30, "shift_indices": [0]},
+            {"name": "Full Day Access", "price": 2500, "duration_days": 30, "shift_indices": [0, 1, 2, 3]},
+        ],
+        "floors": [
+            {"name": "Floor A", "seat_count": 15},
+            {"name": "Floor B", "seat_count": 10},
+        ]
+    }
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.post(
+            "/api/v1/auth/setup-workspace",
+            headers={"Authorization": f"Bearer {token}"},
+            json=payload
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["tenant"]["name"] == "Wizard Apex Library"
+        assert data["tenant"]["pincode"] == "302001"
+        tenant_id = data["tenant"]["id"]
+        new_token = data["access_token"]
+
+        # Verify shifts were created
+        sh_res = await client.get("/api/v1/shifts", headers={"Authorization": f"Bearer {new_token}"})
+        assert sh_res.status_code == 200
+        shifts = sh_res.json()
+        assert len(shifts) == 4
+        shift_names = {s["name"] for s in shifts}
+        assert shift_names == {"Morning", "Afternoon", "Evening", "Night"}
+
+        # Verify plans were created
+        pl_res = await client.get("/api/v1/plans", headers={"Authorization": f"Bearer {new_token}"})
+        assert pl_res.status_code == 200
+        plans = pl_res.json()
+        assert len(plans) == 2
+
+        # Verify desks were generated for both floors
+        d_res = await client.get("/api/v1/desks", headers={"Authorization": f"Bearer {new_token}"})
+        assert d_res.status_code == 200
+        desks = d_res.json()
+        assert len(desks) == 25  # 15 + 10
+        floor_a_desks = [d for d in desks if d["zone"] == "Floor A"]
+        floor_b_desks = [d for d in desks if d["zone"] == "Floor B"]
+        assert len(floor_a_desks) == 15
+        assert len(floor_b_desks) == 10
+        assert floor_a_desks[0]["desk_number"] == "A-01"
+        assert floor_b_desks[0]["desk_number"] == "B-01"
+
+
+@pytest.mark.asyncio
+async def test_setup_workspace_wizard_validation_rules():
+    """Verify validation rules for pincode, duplicate shifts/floors, and seat limits."""
+    async with AsyncSessionLocal() as db:
+        user = await _create_test_user(db, email=f"val_{uuid.uuid4().hex[:6]}@example.com", email_verified=True)
+        token = create_access_token(subject=user.id, tenant_id=None, email=user.email, profile_complete=False)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Invalid 5-digit pincode
+        r1 = await client.post(
+            "/api/v1/auth/setup-workspace",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"library_name": "Lib", "phone": "9876543210", "city": "Jaipur", "pincode": "12345"}
+        )
+        assert r1.status_code == 422
+        assert "pincode" in r1.text.lower()
+
+        # Duplicate shift names
+        r2 = await client.post(
+            "/api/v1/auth/setup-workspace",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "library_name": "Lib", "phone": "9876543210", "city": "Jaipur", "pincode": "302001",
+                "shifts": [
+                    {"name": "Morning", "start_time": "06:00", "end_time": "12:00"},
+                    {"name": "morning", "start_time": "12:00", "end_time": "18:00"},
+                ]
+            }
+        )
+        assert r2.status_code == 422
+        assert "duplicate shift" in r2.text.lower()
+
+        # Duplicate floor names
+        r3 = await client.post(
+            "/api/v1/auth/setup-workspace",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "library_name": "Lib", "phone": "9876543210", "city": "Jaipur", "pincode": "302001",
+                "floors": [
+                    {"name": "Floor A", "seat_count": 20},
+                    {"name": "floor a", "seat_count": 10},
+                ]
+            }
+        )
+        assert r3.status_code == 422
+        assert "duplicate floor" in r3.text.lower()
+
+        # Seat count > 500
+        r4 = await client.post(
+            "/api/v1/auth/setup-workspace",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "library_name": "Lib", "phone": "9876543210", "city": "Jaipur", "pincode": "302001",
+                "floors": [{"name": "Floor A", "seat_count": 501}]
+            }
+        )
+        assert r4.status_code == 422
+        assert "500" in r4.text
+
+
 
 
 

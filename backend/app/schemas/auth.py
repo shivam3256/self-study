@@ -1,6 +1,28 @@
-from typing import Optional
-from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Optional, List
+from decimal import Decimal
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from datetime import datetime
+
+class ShiftSetupItem(BaseModel):
+    name: str
+    start_time: str
+    end_time: str
+    code: Optional[str] = None
+    capacity: Optional[int] = 50
+
+class PlanSetupItem(BaseModel):
+    name: str
+    price: Decimal
+    duration_days: int = 30
+    duration_months: int = 1
+    code: Optional[str] = None
+    shift_indices: Optional[List[int]] = None
+    shift_names: Optional[List[str]] = None
+    description: Optional[str] = None
+
+class FloorSetupItem(BaseModel):
+    name: str
+    seat_count: int
 
 class SignupRequest(BaseModel):
     email: EmailStr
@@ -24,6 +46,9 @@ class SetupWorkspaceRequest(BaseModel):
     state: Optional[str] = None
     pincode: Optional[str] = None
     additional_email: Optional[str] = None
+    shifts: Optional[List[ShiftSetupItem]] = None
+    plans: Optional[List[PlanSetupItem]] = None
+    floors: Optional[List[FloorSetupItem]] = None
 
 # Backward compatibility alias
 TenantRegisterRequest = SignupRequest

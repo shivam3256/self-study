@@ -6,6 +6,10 @@ import {
   handleEmailNotVerifiedStage,
   isStaleTokenProfileIncomplete,
   isStubTenant,
+  getSetupDraftKey,
+  loadSetupDraft,
+  saveSetupDraft,
+  clearSetupDraft,
 } from './src/authLogic.js';
 
 console.log('=====================================================');
@@ -42,7 +46,7 @@ console.log('✓ parseApiError passed all cases.\n');
 console.log('2. Testing deriveAuthStage (imported from src/authLogic.js)...');
 assert.strictEqual(deriveAuthStage(null, null, null), 'logged_out');
 assert.strictEqual(deriveAuthStage('', null, null), 'logged_out');
-assert.strictEqual(deriveAuthStage('tok_1', { email: 'user@lib.com' }, null), 'needs_details');
+assert.strictEqual(deriveAuthStage('tok_1', { email: 'user@lib.com' }, null), 'needs_setup');
 assert.strictEqual(deriveAuthStage('tok_1', { email: 'user@lib.com' }, { id: 'tnt_1', name: 'Lib' }), 'ready');
 
 // Legacy user format with stored tenant
@@ -214,17 +218,55 @@ assert.ok(handledMsg.includes('Study center name must be at least 2 characters.'
 console.log('✓ Details 422 correctly surfaces validation error without reusing stale token.\n');
 
 // ─── 9. Validation and arithmetic ───────────────────────────────────
-console.log('9. Testing phone regex & cooldown calculations...');
+console.log('9. Testing phone & pincode regex & cooldown calculations...');
 const phoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
 assert.ok(phoneRegex.test('9876543210'));
 assert.ok(phoneRegex.test('+919876543210'));
 assert.ok(!phoneRegex.test('1234567890'));
+
+const pincodeRegex = /^[1-9][0-9]{5}$/;
+assert.ok(pincodeRegex.test('302001'));
+assert.ok(pincodeRegex.test('110001'));
+assert.ok(!pincodeRegex.test('012345'), 'Pincode cannot start with 0');
+assert.ok(!pincodeRegex.test('12345'), 'Pincode must be 6 digits');
+assert.ok(!pincodeRegex.test('1234567'), 'Pincode cannot exceed 6 digits');
 
 const nowMs = Date.now();
 const expiresAt = nowMs + 30 * 1000;
 const remainingSec = Math.max(0, Math.ceil((expiresAt - nowMs) / 1000));
 assert.strictEqual(remainingSec, 30);
 console.log('✓ Validation and arithmetic verified.\n');
+
+// ─── 10. Multi-User Setup Draft Isolation ───────────────────────────
+console.log('10. Testing multi-user setup draft isolation (no cross-user leaking)...');
+const draftStorage = new Map();
+const draftStorageAdapter = {
+  setItem: (k, v) => draftStorage.set(k, String(v)),
+  getItem: (k) => draftStorage.get(k) || null,
+  removeItem: (k) => draftStorage.delete(k),
+};
+
+const userA_id = 'user_aaa_111';
+const userB_id = 'user_bbb_222';
+assert.strictEqual(getSetupDraftKey(userA_id), 'study_setup_draft_user_aaa_111');
+
+// User A saves draft at step 3
+saveSetupDraft(userA_id, { currentStep: 3, libraryName: 'User A Library' }, draftStorageAdapter);
+assert.strictEqual(loadSetupDraft(userA_id, draftStorageAdapter).libraryName, 'User A Library');
+
+// User B must NOT see User A's draft
+assert.strictEqual(loadSetupDraft(userB_id, draftStorageAdapter), null);
+
+// User B saves their own draft
+saveSetupDraft(userB_id, { currentStep: 1, libraryName: 'User B Center' }, draftStorageAdapter);
+assert.strictEqual(loadSetupDraft(userB_id, draftStorageAdapter).libraryName, 'User B Center');
+assert.strictEqual(loadSetupDraft(userA_id, draftStorageAdapter).libraryName, 'User A Library');
+
+// Clear User A's draft on completion
+clearSetupDraft(userA_id, draftStorageAdapter);
+assert.strictEqual(loadSetupDraft(userA_id, draftStorageAdapter), null);
+assert.strictEqual(loadSetupDraft(userB_id, draftStorageAdapter).libraryName, 'User B Center', 'User B draft remains intact');
+console.log('✓ Setup draft isolation verified (never leaks between users on same device).\n');
 
 console.log('=====================================================');
 console.log('ALL FRONTEND TESTS PASSED (100% OK)');

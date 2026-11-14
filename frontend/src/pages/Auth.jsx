@@ -88,26 +88,10 @@ export function AuthLeftPanel() {
 }
 
 export function StepIndicator({ path, currentStep }) {
-  if (path !== 'email' && path !== 'google') {
-    return (
-      <div className="auth-step-container">
-        <div className="auth-step-badge">
-          <span>Final step — Workspace details</span>
-        </div>
-      </div>
-    );
-  }
-
-  const steps = path === 'email'
-    ? [
-        { id: 'account', label: 'Account', num: 1 },
-        { id: 'verify', label: 'Verify', num: 2 },
-        { id: 'details', label: 'Details', num: 3 },
-      ]
-    : [
-        { id: 'account', label: 'Account', num: 1 },
-        { id: 'details', label: 'Details', num: 2 },
-      ];
+  const steps = [
+    { id: 'account', label: 'Account', num: 1 },
+    { id: 'verify', label: 'Verify', num: 2 },
+  ];
 
   const currentIdx = steps.findIndex((s) => s.id === currentStep);
 
