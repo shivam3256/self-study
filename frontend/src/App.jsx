@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { api, getAuthToken, setAuthToken, getStoredUser, getStoredTenant, setStoredUser } from './api';
 import {
   deriveAuthStage,
@@ -19,7 +20,7 @@ import Reminders from './pages/Reminders';
 import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
 import Auth from './pages/Auth';
-import Details from './pages/Details';
+import SetupWizard from './pages/SetupWizard';
 import NewStudentModal from './components/NewStudentModal';
 import NewPaymentModal from './components/NewPaymentModal';
 import ReceiptModal from './components/ReceiptModal';
@@ -132,7 +133,17 @@ export default function App() {
   const [retryNonce, setRetryNonce] = useState(0);
   const [authNotice, setAuthNotice] = useState('');
   const handlingStageInvalidRef = useRef(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Extract activeTab from pathname (e.g. '/students' -> 'students', '/' or '/dashboard' -> 'dashboard')
+  const pathSegment = location.pathname.replace(/^\//, '').split('/')[0];
+  const activeTab = pathSegment || 'dashboard';
+
+  const setActiveTab = (tab) => {
+    navigate(tab === 'dashboard' ? '/dashboard' : `/${tab}`);
+  };
 
   // Shared library data
   const [students, setStudents] = useState([]);
@@ -332,6 +343,9 @@ export default function App() {
     setTenant(tenantData || null);
     setServerConnectionError(false);
     setAuthNotice('');
+    if (['/login', '/setup', '/'].includes(location.pathname)) {
+      navigate('/dashboard', { replace: true });
+    }
   };
 
   const handleLogout = (notice = '') => {
@@ -343,6 +357,7 @@ export default function App() {
     setTenant(null);
     setServerConnectionError(false);
     setAuthNotice(typeof notice === 'string' ? notice : '');
+    navigate('/login', { replace: true });
   };
 
   const handleOpenPayment = (studentId = null, paymentType = 'seat') => {
@@ -436,12 +451,12 @@ export default function App() {
     );
   }
 
-  if (authStage === 'needs_details') {
+  if (authStage === 'needs_setup') {
     return (
       <ErrorBoundary>
-        <Details
+        <SetupWizard
           user={user}
-          onDetailsSuccess={handleLoginSuccess}
+          onSetupSuccess={handleLoginSuccess}
           onLogout={handleLogout}
         />
       </ErrorBoundary>
@@ -471,95 +486,117 @@ export default function App() {
         />
 
         <main className="content-body">
-          <ErrorBoundary key={activeTab}>
-            {activeTab === 'dashboard' && (
-              <Dashboard
-                setActiveTab={setActiveTab}
-                onOpenNewStudent={() => setShowNewStudentModal(true)}
-                onOpenNewPayment={() => handleOpenPayment(null)}
+          <ErrorBoundary key={location.pathname}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/setup" element={<Navigate to="/dashboard" replace />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <Dashboard
+                    setActiveTab={setActiveTab}
+                    onOpenNewStudent={() => setShowNewStudentModal(true)}
+                    onOpenNewPayment={() => handleOpenPayment(null)}
+                  />
+                }
               />
-            )}
-
-            {activeTab === 'seatmap' && (
-              <SeatMap
-                students={students}
-                onRefreshStudents={loadSharedData}
+              <Route
+                path="/seatmap"
+                element={
+                  <SeatMap
+                    students={students}
+                    onRefreshStudents={loadSharedData}
+                  />
+                }
               />
-            )}
-
-            {activeTab === 'lockers' && (
-              <LockerMap
-                students={students}
-                onOpenPayment={handleOpenPayment}
-                onViewReceipt={(rcpt) => setCurrentReceipt(rcpt)}
+              <Route
+                path="/lockers"
+                element={
+                  <LockerMap
+                    students={students}
+                    onOpenPayment={handleOpenPayment}
+                    onViewReceipt={(rcpt) => setCurrentReceipt(rcpt)}
+                  />
+                }
               />
-            )}
-
-            {activeTab === 'students' && (
-              <Students
-                students={students}
-                loading={loadingData}
-                onRefresh={loadSharedData}
-                onOpenNewStudent={() => setShowNewStudentModal(true)}
-                onOpenNewPayment={handleOpenPayment}
+              <Route
+                path="/students"
+                element={
+                  <Students
+                    students={students}
+                    loading={loadingData}
+                    onRefresh={loadSharedData}
+                    onOpenNewStudent={() => setShowNewStudentModal(true)}
+                    onOpenNewPayment={handleOpenPayment}
+                  />
+                }
               />
-            )}
-
-            {activeTab === 'billing' && (
-              <Billing
-                onOpenNewPayment={handleOpenPayment}
-                onViewReceipt={(rcpt) => setCurrentReceipt(rcpt)}
+              <Route
+                path="/billing"
+                element={
+                  <Billing
+                    onOpenNewPayment={handleOpenPayment}
+                    onViewReceipt={(rcpt) => setCurrentReceipt(rcpt)}
+                  />
+                }
               />
-            )}
-
-            {activeTab === 'budget' && (
-              <Budget tenant={tenant} />
-            )}
-
-            {activeTab === 'attendance' && (
-              <Attendance students={students} />
-            )}
-
-            {activeTab === 'reminders' && (
-              <Reminders />
-            )}
-
-            {activeTab === 'settings' && (
-              <Settings
-                tenant={tenant}
-                shifts={shifts}
-                plans={plans}
-                onTenantUpdated={(newTenant) => setTenant(newTenant)}
-                onRefreshData={loadSharedData}
-                onLogout={handleLogout}
+              <Route
+                path="/budget"
+                element={<Budget tenant={tenant} />}
               />
-            )}
-
-            {activeTab === 'account-settings' && (
-              <AccountSettings
-                tenant={tenant}
-                user={user}
-                onTenantUpdated={(newTenant) => setTenant(newTenant)}
-                onLogout={handleLogout}
+              <Route
+                path="/attendance"
+                element={<Attendance students={students} />}
               />
-            )}
-
-            {!['dashboard', 'seatmap', 'lockers', 'students', 'billing', 'budget', 'attendance', 'reminders', 'settings', 'account-settings'].includes(activeTab) && (
-              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <div className="card" style={{ maxWidth: 480, margin: '0 auto', padding: '36px 24px' }}>
-                  <div className="support-circle-icon" style={{ width: 52, height: 52, margin: '0 auto 16px', backgroundColor: 'var(--danger-bg)', color: 'var(--danger-solid)' }}>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>404</span>
+              <Route
+                path="/reminders"
+                element={<Reminders />}
+              />
+              <Route
+                path="/settings"
+                element={
+                  <Settings
+                    tenant={tenant}
+                    shifts={shifts}
+                    plans={plans}
+                    onTenantUpdated={(newTenant) => setTenant(newTenant)}
+                    onRefreshData={loadSharedData}
+                    onLogout={handleLogout}
+                  />
+                }
+              />
+              <Route
+                path="/account-settings"
+                element={
+                  <AccountSettings
+                    tenant={tenant}
+                    user={user}
+                    onTenantUpdated={(newTenant) => setTenant(newTenant)}
+                    onLogout={handleLogout}
+                  />
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                    <div className="card" style={{ maxWidth: 480, margin: '0 auto', padding: '36px 24px' }}>
+                      <div className="support-circle-icon" style={{ width: 52, height: 52, margin: '0 auto 16px', backgroundColor: 'var(--danger-bg)', color: 'var(--danger-solid)' }}>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>404</span>
+                      </div>
+                      <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', marginBottom: 8 }}>Page Not Found</h3>
+                      <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 20 }}>
+                        The view or section you requested doesn't exist or may have moved.
+                      </p>
+                      <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
+                        Return to Dashboard
+                      </button>
+                    </div>
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', color: 'var(--color-heading)', marginBottom: 8 }}>Page Not Found</h3>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 20 }}>
-                    The view or section you requested doesn't exist or may have moved.
-                  </p>
-                  <button className="btn btn-primary" onClick={() => setActiveTab('dashboard')}>
-                    Return to Dashboard
-                  </button>
-                </div>
-              </div>
-            )}
+                }
+              />
+            </Routes>
           </ErrorBoundary>
         </main>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Grid,
@@ -18,24 +19,25 @@ import {
 import PlanDetailsModal from './PlanDetailsModal';
 import SupportModal from './SupportModal';
 
-export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogout }) {
+export default function Sidebar({ _activeTab, setActiveTab, user, tenant, onLogout }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const navigate = useNavigate();
 
   const managementNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'seatmap', label: 'Visual Seat Map', icon: Grid },
-    { id: 'lockers', label: 'Locker Management', icon: Lock },
-    { id: 'students', label: 'Students', icon: Users },
-    { id: 'billing', label: 'Fee & Billing', icon: CreditCard },
-    { id: 'budget', label: 'Budget & Profit', icon: Wallet },
-    { id: 'attendance', label: 'Attendance & QR', icon: QrCode },
-    { id: 'reminders', label: 'WhatsApp Reminders', icon: BellRing },
+    { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'seatmap', path: '/seatmap', label: 'Visual Seat Map', icon: Grid },
+    { id: 'lockers', path: '/lockers', label: 'Locker Management', icon: Lock },
+    { id: 'students', path: '/students', label: 'Students', icon: Users },
+    { id: 'billing', path: '/billing', label: 'Fee & Billing', icon: CreditCard },
+    { id: 'budget', path: '/budget', label: 'Budget & Profit', icon: Wallet },
+    { id: 'attendance', path: '/attendance', label: 'Attendance & QR', icon: QrCode },
+    { id: 'reminders', path: '/reminders', label: 'WhatsApp Reminders', icon: BellRing },
   ];
 
   const configNavItems = [
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
+    { id: 'settings', path: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const getInitials = (name) => {
@@ -49,12 +51,14 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
   const displayEmail = user?.email || 'kumarsinghshivam325@gmail.com';
 
   const handleEditProfile = () => {
-    setActiveTab('account-settings');
+    if (setActiveTab) setActiveTab('account-settings');
+    navigate('/account-settings');
     setIsExpanded(false);
   };
 
   const handleAccountSettings = () => {
-    setActiveTab('account-settings');
+    if (setActiveTab) setActiveTab('account-settings');
+    navigate('/account-settings');
     setIsExpanded(false);
   };
 
@@ -70,58 +74,66 @@ export default function Sidebar({ activeTab, setActiveTab, user, tenant, onLogou
     <>
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="brand-badge">
-            <img
-              src="/brand/libma-icon.svg"
-              alt="LibMa"
-              className="brand-badge-icon"
-            />
-          </div>
-          <div className="brand-info">
-            <div
-              className="brand-name"
-              title="LibMa"
-              aria-label="LibMa"
-            >
-              LibMa
+          <Link
+            to="/dashboard"
+            style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit' }}
+            title="LibMa — Dashboard"
+          >
+            <div className="brand-badge">
+              <img
+                src="/brand/libma-icon.svg"
+                alt="LibMa"
+                className="brand-badge-icon"
+              />
             </div>
-          </div>
+            <div className="brand-info">
+              <div
+                className="brand-name"
+                title="LibMa"
+                aria-label="LibMa"
+              >
+                LibMa
+              </div>
+            </div>
+          </Link>
         </div>
 
         <nav className="sidebar-nav" aria-label="Sidebar Navigation">
           <div className="sidebar-section-label">Management</div>
           {managementNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
             return (
-              <button
+              <NavLink
                 key={item.id}
-                type="button"
-                onClick={() => setActiveTab(item.id)}
-                className={`nav-item ${isActive ? 'active' : ''}`}
+                to={item.path}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  if (setActiveTab) setActiveTab(item.id);
+                }}
               >
                 <div className="nav-indicator" />
                 <Icon size={18} />
                 <span>{item.label}</span>
-              </button>
+              </NavLink>
             );
           })}
 
           <div className="sidebar-section-label">Configuration</div>
           {configNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
             return (
-              <button
+              <NavLink
                 key={item.id}
-                type="button"
-                onClick={() => setActiveTab(item.id)}
-                className={`nav-item ${isActive ? 'active' : ''}`}
+                to={item.path}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  if (setActiveTab) setActiveTab(item.id);
+                }}
               >
                 <div className="nav-indicator" />
                 <Icon size={18} />
                 <span>{item.label}</span>
-              </button>
+              </NavLink>
             );
           })}
         </nav>
