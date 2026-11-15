@@ -208,9 +208,11 @@ async def _process_all_tenants():
 async def _process_allocations_lifecycle_async():
     from app.services.allocation_service import AllocationService
     from app.services.locker_service import LockerService
+    from app.services.subscription_service import SubscriptionService
     engine = create_async_engine(settings.DATABASE_URL)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with session_factory() as db:
         await AllocationService.process_overdue_and_expirations(db)
         await LockerService.process_overdue_and_expirations(db)
+        await SubscriptionService.process_expiries(db)
     await engine.dispose()

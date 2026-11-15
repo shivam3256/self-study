@@ -28,6 +28,8 @@ import ReceiptModal from './components/ReceiptModal';
 import StudentDetailsModal from './components/StudentDetailsModal';
 import EditStudentModal from './components/EditStudentModal';
 
+const SuperAdminApp = React.lazy(() => import('./admin/SuperAdminApp'));
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -380,6 +382,15 @@ export default function App() {
       setSelectedStudentForDetails(target);
     }
   };
+
+  const adminPrefix = import.meta.env.VITE_ADMIN_PATH_PREFIX || '/ops-k7x2q9m4';
+  if (location.pathname.startsWith(adminPrefix)) {
+    return (
+      <React.Suspense fallback={null}>
+        <SuperAdminApp />
+      </React.Suspense>
+    );
+  }
 
   if (initializingAuth) {
     return (

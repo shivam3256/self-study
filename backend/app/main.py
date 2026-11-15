@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.v1 import api_router
+from app.api.admin import admin_api_router
 
 # Import all models to ensure they are registered with Base.metadata
 import app.models
@@ -125,6 +126,10 @@ async def lifespan(app: FastAPI):
                 add_column_if_not_exists("tenants", "additional_email", "VARCHAR(255)")
                 add_column_if_not_exists("tenants", "grace_period_days", "INTEGER DEFAULT 30")
                 sync_conn.execute(text("UPDATE tenants SET grace_period_days = 30 WHERE grace_period_days IS NULL OR grace_period_days = 5"))
+                add_column_if_not_exists("tenants", "manually_overridden", "BOOLEAN DEFAULT FALSE")
+                add_column_if_not_exists("tenants", "override_reason", "TEXT")
+                add_column_if_not_exists("tenants", "overridden_by", "VARCHAR(36)")
+                add_column_if_not_exists("tenants", "overridden_at", "TIMESTAMP WITH TIME ZONE" if sync_conn.dialect.name == "postgresql" else "DATETIME")
 
             add_column_if_not_exists("plans", "zone_id", "VARCHAR(100)")
             add_column_if_not_exists("students", "gender", "VARCHAR(20)")
@@ -270,3 +275,4 @@ async def health_check():
     }
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(admin_api_router, prefix=f"{settings.ADMIN_PATH_PREFIX}/api")

@@ -21,6 +21,10 @@ class Tenant(BaseModel):
     subscription_tier = Column(String(50), default="pro", nullable=False)
     subscription_status = Column(String(50), default="active", nullable=False)
     subscription_expires_at = Column(DateTime(timezone=True), nullable=True)
+    manually_overridden = Column(Boolean, default=False, nullable=False)
+    override_reason = Column(Text, nullable=True)
+    overridden_by = Column(String(36), ForeignKey("platform_admins.id", ondelete="SET NULL"), nullable=True)
+    overridden_at = Column(DateTime(timezone=True), nullable=True)
     
     currency = Column(String(10), default="INR", nullable=False)
     operating_hours = Column(String(100), default="06:00 AM - 11:00 PM", nullable=False)

@@ -12,6 +12,7 @@ from app.models.reminder import ReminderLog
 from app.models.notification import Notification
 from app.models.expense import Expense
 from app.models.locker import Locker, LockerAssignment
+from app.models.platform_admin import PlatformAdmin, AdminAuditLog
 
 __all__ = [
     "Base",
@@ -35,5 +36,7 @@ __all__ = [
     "Expense",
     "Locker",
     "LockerAssignment",
+    "PlatformAdmin",
+    "AdminAuditLog",
 ]
 

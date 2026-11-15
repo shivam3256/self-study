@@ -66,6 +66,15 @@ class Settings(BaseSettings):
     WHATSAPP_BUSINESS_ACCOUNT_ID: str = ""  # WABA ID (optional)
     WHATSAPP_API_VERSION: str = "v20.0"  # Meta Graph API version
 
+    # Platform Super Admin Configuration
+    ADMIN_PATH_PREFIX: str = "/ops-k7x2q9m4"
+    ADMIN_SECRET_KEY: str = "supersecret-admin-jwt-key-for-saas-platform-change-in-prod-2026"
+    ADMIN_FERNET_KEY: str = ""  # 32-byte url-safe base64 key
+    ADMIN_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    ADMIN_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ADMIN_IP_ALLOWLIST: str = ""  # Optional comma-separated IP addresses
+    ADMIN_SUBDOMAIN: str = ""     # Optional subdomain constraint
+
     model_config = {
         "env_file": ".env",
         "case_sensitive": True,
