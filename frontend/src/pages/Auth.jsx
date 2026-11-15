@@ -124,9 +124,18 @@ export function StepIndicator({ path, currentStep }) {
   );
 }
 
-export default function Auth({ onLoginSuccess, initialMessage = '', onNoticeCleared }) {
+export default function Auth({ onLoginSuccess, initialMessage = '', onNoticeCleared, initialMode = 'login' }) {
   const [verifyEmail, setVerifyEmail] = useState(() => sessionStorage.getItem('study_pending_verify_email') || '');
-  const [mode, setMode] = useState(() => sessionStorage.getItem('study_pending_verify_email') ? 'verify' : 'login');
+  const [mode, setMode] = useState(() => {
+    if (sessionStorage.getItem('study_pending_verify_email')) return 'verify';
+    return initialMode || 'login';
+  });
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('study_pending_verify_email') && initialMode) {
+      setMode(initialMode);
+    }
+  }, [initialMode]);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);

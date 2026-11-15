@@ -20,6 +20,7 @@ import Reminders from './pages/Reminders';
 import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
 import Auth from './pages/Auth';
+import LandingPage from './pages/LandingPage';
 import SetupWizard from './pages/SetupWizard';
 import NewStudentModal from './components/NewStudentModal';
 import NewPaymentModal from './components/NewPaymentModal';
@@ -440,12 +441,27 @@ export default function App() {
   }
 
   if (authStage === 'logged_out') {
+    const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
+    if (!isAuthRoute && (location.pathname === '/' || !location.pathname || location.pathname === '/landing')) {
+      return (
+        <ErrorBoundary>
+          <LandingPage
+            onLogin={() => navigate('/login')}
+            onGetStarted={() => navigate('/register')}
+            user={user}
+            tenant={tenant}
+          />
+        </ErrorBoundary>
+      );
+    }
+
     return (
       <ErrorBoundary>
         <Auth
           onLoginSuccess={handleLoginSuccess}
           initialMessage={authNotice}
           onNoticeCleared={() => setAuthNotice('')}
+          initialMode={location.pathname === '/register' ? 'register' : 'login'}
         />
       </ErrorBoundary>
     );
@@ -490,6 +506,18 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+              <Route
+                path="/landing"
+                element={
+                  <LandingPage
+                    onLogin={() => navigate('/dashboard')}
+                    onGetStarted={() => navigate('/dashboard')}
+                    user={user}
+                    tenant={tenant}
+                  />
+                }
+              />
               <Route path="/setup" element={<Navigate to="/dashboard" replace />} />
               <Route
                 path="/dashboard"
